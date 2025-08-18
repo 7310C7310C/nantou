@@ -2,6 +2,10 @@ const express = require('express');
 const path = require('path');
 require('dotenv').config();
 
+// 导入控制器和中间件
+const authController = require('./controllers/auth.controller');
+const { protect } = require('./middleware/auth.middleware');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -24,6 +28,16 @@ app.get('/health', (req, res) => {
     message: '服务器运行正常',
     timestamp: new Date().toISOString()
   });
+});
+
+// 认证路由
+app.post('/api/auth/login', authController.login);
+app.get('/api/auth/me', protect, authController.getCurrentUser);
+app.post('/api/auth/logout', protect, authController.logout);
+
+// 管理后台页面路由
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 // 启动服务器
