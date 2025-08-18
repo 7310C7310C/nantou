@@ -20,7 +20,7 @@
 | `id` | `INT` | **主键**, 自动递增 |
 | `username` | `VARCHAR` | 登录账号, **唯一** |
 | `password` | `VARCHAR` | 加密后的密码哈希 |
-| `role` | `VARCHAR` | 'admin' 或 'matchmaker'  或 'sign' |
+| `role` | `VARCHAR` | 'admin' 或 'staff' 或 'matchmaker' |
 
 ## 3. `selections` - 用户选择表
 
