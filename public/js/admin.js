@@ -3,71 +3,173 @@
  * 处理登录、登出和界面交互
  */
 
-class AdminApp {
-    constructor() {
-        this.token = localStorage.getItem('authToken');
-        this.user = JSON.parse(localStorage.getItem('userInfo') || 'null');
-        
-        this.init();
-    }
+// 全局变量
+let authToken = localStorage.getItem('authToken');
+let currentUser = null;
 
-    init() {
-        // 绑定事件监听器
-        this.bindEvents();
-        
-        // 检查登录状态
-        this.checkAuthStatus();
-    }
-
-    bindEvents() {
-        // 登录表单提交
+// DOM 元素
         const loginForm = document.getElementById('loginForm');
-        if (loginForm) {
-            loginForm.addEventListener('submit', (e) => this.handleLogin(e));
-        }
-
-        // 登出按钮
+const loginSection = document.getElementById('loginSection');
+const userInfo = document.getElementById('userInfo');
+const displayUsername = document.getElementById('displayUsername');
+const displayRole = document.getElementById('displayRole');
         const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => this.handleLogout());
-        }
-    }
+const mainContent = document.getElementById('mainContent');
+const loginError = document.getElementById('loginError');
 
-    async checkAuthStatus() {
-        if (this.token && this.user) {
-            // 验证令牌是否有效
+// 录入相关元素
+const openRegistrationBtn = document.getElementById('openRegistrationBtn');
+const registrationModal = document.getElementById('registrationModal');
+const closeRegistrationBtn = document.getElementById('closeRegistrationBtn');
+const registrationForm = document.getElementById('registrationForm');
+const photoUpload = document.getElementById('photoUpload');
+const photoInput = document.getElementById('photoInput');
+const photoPreview = document.getElementById('photoPreview');
+const cancelBtn = document.getElementById('cancelBtn');
+
+// 管理相关元素
+const openManageBtn = document.getElementById('openManageBtn');
+const manageModal = document.getElementById('manageModal');
+const closeManageBtn = document.getElementById('closeManageBtn');
+const participantsList = document.getElementById('participantsList');
+const searchInput = document.getElementById('searchInput');
+const genderFilter = document.getElementById('genderFilter');
+
+// 删除相关元素
+const deleteModal = document.getElementById('deleteModal');
+const deleteConfirmInput = document.getElementById('deleteConfirmInput');
+const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+// 确认弹窗元素
+const confirmModal = document.getElementById('confirmModal');
+const confirmInfo = document.getElementById('confirmInfo');
+const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
+const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+
+// 结果弹窗元素
+const resultModal = document.getElementById('resultModal');
+const accountInfo = document.getElementById('accountInfo');
+const closeResultBtn = document.getElementById('closeResultBtn');
+
+// 进度提示元素
+const loadingOverlay = document.getElementById('loadingOverlay');
+
+// 存储选择的照片
+let selectedPhotos = [];
+
+// 页面加载时检查登录状态
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuthStatus();
+    setupEventListeners();
+});
+
+// 设置事件监听器
+function setupEventListeners() {
+    // 登录表单
+    loginForm.addEventListener('submit', handleLogin);
+    logoutBtn.addEventListener('click', handleLogout);
+
+    // 录入界面
+    openRegistrationBtn.addEventListener('click', openRegistrationModal);
+    closeRegistrationBtn.addEventListener('click', closeRegistrationModal);
+    cancelBtn.addEventListener('click', closeRegistrationModal);
+    registrationForm.addEventListener('submit', handleRegistrationSubmit);
+
+    // 管理界面
+    openManageBtn.addEventListener('click', openManageModal);
+    closeManageBtn.addEventListener('click', closeManageModal);
+    searchInput.addEventListener('input', filterParticipants);
+    genderFilter.addEventListener('change', filterParticipants);
+
+    // 删除功能
+    cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+    confirmDeleteBtn.addEventListener('click', handleDeleteParticipant);
+    deleteConfirmInput.addEventListener('input', validateDeleteConfirm);
+
+    // 照片上传
+    photoUpload.addEventListener('click', () => photoInput.click());
+    photoInput.addEventListener('change', handlePhotoSelect);
+    setupDragAndDrop();
+
+    // 确认弹窗
+    cancelConfirmBtn.addEventListener('click', closeConfirmModal);
+    confirmSubmitBtn.addEventListener('click', submitRegistration);
+
+    // 结果弹窗
+    closeResultBtn.addEventListener('click', closeResultModal);
+
+    // 点击模态框外部关闭
+    registrationModal.addEventListener('click', (e) => {
+        if (e.target === registrationModal) closeRegistrationModal();
+    });
+    manageModal.addEventListener('click', (e) => {
+        if (e.target === manageModal) closeManageModal();
+    });
+    confirmModal.addEventListener('click', (e) => {
+        if (e.target === confirmModal) closeConfirmModal();
+    });
+    resultModal.addEventListener('click', (e) => {
+        if (e.target === resultModal) closeResultModal();
+    });
+    deleteModal.addEventListener('click', (e) => {
+        if (e.target === deleteModal) closeDeleteModal();
+    });
+}
+
+// 检查认证状态
+async function checkAuthStatus() {
+    if (authToken) {
             try {
                 const response = await fetch('/api/auth/me', {
                     headers: {
-                        'Authorization': `Bearer ${this.token}`
+                    'Authorization': `Bearer ${authToken}`
                     }
                 });
 
-                if (response.ok) {
-                    this.showLoggedInState();
-                } else {
-                    this.clearAuthData();
-                    this.showLoginForm();
-                }
-            } catch (error) {
-                console.error('验证令牌失败:', error);
-                this.clearAuthData();
-                this.showLoginForm();
+                            if (response.ok) {
+                const user = await response.json();
+                currentUser = user.data.user;
+                showAuthenticatedUI();
+            } else {
+                localStorage.removeItem('authToken');
+                authToken = null;
+                showLoginUI();
             }
-        } else {
-            this.showLoginForm();
+        } catch (error) {
+            console.error('检查认证状态失败:', error);
+            localStorage.removeItem('authToken');
+            authToken = null;
+            showLoginUI();
         }
+    } else {
+        showLoginUI();
     }
+}
 
-    async handleLogin(event) {
-        event.preventDefault();
+// 显示登录界面
+function showLoginUI() {
+    loginSection.style.display = 'flex';
+    userInfo.style.display = 'none';
+    mainContent.style.display = 'none';
+}
+
+// 显示已认证界面
+function showAuthenticatedUI() {
+    loginSection.style.display = 'none';
+    userInfo.style.display = 'flex';
+    mainContent.style.display = 'block';
+    
+    displayUsername.textContent = currentUser.username;
+    displayRole.textContent = currentUser.role;
+}
+
+// 处理登录
+async function handleLogin(e) {
+    e.preventDefault();
         
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
-        const errorElement = document.getElementById('loginError');
-
-        // 清除之前的错误信息
-        this.hideError();
 
         try {
             const response = await fetch('/api/auth/login', {
@@ -80,160 +182,603 @@ class AdminApp {
 
             const data = await response.json();
 
-            if (data.success) {
-                // 保存认证信息
-                this.token = data.data.token;
-                this.user = data.data.user;
-                
-                localStorage.setItem('authToken', this.token);
-                localStorage.setItem('userInfo', JSON.stringify(this.user));
-
-                // 显示登录成功状态
-                this.showLoggedInState();
-                
-                // 显示成功消息
-                this.showSuccess('登录成功！');
-                
-                // 清空表单
-                document.getElementById('loginForm').reset();
-            } else {
-                this.showError(data.message || '登录失败');
-            }
-        } catch (error) {
-            console.error('登录请求失败:', error);
-            this.showError('网络错误，请稍后重试');
+                if (response.ok) {
+            authToken = data.data.token;
+            localStorage.setItem('authToken', authToken);
+            currentUser = data.data.user;
+            showAuthenticatedUI();
+            loginError.style.display = 'none';
+        } else {
+            showError(data.message || '登录失败');
         }
-    }
-
-    async handleLogout() {
-        try {
-            // 调用登出API
-            await fetch('/api/auth/logout', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.token}`
-                }
-            });
-        } catch (error) {
-            console.error('登出请求失败:', error);
-        } finally {
-            // 清除本地存储的认证信息
-            this.clearAuthData();
-            
-            // 显示登录表单
-            this.showLoginForm();
-            
-            // 显示登出成功消息
-            this.showSuccess('已成功登出');
-        }
-    }
-
-    showLoggedInState() {
-        // 隐藏登录表单
-        const loginSection = document.getElementById('loginSection');
-        if (loginSection) {
-            loginSection.style.display = 'none';
-        }
-
-        // 显示用户信息
-        const userInfo = document.getElementById('userInfo');
-        if (userInfo) {
-            userInfo.style.display = 'flex';
-        }
-
-        // 更新用户信息显示
-        const displayUsername = document.getElementById('displayUsername');
-        const displayRole = document.getElementById('displayRole');
-        
-        if (displayUsername && this.user) {
-            displayUsername.textContent = this.user.username;
-        }
-        
-        if (displayRole && this.user) {
-            displayRole.textContent = this.getRoleDisplayName(this.user.role);
-        }
-
-        // 显示主要内容
-        const mainContent = document.getElementById('mainContent');
-        if (mainContent) {
-            mainContent.style.display = 'block';
-        }
-    }
-
-    showLoginForm() {
-        // 显示登录表单
-        const loginSection = document.getElementById('loginSection');
-        if (loginSection) {
-            loginSection.style.display = 'flex';
-        }
-
-        // 隐藏用户信息
-        const userInfo = document.getElementById('userInfo');
-        if (userInfo) {
-            userInfo.style.display = 'none';
-        }
-
-        // 隐藏主要内容
-        const mainContent = document.getElementById('mainContent');
-        if (mainContent) {
-            mainContent.style.display = 'none';
-        }
-    }
-
-    clearAuthData() {
-        this.token = null;
-        this.user = null;
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userInfo');
-    }
-
-    showError(message) {
-        const errorElement = document.getElementById('loginError');
-        if (errorElement) {
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-        }
-    }
-
-    hideError() {
-        const errorElement = document.getElementById('loginError');
-        if (errorElement) {
-            errorElement.style.display = 'none';
-        }
-    }
-
-    showSuccess(message) {
-        // 创建临时成功消息
-        const successDiv = document.createElement('div');
-        successDiv.className = 'success-message';
-        successDiv.textContent = message;
-        successDiv.style.position = 'fixed';
-        successDiv.style.top = '20px';
-        successDiv.style.right = '20px';
-        successDiv.style.zIndex = '1000';
-        successDiv.style.display = 'block';
-
-        document.body.appendChild(successDiv);
-
-        // 3秒后自动移除
-        setTimeout(() => {
-            if (successDiv.parentNode) {
-                successDiv.parentNode.removeChild(successDiv);
-            }
-        }, 3000);
-    }
-
-    getRoleDisplayName(role) {
-        const roleNames = {
-            'admin': '管理员',
-            'staff': '员工',
-            'matchmaker': '红娘'
-        };
-        return roleNames[role] || role;
+    } catch (error) {
+        console.error('登录错误:', error);
+        showError('网络错误，请重试');
     }
 }
 
-// 页面加载完成后初始化应用
-document.addEventListener('DOMContentLoaded', () => {
-    new AdminApp();
-}); 
+// 处理登出
+function handleLogout() {
+    localStorage.removeItem('authToken');
+    authToken = null;
+    currentUser = null;
+    showLoginUI();
+}
+
+// 显示错误信息
+function showError(message) {
+    loginError.textContent = message;
+    loginError.style.display = 'block';
+}
+
+// 打开录入界面
+function openRegistrationModal() {
+    registrationModal.style.display = 'block';
+    resetForm();
+}
+
+// 关闭录入界面
+function closeRegistrationModal() {
+    registrationModal.style.display = 'none';
+    resetForm();
+}
+
+// 打开管理界面
+async function openManageModal() {
+    manageModal.style.display = 'block';
+    await loadParticipants();
+}
+
+// 关闭管理界面
+function closeManageModal() {
+    manageModal.style.display = 'none';
+    searchInput.value = '';
+    genderFilter.value = '';
+}
+
+// 加载参与者列表
+async function loadParticipants() {
+    try {
+        showLoading('正在加载...', '请稍候，正在获取参与者列表');
+        const response = await fetch('/api/admin/participants', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            displayParticipants(data.data);
+        } else {
+            alert(data.message || '加载参与者列表失败');
+        }
+    } catch (error) {
+        console.error('加载参与者列表失败:', error);
+        alert('网络错误，请重试');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 显示参与者列表
+function displayParticipants(participants) {
+    if (participants.length === 0) {
+        participantsList.innerHTML = '<div class="no-participants">暂无参与者数据</div>';
+        return;
+    }
+
+    participantsList.innerHTML = participants.map(participant => `
+        <div class="participant-item">
+            <div class="participant-info">
+                <div class="participant-name">${participant.name} ${participant.baptismal_name ? `(${participant.baptismal_name})` : ''}</div>
+                <div class="participant-details">
+                    <span>用户名：${participant.username}</span>
+                    <span>性别：${participant.gender === 'male' ? '男' : '女'}</span>
+                    <span>手机：${participant.phone}</span>
+                    <span>照片：${participant.photo_count}张</span>
+                    <span>录入时间：${new Date(participant.created_at).toLocaleString()}</span>
+                </div>
+            </div>
+            <button class="delete-btn" onclick="showDeleteConfirm(${participant.id}, '${participant.name}')">删除账号</button>
+        </div>
+    `).join('');
+}
+
+// 过滤参与者
+function filterParticipants() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const genderFilterValue = genderFilter.value;
+    
+    const participantItems = participantsList.querySelectorAll('.participant-item');
+    
+    participantItems.forEach(item => {
+        const name = item.querySelector('.participant-name').textContent.toLowerCase();
+        const details = item.querySelector('.participant-details').textContent.toLowerCase();
+        const gender = details.includes('性别：男') ? 'male' : 'female';
+        
+        const matchesSearch = name.includes(searchTerm) || details.includes(searchTerm);
+        const matchesGender = !genderFilterValue || gender === genderFilterValue;
+        
+        item.style.display = matchesSearch && matchesGender ? 'flex' : 'none';
+    });
+}
+
+// 重置表单
+function resetForm() {
+    registrationForm.reset();
+    selectedPhotos = [];
+    updatePhotoPreview();
+}
+
+// 设置拖拽上传
+function setupDragAndDrop() {
+    photoUpload.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        photoUpload.classList.add('dragover');
+    });
+
+    photoUpload.addEventListener('dragleave', () => {
+        photoUpload.classList.remove('dragover');
+    });
+
+    photoUpload.addEventListener('drop', (e) => {
+        e.preventDefault();
+        photoUpload.classList.remove('dragover');
+        const files = Array.from(e.dataTransfer.files);
+        handleFiles(files);
+    });
+}
+
+// 处理照片选择
+function handlePhotoSelect(e) {
+    const files = Array.from(e.target.files);
+    handleFiles(files);
+}
+
+// 处理文件
+function handleFiles(files) {
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (selectedPhotos.length + imageFiles.length > 5) {
+        alert('最多只能选择5张照片');
+        return;
+    }
+
+    imageFiles.forEach(file => {
+        if (selectedPhotos.length < 5) {
+            selectedPhotos.push(file);
+        }
+    });
+
+    updatePhotoPreview();
+}
+
+// 更新照片预览
+function updatePhotoPreview() {
+    photoPreview.innerHTML = '';
+    
+    selectedPhotos.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const photoItem = document.createElement('div');
+            photoItem.className = 'photo-item';
+            photoItem.innerHTML = `
+                <img src="${e.target.result}" alt="预览">
+                <button type="button" class="remove-btn" onclick="removePhoto(${index})">&times;</button>
+            `;
+            photoPreview.appendChild(photoItem);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// 移除照片
+function removePhoto(index) {
+    selectedPhotos.splice(index, 1);
+    updatePhotoPreview();
+}
+
+// 处理录入表单提交
+async function handleRegistrationSubmit(e) {
+    e.preventDefault();
+    
+    // 验证表单
+    if (!validateForm()) {
+        return;
+    }
+
+    // 显示确认弹窗
+    showConfirmModal();
+}
+
+// 验证表单
+function validateForm() {
+    const name = document.getElementById('name').value.trim();
+    const baptismalName = document.getElementById('baptismal_name').value.trim();
+    const gender = document.getElementById('gender').value;
+    const phone = document.getElementById('phone').value.trim();
+
+    if (!name) {
+        alert('请输入姓名');
+        return false;
+    }
+
+    if (!baptismalName) {
+        alert('请输入圣名');
+        return false;
+    }
+
+    if (!gender) {
+        alert('请选择性别');
+        return false;
+    }
+
+    if (!phone) {
+        alert('请输入手机号');
+        return false;
+    }
+
+    // 验证手机号格式
+    const phoneRegex = /^1[3-9]\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+        alert('请输入有效的手机号码');
+        return false;
+    }
+
+    if (selectedPhotos.length === 0) {
+        alert('请至少上传一张照片');
+        return false;
+    }
+
+    return true;
+}
+
+// 显示确认弹窗
+function showConfirmModal() {
+    const name = document.getElementById('name').value.trim();
+    const baptismalName = document.getElementById('baptismal_name').value.trim();
+    const gender = document.getElementById('gender').value;
+    const phone = document.getElementById('phone').value.trim();
+
+    const genderText = gender === 'male' ? '男' : '女';
+
+    confirmInfo.innerHTML = `
+        <p><strong>姓名：</strong>${name}</p>
+        <p><strong>圣名：</strong>${baptismalName}</p>
+        <p><strong>性别：</strong>${genderText}</p>
+        <p><strong>手机号：</strong>${phone}</p>
+        <p><strong>照片数量：</strong>${selectedPhotos.length}张</p>
+    `;
+
+    confirmModal.style.display = 'block';
+}
+
+// 关闭确认弹窗
+function closeConfirmModal() {
+    confirmModal.style.display = 'none';
+}
+
+// 提交注册
+async function submitRegistration() {
+    try {
+        // 显示进度提示
+        showLoading('正在处理...', '请稍候，正在创建账号并上传照片');
+        
+        // 压缩照片
+        const compressedPhotos = await compressPhotos(selectedPhotos);
+        
+        // 创建 FormData
+        const formData = new FormData();
+        formData.append('name', document.getElementById('name').value.trim());
+        formData.append('baptismal_name', document.getElementById('baptismal_name').value.trim());
+        formData.append('gender', document.getElementById('gender').value);
+        formData.append('phone', document.getElementById('phone').value.trim());
+        
+        // 添加照片
+        compressedPhotos.forEach((photo, index) => {
+            formData.append('photos', photo, `photo_${index + 1}.jpg`);
+        });
+
+        // 发送请求
+        const response = await fetch('/api/admin/participants', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            hideLoading();
+            closeConfirmModal();
+            showResultModal(data.data);
+        } else {
+            hideLoading();
+            alert(data.message || '创建账号失败');
+        }
+    } catch (error) {
+        console.error('提交注册失败:', error);
+        hideLoading();
+        alert('网络错误，请重试');
+    }
+}
+
+// 压缩照片
+async function compressPhotos(photos) {
+    // 如果没有 browser-image-compression 库，使用简单的压缩方法
+    const compressedPhotos = [];
+    
+    for (const photo of photos) {
+        try {
+            const compressed = await compressImage(photo);
+            compressedPhotos.push(compressed);
+        } catch (error) {
+            console.error('压缩照片失败:', error);
+            compressedPhotos.push(photo); // 使用原图
+        }
+    }
+    
+    return compressedPhotos;
+}
+
+// 简单的图片压缩
+function compressImage(file) {
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = () => {
+            // 计算压缩后的尺寸
+            const maxWidth = 1080;
+            const maxHeight = 1080;
+            let { width, height } = img;
+            
+            if (width > height) {
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+            } else {
+                if (height > maxHeight) {
+                    width = (width * maxHeight) / height;
+                    height = maxHeight;
+                }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // 绘制压缩后的图片
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // 转换为 Blob
+            canvas.toBlob((blob) => {
+                resolve(blob);
+            }, 'image/jpeg', 0.8); // 80% 质量
+        };
+        
+        img.src = URL.createObjectURL(file);
+    });
+}
+
+// 显示结果弹窗
+function showResultModal(data) {
+    accountInfo.innerHTML = `
+        <h3>账号信息</h3>
+        <p><strong>用户名：</strong>${data.username}</p>
+        <p><strong>密码：</strong>${data.password}</p>
+        <p><strong>照片数量：</strong>${data.photo_count}张</p>
+        <div>
+            <button class="copy-btn" onclick="copyAccountInfo('${data.username}', '${data.password}')">再次复制账号密码</button>
+        </div>
+    `;
+    
+    resultModal.style.display = 'block';
+    
+    // 自动复制账号密码
+    setTimeout(async () => {
+        try {
+            await copyAccountInfo(data.username, data.password, false);
+            // 复制成功后显示绿色提示
+            const copyStatus = document.createElement('p');
+            copyStatus.style.cssText = 'color: #28a745; font-size: 14px; margin: 10px 0;';
+            copyStatus.textContent = '✅ 账号密码已自动复制到剪贴板';
+            accountInfo.insertBefore(copyStatus, accountInfo.querySelector('.copy-btn').parentNode);
+        } catch (error) {
+            console.error('自动复制失败:', error);
+        }
+    }, 500); // 延迟500毫秒，确保弹窗完全显示后再复制
+}
+
+// 关闭结果弹窗
+function closeResultModal() {
+    resultModal.style.display = 'none';
+    closeRegistrationModal();
+}
+
+// 显示进度提示
+function showLoading(message = '正在处理...', description = '请稍候') {
+    const loadingTitle = loadingOverlay.querySelector('h3');
+    const loadingDesc = loadingOverlay.querySelector('p');
+    
+    loadingTitle.textContent = message;
+    loadingDesc.textContent = description;
+    loadingOverlay.style.display = 'flex';
+}
+
+// 隐藏进度提示
+function hideLoading() {
+    loadingOverlay.style.display = 'none';
+}
+
+// 一键复制账号密码
+function copyAccountInfo(username, password, showAlert = true) {
+    const accountInfo = `用户名：${username}\n密码：${password}`;
+    
+    return new Promise((resolve, reject) => {
+        navigator.clipboard.writeText(accountInfo).then(() => {
+            if (showAlert) {
+                alert('账号密码已复制到剪贴板');
+            }
+            resolve();
+        }).catch(() => {
+            // 降级方案
+            const textArea = document.createElement('textarea');
+            textArea.value = accountInfo;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            if (showAlert) {
+                alert('账号密码已复制到剪贴板');
+            }
+            resolve();
+        });
+    });
+}
+
+// 显示删除确认弹窗
+async function showDeleteConfirm(participantId, participantName) {
+    window.currentDeleteParticipantId = participantId;
+    window.currentDeleteParticipantName = participantName;
+    
+    deleteConfirmInput.value = '';
+    confirmDeleteBtn.disabled = true;
+    deleteModal.style.display = 'block';
+    
+    // 获取并显示用户详细信息
+    await loadDeleteUserInfo(participantId);
+}
+
+// 加载删除用户的详细信息
+async function loadDeleteUserInfo(participantId) {
+    try {
+        console.log('请求用户信息:', participantId);
+        
+        const response = await fetch(`/api/admin/participants/${participantId}`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        console.log('用户信息响应状态:', response.status);
+        console.log('用户信息响应头:', response.headers);
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log('用户信息数据:', data);
+            displayDeleteUserInfo(data.data);
+        } else {
+            const errorText = await response.text();
+            console.error('获取用户信息失败:', response.status, errorText);
+            displayDeleteUserInfo(null);
+        }
+    } catch (error) {
+        console.error('获取用户信息失败:', error);
+        displayDeleteUserInfo(null);
+    }
+}
+
+// 显示删除用户的详细信息
+function displayDeleteUserInfo(userData) {
+    const deleteUserInfo = document.getElementById('deleteUserInfo');
+    
+    if (!userData) {
+        deleteUserInfo.innerHTML = '<p style="color: #dc3545;">无法获取用户信息</p>';
+        return;
+    }
+
+    deleteUserInfo.innerHTML = `
+        <h4>📋 要删除的用户信息</h4>
+        <div class="user-details">
+            <p><strong>姓名：</strong>${userData.name}</p>
+            <p><strong>圣名：</strong>${userData.baptismal_name || '无'}</p>
+            <p><strong>用户名：</strong>${userData.username}</p>
+            <p><strong>性别：</strong>${userData.gender === 'male' ? '男' : '女'}</p>
+            <p><strong>手机号：</strong>${userData.phone}</p>
+            <p><strong>照片数量：</strong>${userData.photo_count || 0}张</p>
+            <p><strong>录入时间：</strong>${new Date(userData.created_at).toLocaleString()}</p>
+        </div>
+    `;
+}
+
+// 关闭删除确认弹窗
+function closeDeleteModal() {
+    deleteModal.style.display = 'none';
+    deleteConfirmInput.value = '';
+    confirmDeleteBtn.disabled = true;
+    window.currentDeleteParticipantId = null;
+    window.currentDeleteParticipantName = null;
+}
+
+// 验证删除确认输入
+function validateDeleteConfirm() {
+    const input = deleteConfirmInput.value.trim();
+    confirmDeleteBtn.disabled = input !== '确定';
+}
+
+// 处理删除参与者
+async function handleDeleteParticipant() {
+    if (!window.currentDeleteParticipantId) {
+        alert('删除信息丢失，请重试');
+        return;
+    }
+
+    try {
+        showLoading('正在删除...', '请稍候，正在删除账号及相关数据');
+        
+        console.log('发送删除请求:', window.currentDeleteParticipantId);
+        
+        const response = await fetch(`/api/admin/participants/${window.currentDeleteParticipantId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        console.log('删除响应状态:', response.status);
+        console.log('删除响应头:', response.headers);
+
+        if (response.ok) {
+            const data = await response.json();
+            closeDeleteModal();
+            alert('账号删除成功');
+            await loadParticipants(); // 重新加载列表
+        } else {
+            const errorText = await response.text();
+            console.log('删除错误响应:', errorText);
+            
+            try {
+                const errorData = JSON.parse(errorText);
+                alert(errorData.message || '删除账号失败');
+            } catch (parseError) {
+                alert('删除账号失败: ' + errorText);
+            }
+        }
+    } catch (error) {
+        console.error('删除账号失败:', error);
+        alert('网络错误，请重试');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 复制到剪贴板
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        alert('已复制到剪贴板');
+    }).catch(() => {
+        // 降级方案
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('已复制到剪贴板');
+    });
+} 

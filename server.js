@@ -4,7 +4,8 @@ require('dotenv').config();
 
 // 导入控制器和中间件
 const authController = require('./controllers/auth.controller');
-const { protect } = require('./middleware/auth.middleware');
+const adminController = require('./controllers/admin.controller');
+const { protect, restrictTo } = require('./middleware/auth.middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -30,10 +31,36 @@ app.get('/health', (req, res) => {
   });
 });
 
+// 测试路由 - 用于调试
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'API路由正常工作',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 测试认证路由 - 用于调试
+app.get('/api/test-auth', protect, (req, res) => {
+  res.json({ 
+    message: '认证正常工作',
+    user: req.user,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // 认证路由
 app.post('/api/auth/login', authController.login);
 app.get('/api/auth/me', protect, authController.getCurrentUser);
 app.post('/api/auth/logout', protect, authController.logout);
+
+// 管理后台API路由
+app.post('/api/admin/participants', protect, restrictTo('admin', 'staff'), adminController.registerParticipant);
+app.get('/api/admin/participants', protect, restrictTo('admin', 'staff'), adminController.getAllParticipants);
+app.get('/api/admin/participants/:participant_id/photos', protect, restrictTo('admin', 'staff'), adminController.getParticipantPhotos);
+app.get('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.getParticipantById);
+app.delete('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.deleteParticipant);
+app.post('/api/admin/photos/primary', protect, restrictTo('admin', 'staff'), adminController.setPrimaryPhoto);
+app.delete('/api/admin/photos/:photo_id', protect, restrictTo('admin', 'staff'), adminController.deletePhoto);
 
 // 管理后台页面路由
 app.get('/admin', (req, res) => {

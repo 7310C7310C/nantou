@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
-const { verifyPassword } = require('../utils/password.util');
 
 class AuthService {
   /**
@@ -24,7 +24,7 @@ class AuthService {
       const user = users[0];
 
       // 验证密码
-      const isPasswordValid = await verifyPassword(password, user.password);
+      const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
         throw new Error('用户名或密码错误');
       }

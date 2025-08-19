@@ -6,7 +6,7 @@
  */
 
 const { pool, testConnection } = require('../config/database');
-const { hashPassword } = require('./password.util');
+const bcrypt = require('bcryptjs');
 
 // 初始员工数据
 const initialStaff = [
@@ -68,7 +68,7 @@ async function createInitialStaff() {
         }
 
         // 加密密码
-        const hashedPassword = await hashPassword(staff.password);
+        const hashedPassword = await bcrypt.hash(staff.password, 10);
 
         // 插入新用户
         await pool.execute(

@@ -148,6 +148,530 @@
             margin-top: 10px;
             display: none;
         }
+
+        /* 按钮样式 */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+
+        /* 录入界面样式 */
+        .registration-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .registration-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .registration-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .registration-header h2 {
+            margin: 0;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        .photo-upload {
+            border: 2px dashed #ddd;
+            border-radius: 4px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 10px;
+            transition: border-color 0.3s;
+        }
+
+        .photo-upload:hover {
+            border-color: #007bff;
+        }
+
+        .photo-upload.dragover {
+            border-color: #007bff;
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+
+        .photo-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .photo-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-item .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        /* 确认弹窗样式 */
+        .confirm-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+        }
+
+        .confirm-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .confirm-info {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .confirm-info p {
+            margin: 5px 0;
+        }
+
+        /* 结果弹窗样式 */
+        .result-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 3000;
+        }
+
+        .result-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .account-info {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .account-info h3 {
+            margin-top: 0;
+            color: #155724;
+        }
+
+        .copy-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .copy-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* 进度提示样式 */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 管理界面样式 */
+        .manage-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .manage-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 95%;
+            max-width: 1000px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .manage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .manage-header h2 {
+            margin: 0;
+            color: #333;
+        }
+
+        .manage-filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .filter-select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 120px;
+        }
+
+        .participants-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .participant-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+
+        .participant-info {
+            flex: 1;
+        }
+
+        .participant-name {
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .participant-details {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .participant-details span {
+            margin-right: 15px;
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
+        /* 删除确认弹窗样式 */
+        .delete-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+        }
+
+        .delete-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .delete-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+
+        .delete-warning ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .delete-warning li {
+            margin: 5px 0;
+        }
+
+        .delete-confirm {
+            margin: 20px 0;
+        }
+
+        .confirm-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .btn-danger:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .no-participants {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        /* 删除确认弹窗中的用户信息样式 */
+        .delete-user-info {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .delete-user-info h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .delete-user-info .user-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .delete-user-info .user-details p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .delete-user-info .user-details strong {
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -189,9 +713,10 @@
                 </div>
 
                 <div class="dashboard-card">
-                    <h3>👥 用户管理</h3>
-                    <p>管理系统用户和权限</p>
-                    <p><strong>功能开发中...</strong></p>
+                    <h3>👥 报名录入</h3>
+                    <p>录入新参与者信息</p>
+                    <button class="btn btn-primary" id="openRegistrationBtn">开始录入</button>
+                    <button class="btn btn-secondary" id="openManageBtn" style="margin-top: 10px;">管理已录入</button>
                 </div>
 
                 <div class="dashboard-card">
@@ -206,6 +731,143 @@
                     <p><strong>功能开发中...</strong></p>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 录入界面模态框 -->
+    <div class="registration-modal" id="registrationModal">
+        <div class="registration-content">
+            <div class="registration-header">
+                <h2>📝 报名录入</h2>
+                <button class="close-btn" id="closeRegistrationBtn">&times;</button>
+            </div>
+            
+            <form id="registrationForm">
+                <div class="form-group">
+                    <label for="name">姓名 *</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="baptismal_name">圣名 *</label>
+                    <input type="text" id="baptismal_name" name="baptismal_name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="gender">性别 *</label>
+                    <select id="gender" name="gender" required>
+                        <option value="">请选择性别</option>
+                        <option value="male">男</option>
+                        <option value="female">女</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">手机号 *</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>照片 * (最多5张)</label>
+                    <div class="photo-upload" id="photoUpload">
+                        <p>点击选择或拖拽照片到此处</p>
+                        <input type="file" id="photoInput" multiple accept="image/*" style="display: none;">
+                    </div>
+                    <div class="photo-preview" id="photoPreview"></div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">取消</button>
+                    <button type="submit" class="btn btn-primary">创建账号</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 确认弹窗 -->
+    <div class="confirm-modal" id="confirmModal">
+        <div class="confirm-content">
+            <h3>确认信息</h3>
+            <div class="confirm-info" id="confirmInfo">
+                <!-- 确认信息将在这里显示 -->
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelConfirmBtn">取消</button>
+                <button type="button" class="btn btn-success" id="confirmSubmitBtn">确认提交</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 结果弹窗 -->
+    <div class="result-modal" id="resultModal">
+        <div class="result-content">
+            <h3>✅ 账号创建成功</h3>
+            <div class="account-info" id="accountInfo">
+                <!-- 账号信息将在这里显示 -->
+            </div>
+            <button type="button" class="btn btn-primary" id="closeResultBtn">继续录入</button>
+        </div>
+    </div>
+
+    <!-- 管理界面模态框 -->
+    <div class="manage-modal" id="manageModal">
+        <div class="manage-content">
+            <div class="manage-header">
+                <h2>📋 管理已录入人员</h2>
+                <button class="close-btn" id="closeManageBtn">&times;</button>
+            </div>
+            
+            <div class="manage-filters">
+                <input type="text" id="searchInput" placeholder="搜索姓名、用户名或手机号..." class="search-input">
+                <select id="genderFilter" class="filter-select">
+                    <option value="">所有性别</option>
+                    <option value="male">男</option>
+                    <option value="female">女</option>
+                </select>
+            </div>
+            
+            <div class="participants-list" id="participantsList">
+                <!-- 参与者列表将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认弹窗 -->
+    <div class="delete-modal" id="deleteModal">
+        <div class="delete-content">
+            <h3>⚠️ 删除账号确认</h3>
+            
+            <!-- 用户信息显示区域 -->
+            <div class="delete-user-info" id="deleteUserInfo">
+                <!-- 用户信息将在这里显示 -->
+            </div>
+            
+            <div class="delete-warning">
+                <p><strong>警告：</strong>此操作将永久删除该账号的所有数据，包括：</p>
+                <ul>
+                    <li>参与者基本信息</li>
+                    <li>所有上传的照片</li>
+                    <li>相关匹配记录</li>
+                </ul>
+                <p>此操作不可撤销！</p>
+            </div>
+            <div class="delete-confirm">
+                <p>请输入"<strong>确定</strong>"二字以确认删除：</p>
+                <input type="text" id="deleteConfirmInput" placeholder="请输入：确定" class="confirm-input">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelDeleteBtn">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 进度提示 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h3>正在处理...</h3>
+            <p>请稍候</p>
         </div>
     </div>
 
