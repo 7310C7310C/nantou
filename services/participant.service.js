@@ -378,7 +378,7 @@ async function generateUsername(gender) {
  * @returns {string} 生成的密码
  */
 function generatePassword() {
-  const letters = 'ABCDEFGHIJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
+  const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
   const numbers = '23456789';
   let password = '';
   

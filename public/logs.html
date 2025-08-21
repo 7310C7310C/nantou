@@ -170,31 +170,22 @@
         }
         
         .search-box {
-            display: flex;
-            gap: 10px;
             margin-bottom: 15px;
         }
         
         .search-box input {
-            flex: 1;
+            width: 100%;
             padding: 10px;
             border: 1px solid #e8d5c4;
             border-radius: 4px;
             background-color: white;
+            font-size: 14px;
         }
         
-        .search-box button {
-            padding: 10px 20px;
-            background: #7d6b4a; /* 棕色搜索按钮 */
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        .search-box button:hover {
-            background: #5d4e37;
+        .search-box input:focus {
+            outline: none;
+            border-color: #8b6f47;
+            box-shadow: 0 0 0 2px rgba(139, 111, 71, 0.2);
         }
 
         /* 移动端适配 */
@@ -290,8 +281,7 @@
         </div>
 
         <div class="search-box">
-            <input type="text" id="searchKeyword" placeholder="搜索日志关键词...">
-            <button onclick="searchLogs()">搜索</button>
+            <input type="text" id="searchKeyword" placeholder="搜索日志关键词..." oninput="searchLogs()">
         </div>
 
         <div class="logs-content" id="logsContent">
@@ -513,8 +503,9 @@
                 const level = document.getElementById('logLevel').value;
                 const date = document.getElementById('logDate').value;
                 
+                // 如果没有关键词，显示所有日志
                 if (!keyword) {
-                    alert('请输入搜索关键词');
+                    loadLogs();
                     return;
                 }
 
@@ -528,11 +519,10 @@
                     const data = await response.json();
                     displayLogs(data.data.logs);
                 } else {
-                    alert('搜索失败');
+                    console.error('搜索失败');
                 }
             } catch (error) {
                 console.error('搜索失败:', error);
-                alert('网络错误');
             }
         }
 
@@ -542,11 +532,13 @@
             loadLogs();
         });
 
-        // 回车键搜索
-        document.getElementById('searchKeyword').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
+        // 防抖搜索，避免频繁请求
+        let searchTimeout;
+        document.getElementById('searchKeyword').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
                 searchLogs();
-            }
+            }, 300); // 300毫秒延迟
         });
     </script>
 </body>

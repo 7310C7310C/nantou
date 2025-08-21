@@ -62,6 +62,15 @@ const closeResultBtn = document.getElementById('closeResultBtn');
 // 进度提示元素
 const loadingOverlay = document.getElementById('loadingOverlay');
 
+// 日志相关元素
+const openLogsBtn = document.getElementById('openLogsBtn');
+const logsModal = document.getElementById('logsModal');
+const closeLogsBtn = document.getElementById('closeLogsBtn');
+const logDate = document.getElementById('logDate');
+const logLevel = document.getElementById('logLevel');
+const searchKeyword = document.getElementById('searchKeyword');
+const logsDisplay = document.getElementById('logsDisplay');
+
 // 存储选择的照片
 let selectedPhotos = [];
 
@@ -134,6 +143,10 @@ function setupEventListeners() {
     // 结果弹窗
     closeResultBtn.addEventListener('click', closeResultModal);
 
+    // 日志功能
+    openLogsBtn.addEventListener('click', openLogsModal);
+    closeLogsBtn.addEventListener('click', closeLogsModal);
+
     // 点击模态框外部关闭
     registrationModal.addEventListener('click', (e) => {
         if (e.target === registrationModal) closeRegistrationModal();
@@ -155,6 +168,9 @@ function setupEventListeners() {
     });
     resetPasswordResultModal.addEventListener('click', (e) => {
         if (e.target === resetPasswordResultModal) closeResetPasswordResultModal();
+    });
+    logsModal.addEventListener('click', (e) => {
+        if (e.target === logsModal) closeLogsModal();
     });
 }
 
@@ -977,4 +993,258 @@ function copyNewPassword(username, password, showAlert = true) {
             resolve();
         });
     });
-} 
+}
+
+// ==================== 日志功能 ====================
+
+// 打开日志模态框
+function openLogsModal() {
+    logsModal.style.display = 'block';
+    setDefaultDate();
+    loadLogs();
+}
+
+// 关闭日志模态框
+function closeLogsModal() {
+    logsModal.style.display = 'none';
+    // 清空搜索框
+    searchKeyword.value = '';
+    // 重置日期为今天
+    setDefaultDate();
+    // 重置级别为所有级别
+    logLevel.value = 'all';
+}
+
+// 设置默认日期为今天
+function setDefaultDate() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    logDate.value = dateString;
+}
+
+// 格式化时间戳
+function formatTimestamp(timestamp) {
+    try {
+        const date = new Date(timestamp);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    } catch (error) {
+        return timestamp;
+    }
+}
+
+// 解析日志级别
+function parseLogLevel(logText) {
+    // 匹配日志格式：[时间戳] 级别: 消息内容
+    const logPattern = /^\[([^\]]+)\]\s+(\w+):/;
+    const match = logText.match(logPattern);
+    
+    if (match) {
+        const level = match[2].toLowerCase();
+        // 映射级别名称
+        const levelMap = {
+            'error': 'error',
+            'warn': 'warn',
+            'warning': 'warn',
+            'operation': 'operation',
+            'success': 'success',
+            'info': 'info',
+            'debug': 'info'
+        };
+        return levelMap[level] || 'info';
+    }
+    
+    // 后备方法：在文本中查找级别关键词
+    if (logText.includes('ERROR')) return 'error';
+    if (logText.includes('WARN')) return 'warn';
+    if (logText.includes('OPERATION')) return 'operation';
+    if (logText.includes('SUCCESS')) return 'success';
+    if (logText.includes('INFO')) return 'info';
+    return 'info';
+}
+
+// 解析日志时间戳
+function parseLogTimestamp(logText) {
+    // 匹配日志格式：[时间戳] 级别: 消息内容
+    const logPattern = /^\[([^\]]+)\]/;
+    const match = logText.match(logPattern);
+    
+    if (match) {
+        const timestamp = match[1];
+        // 尝试格式化时间戳
+        return formatTimestamp(timestamp);
+    }
+    
+    // 后备方法：匹配ISO格式的时间戳
+    const timestampMatch = logText.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}/);
+    if (timestampMatch) {
+        return formatTimestamp(timestampMatch[0]);
+    }
+    
+    // 匹配其他格式的时间戳
+    const otherMatch = logText.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/);
+    if (otherMatch) {
+        return otherMatch[0];
+    }
+    
+    return '未知时间';
+}
+
+// 提取日志消息内容
+function extractLogMessage(logText) {
+    // 匹配日志格式：[时间戳] 级别: 消息内容 | 数据
+    const logPattern = /^\[([^\]]+)\]\s+(\w+):\s+(.+?)(?:\s+\|\s+(.+))?$/;
+    const match = logText.match(logPattern);
+    
+    if (match) {
+        // 提取消息内容（第3个捕获组）
+        let message = match[3].trim();
+        
+        return `<span class="message-text">${message}</span>`;
+    }
+    
+    // 如果正则匹配失败，使用原来的方法作为后备
+    let message = logText;
+    
+    // 移除时间戳部分
+    message = message.replace(/^\[[^\]]+\]\s*/, '');
+    
+    // 移除日志级别标识
+    message = message.replace(/^(ERROR|WARN|OPERATION|SUCCESS|INFO|DEBUG):\s*/, '');
+    
+    // 清理多余的空格和符号
+    message = message.replace(/^[\s\-:]+/, '').trim();
+    
+    return `<span class="message-text">${message || logText}</span>`;
+}
+
+// 提取日志数据内容
+function extractLogData(logText) {
+    // 匹配日志格式：[时间戳] 级别: 消息内容 | 数据
+    const logPattern = /^\[([^\]]+)\]\s+(\w+):\s+(.+?)(?:\s+\|\s+(.+))?$/;
+    const match = logText.match(logPattern);
+    
+    if (match && match[4]) {
+        const data = match[4].trim();
+        
+        try {
+            // 尝试解析JSON数据
+            const parsedData = JSON.parse(data);
+            if (typeof parsedData === 'object' && parsedData !== null) {
+                // 格式化对象数据，每个字段一行
+                const formattedData = Object.entries(parsedData)
+                    .map(([key, value]) => {
+                        const valueStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                        return `<div style="margin: 2px 0;"><strong>${key}:</strong> ${valueStr}</div>`;
+                    })
+                    .join('');
+                return `<div class="log-data">📊 数据:<br>${formattedData}</div>`;
+            } else {
+                return `<div class="log-data">📊 数据: ${data}</div>`;
+            }
+        } catch (e) {
+            // 如果不是JSON，直接显示原始数据
+            return `<div class="log-data">📊 数据: ${data}</div>`;
+        }
+    }
+    
+    return '';
+}
+
+// 加载日志
+async function loadLogs() {
+    try {
+        const level = logLevel.value;
+        const date = logDate.value;
+        
+        const response = await fetch(`/api/admin/logs?level=${level}&date=${date}`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            displayLogs(data.data.logs);
+        } else {
+            console.error('加载日志失败');
+        }
+    } catch (error) {
+        console.error('加载日志失败:', error);
+    }
+}
+
+// 显示日志
+function displayLogs(logs) {
+    if (logs.length === 0) {
+        logsDisplay.innerHTML = '<div style="text-align: center; padding: 40px; color: #666; font-size: 16px;">暂无日志</div>';
+        return;
+    }
+
+    // 反转数组，让最新的日志显示在最上面
+    const reversedLogs = logs.reverse();
+    
+    logsDisplay.innerHTML = reversedLogs.map(log => {
+        const level = parseLogLevel(log);
+        const timestamp = parseLogTimestamp(log);
+        const message = extractLogMessage(log);
+        const data = extractLogData(log);
+        
+        return `
+            <div class="log-entry">
+                <div class="log-timestamp">${timestamp}</div>
+                <div class="log-level ${level}">${level}</div>
+                <div class="log-message">${message}</div>
+                <div class="log-data-column">${data}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 搜索日志
+async function searchLogs() {
+    try {
+        const keyword = searchKeyword.value.trim();
+        const level = logLevel.value;
+        const date = logDate.value;
+        
+        // 如果没有关键词，显示所有日志
+        if (!keyword) {
+            loadLogs();
+            return;
+        }
+
+        const response = await fetch(`/api/admin/logs/search?keyword=${encodeURIComponent(keyword)}&level=${level}&date=${date}`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            displayLogs(data.data.logs);
+        } else {
+            console.error('搜索失败');
+        }
+    } catch (error) {
+        console.error('搜索失败:', error);
+    }
+}
+
+// 防抖搜索，避免频繁请求
+let searchTimeout;
+searchKeyword.addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        searchLogs();
+    }, 300); // 300毫秒延迟
+}); 
