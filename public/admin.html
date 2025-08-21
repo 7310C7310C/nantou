@@ -1073,6 +1073,7 @@
 
         .participant-info {
             flex: 1;
+            margin-right: 20px;
         }
 
         .participant-name {
@@ -1091,6 +1092,80 @@
             margin-right: 15px;
         }
 
+        .participant-photos {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 10px;
+            background-color: #faf7f2;
+            border-radius: 6px;
+            border: 1px solid #e8d5c4;
+        }
+
+        .participant-photo {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 2px solid #e8d5c4;
+            transition: all 0.3s ease;
+        }
+
+        .participant-photo.primary {
+            border-color: #8b6f47;
+        }
+
+        .participant-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .primary-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background-color: #8b6f47;
+            color: white;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .no-photos {
+            color: #999;
+            font-style: italic;
+            font-size: 14px;
+        }
+
+        /* 大图查看样式 */
+        .fullscreen-image {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 3000;
+            cursor: pointer;
+        }
+
+        .fullscreen-image img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
         @media (max-width: 768px) {
             .participant-details {
                 font-size: 12px;
@@ -1101,16 +1176,32 @@
                 margin-right: 0;
                 margin-bottom: 5px;
             }
+
+            .participant-photos {
+                gap: 6px;
+                padding: 8px;
+            }
+
+            .participant-photo {
+                width: 50px;
+                height: 50px;
+            }
+
+            .primary-badge {
+                font-size: 9px;
+                padding: 1px 3px;
+            }
         }
 
         .delete-btn {
-            background-color: #dc3545;
+            background-color: #6c757d;
             color: white;
             border: none;
             padding: 8px 16px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            transition: background-color 0.3s;
         }
 
         @media (max-width: 768px) {
@@ -1122,7 +1213,7 @@
         }
 
         .delete-btn:hover {
-            background-color: #c82333;
+            background-color: #5a6268;
         }
 
         /* 删除确认弹窗样式 */
@@ -1350,6 +1441,7 @@
             width: 90%;
             max-width: 500px;
             border: 1px solid #e8d5c4;
+            text-align: center;
         }
 
         @media (max-width: 768px) {
@@ -1369,6 +1461,7 @@
             border-radius: 4px;
             padding: 20px;
             margin: 20px 0;
+            text-align: center;
         }
 
         .new-password-info h4 {
@@ -1378,15 +1471,18 @@
         }
 
         .new-password-info .password-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             gap: 10px;
             font-size: 14px;
+            margin: 15px 0;
         }
 
         .new-password-info .password-details p {
             margin: 5px 0;
             color: #5d4e37;
+            text-align: center;
         }
 
         .new-password-info .password-details strong {
@@ -1408,13 +1504,14 @@
         }
 
         .reset-password-btn {
-            background-color: #ffc107;
-            color: #212529;
+            background-color: #8b6f47;
+            color: white;
             border: none;
             padding: 8px 16px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            transition: background-color 0.3s;
         }
 
         @media (max-width: 768px) {
@@ -1426,7 +1523,7 @@
         }
 
         .reset-password-btn:hover {
-            background-color: #e0a800;
+            background-color: #6d5a3a;
         }
 
         /* 移动端全局优化 */
@@ -1497,11 +1594,6 @@
 
         <!-- 主要内容 -->
         <div class="main-content" id="mainContent">
-            <div class="welcome-message">
-                <h2>欢迎回来！</h2>
-                <p>您已成功登录管理后台。在这里您可以管理用户、查看数据统计等。</p>
-            </div>
-
             <div class="dashboard-grid">
                 <div class="dashboard-card">
                     <h3>👥 报名录入</h3>
@@ -1727,6 +1819,11 @@
                 <div class="log-entry"><div class="log-timestamp">-</div><div class="log-level info">-</div><div class="log-message">正在加载日志...</div><div class="log-data-column"></div></div>
             </div>
         </div>
+    </div>
+
+    <!-- 大图查看 -->
+    <div class="fullscreen-image" id="fullscreenImage">
+        <img id="fullscreenImg" src="" alt="大图">
     </div>
 
     <!-- 进度提示 -->

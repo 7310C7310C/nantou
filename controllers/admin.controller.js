@@ -139,7 +139,8 @@ async function getAllParticipants(req, res) {
   try {
     logger.operation('获取参与者列表', req.user?.id, { operator: req.user?.username });
     
-    const [rows] = await pool.execute(`
+    // 获取参与者基本信息
+    const [participants] = await pool.execute(`
       SELECT 
         p.id,
         p.username,
@@ -156,11 +157,31 @@ async function getAllParticipants(req, res) {
       ORDER BY p.created_at DESC
     `);
 
-    logger.info('参与者列表获取成功', { count: rows.length, operator: req.user?.username });
+    // 获取每个参与者的照片信息
+    const participantsWithPhotos = await Promise.all(participants.map(async (participant) => {
+      const [photos] = await pool.execute(`
+        SELECT 
+          id,
+          photo_url,
+          is_primary,
+          sort_order,
+          created_at
+        FROM participant_photos 
+        WHERE participant_id = ?
+        ORDER BY is_primary DESC, sort_order ASC, created_at ASC
+      `, [participant.id]);
+
+      return {
+        ...participant,
+        photos: photos
+      };
+    }));
+
+    logger.info('参与者列表获取成功', { count: participantsWithPhotos.length, operator: req.user?.username });
 
     res.json({
       success: true,
-      data: rows
+      data: participantsWithPhotos
     });
   } catch (error) {
     logger.error('获取参与者列表错误', error);

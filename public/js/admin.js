@@ -71,6 +71,10 @@ const logLevel = document.getElementById('logLevel');
 const searchKeyword = document.getElementById('searchKeyword');
 const logsDisplay = document.getElementById('logsDisplay');
 
+// 大图查看相关元素
+const fullscreenImage = document.getElementById('fullscreenImage');
+const fullscreenImg = document.getElementById('fullscreenImg');
+
 // 存储选择的照片
 let selectedPhotos = [];
 
@@ -146,6 +150,9 @@ function setupEventListeners() {
     // 日志功能
     openLogsBtn.addEventListener('click', openLogsModal);
     closeLogsBtn.addEventListener('click', closeLogsModal);
+
+    // 大图查看功能
+    fullscreenImage.addEventListener('click', closeFullscreenImage);
 
     // 点击模态框外部关闭
     registrationModal.addEventListener('click', (e) => {
@@ -345,6 +352,17 @@ function displayParticipants(participants) {
                     <span>手机：${participant.phone}</span>
                     <span>照片：${participant.photo_count}张</span>
                     <span>录入时间：${new Date(participant.created_at).toLocaleString()}</span>
+                </div>
+                <div class="participant-photos">
+                    ${participant.photos && participant.photos.length > 0 ? 
+                        participant.photos.map(photo => `
+                            <div class="participant-photo ${photo.is_primary ? 'primary' : ''}" title="${photo.is_primary ? '主图' : '照片'}">
+                                <img src="${photo.photo_url}" alt="照片" onerror="this.style.display='none'" onclick="showFullscreenImage('${photo.photo_url}')" style="cursor: pointer;">
+                                ${photo.is_primary ? '<span class="primary-badge">主图</span>' : ''}
+                            </div>
+                        `).join('') : 
+                        '<div class="no-photos">暂无照片</div>'
+                    }
                 </div>
             </div>
             <div class="participant-actions">
@@ -1247,4 +1265,19 @@ searchKeyword.addEventListener('input', (e) => {
     searchTimeout = setTimeout(() => {
         searchLogs();
     }, 300); // 300毫秒延迟
-}); 
+});
+
+// ==================== 大图查看功能 ====================
+
+// 显示大图
+function showFullscreenImage(imageUrl) {
+    fullscreenImg.src = imageUrl;
+    fullscreenImage.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // 防止背景滚动
+}
+
+// 关闭大图
+function closeFullscreenImage() {
+    fullscreenImage.style.display = 'none';
+    document.body.style.overflow = ''; // 恢复背景滚动
+} 
