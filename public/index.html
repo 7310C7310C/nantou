@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>开发中 • 一线牵</title>
+    <title>一线牵</title>
     <style>
         * {
             margin: 0;
@@ -13,176 +13,622 @@
 
         body {
             font-family: 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
-            background: linear-gradient(135deg, #e8d5ff 0%, #c084fc 50%, #a855f7 100%);
+            background: linear-gradient(135deg, #db909a 0%, #c084fc 50%, #a855f7 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+            padding: 20px;
         }
 
-        .container {
+        .header {
             text-align: center;
-            padding: 40px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px rgba(168, 85, 247, 0.3);
-            max-width: 500px;
-            width: 90%;
-            animation: float 6s ease-in-out infinite;
+            margin-bottom: 30px;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .heart-icon {
-            font-size: 60px;
+        .title {
             color: #fff;
+            font-size: 36px;
             margin-bottom: 20px;
-            animation: heartbeat 2s ease-in-out infinite;
-        }
-
-        @keyframes heartbeat {
-            0% { transform: scale(1); }
-            14% { transform: scale(1.1); }
-            28% { transform: scale(1); }
-            42% { transform: scale(1.1); }
-            70% { transform: scale(1); }
-        }
-
-        h1 {
-            color: #fff;
-            font-size: 32px;
-            margin-bottom: 15px;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .subtitle {
-            color: #f3e8ff;
-            font-size: 18px;
-            line-height: 1.6;
+        .search-container {
+            margin-bottom: 20px;
+            text-align: center;
         }
 
-        .progress-container {
+        .search-input {
+            width: 300px;
+            max-width: 90%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .gender-toggle {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .gender-btn {
+            padding: 10px 25px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
             background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            backdrop-filter: blur(10px);
+        }
+
+        .gender-btn.active {
+            background: rgba(255, 255, 255, 0.9);
+            color: #a855f7;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .gender-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .user-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
             border-radius: 20px;
-            padding: 4px;
-            margin: 30px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(168, 85, 247, 0.3);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            position: relative;
+            aspect-ratio: 3/4;
         }
 
-        .progress-bar {
-            height: 12px;
-            background: linear-gradient(90deg, #f0abfc, #e879f9, #c084fc);
-            border-radius: 20px;
-            width: 0%;
-            animation: loading 3s ease-in-out infinite;
+        .user-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(168, 85, 247, 0.4);
         }
 
-        @keyframes loading {
-            0% { width: 0%; }
-            50% { width: 70%; }
-            100% { width: 100%; }
-        }
-
-        .floating-hearts {
-            position: absolute;
+        .user-photo {
             width: 100%;
             height: 100%;
-            overflow: hidden;
-            pointer-events: none;
+            object-fit: cover;
+            position: relative;
         }
 
-        /* 新的随机爱心样式 */
-        .heart {
+        .user-info {
             position: absolute;
-            bottom: -50px; /* 从屏幕外底部开始 */
-            color: rgba(255, 255, 255, 0.6);
-            animation: float-up linear forwards;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+            padding: 20px;
+            color: #fff;
         }
 
-        @keyframes float-up {
-            0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
-            10%  { opacity: 1; }
-            90%  { opacity: 1; }
-            100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+        .user-username {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .user-baptismal {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #fff;
+            font-size: 18px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #fff;
+            font-size: 18px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 全屏图片查看器 */
+        .fullscreen-viewer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fullscreen-viewer.active {
+            display: flex;
+        }
+
+        .viewer-content {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .viewer-content img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .viewer-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 25px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .image-counter {
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+        }
+
+
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .viewer-controls {
+                bottom: 20px;
+                padding: 12px 20px;
+                gap: 15px;
+            }
+
+            .control-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
+            }
+
+            .image-counter {
+                font-size: 14px;
+                min-width: 50px;
+            }
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 28px;
+            }
+
+            .search-input {
+                width: 250px;
+                font-size: 14px;
+                padding: 10px 16px;
+            }
+
+            .gender-btn {
+                padding: 8px 20px;
+                font-size: 14px;
+            }
+
+            .users-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                padding: 0 10px;
+            }
+
+            .user-card {
+                aspect-ratio: 4/5;
+            }
         }
 
         @media (max-width: 480px) {
-            .container {
-                padding: 30px 20px;
+            .users-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                padding: 0 5px;
             }
-            h1 {
-                font-size: 28px;
-            }
-            .subtitle {
-                font-size: 16px;
+
+            .user-card {
+                aspect-ratio: 3/4;
             }
         }
     </style>
 </head>
 <body>
-    <div class="floating-hearts"></div>
+    <div class="header">
+        <h1 class="title">一线牵</h1>
+    </div>
 
-    <div class="container">
-        <div class="heart-icon">💝</div>
-        <h1>开发中 • 一线牵</h1>
-        <p class="subtitle">
-            我们正在紧锣密鼓地开发中……
-        </p>
+    <div class="search-container">
+        <input type="text" class="search-input" id="searchInput" placeholder="搜索账户号..." oninput="searchUsers()">
+    </div>
 
-        <div class="progress-container">
-            <div class="progress-bar"></div>
+    <div class="gender-toggle">
+        <button class="gender-btn" id="femaleBtn" onclick="switchGender('female')">女</button>
+        <button class="gender-btn" id="maleBtn" onclick="switchGender('male')">男</button>
+    </div>
+
+    <div class="users-grid" id="usersGrid">
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            加载中...
+        </div>
+    </div>
+
+    <!-- 全屏图片查看器 -->
+    <div class="fullscreen-viewer" id="fullscreenViewer">
+        <div class="viewer-content">
+            <img id="viewerImage" src="" alt="用户照片">
+            <div class="viewer-controls">
+                <button class="control-btn prev-btn" id="prevBtn">‹</button>
+                <span class="image-counter" id="imageCounter">1 / 1</span>
+                <button class="control-btn next-btn" id="nextBtn">›</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // 页面加载动画
-        window.addEventListener('load', function() {
-            document.querySelector('.container').style.animation = 'float 6s ease-in-out infinite, fadeIn 1s ease-in';
+        let currentGender = 'female';
+        let currentPage = 0;
+        let isLoading = false;
+        let hasMore = true;
+        let searchTerm = '';
+        let allUsers = [];
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 设置默认性别按钮状态
+            document.getElementById('femaleBtn').classList.add('active');
+            // 加载用户数据
+            loadUsers();
         });
 
-        // 添加 fadeIn 动画
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fadeIn {
-                from { opacity: 0; transform: scale(0.9); }
-                to { opacity: 1; transform: scale(1); }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // 随机生成爱心
-        const heartContainer = document.querySelector('.floating-hearts');
-        const heartTypes = ['💜', '💖', '💕'];
-
-        function createHeart() {
-            const heart = document.createElement('div');
-            heart.className = 'heart';
-            heart.textContent = heartTypes[Math.floor(Math.random() * heartTypes.length)];
-
-            // 随机位置
-            heart.style.left = Math.random() * 100 + '%';
-            // 随机大小
-            const size = 16 + Math.random() * 16;
-            heart.style.fontSize = size + 'px';
-            // 随机动画时长
-            const duration = 10 + Math.random() * 10;
-            heart.style.animationDuration = duration + 's';
-            // 随机延迟
-            heart.style.animationDelay = Math.random() * 5 + 's';
-
-            heartContainer.appendChild(heart);
-
-            // 动画结束移除
-            setTimeout(() => heart.remove(), (duration + 5) * 1000);
+        // 切换性别
+        function switchGender(gender) {
+            if (currentGender === gender) return;
+            
+            currentGender = gender;
+            currentPage = 0;
+            hasMore = true;
+            allUsers = [];
+            
+            // 更新按钮状态
+            document.getElementById('femaleBtn').classList.toggle('active', gender === 'female');
+            document.getElementById('maleBtn').classList.toggle('active', gender === 'male');
+            
+            // 重新加载用户
+            loadUsers();
         }
 
-        // 持续生成爱心
-        setInterval(createHeart, 800);
+        // 搜索用户
+        function searchUsers() {
+            searchTerm = document.getElementById('searchInput').value.trim();
+            currentPage = 0;
+            hasMore = true;
+            allUsers = [];
+            loadUsers();
+        }
+
+        // 加载用户数据
+        async function loadUsers() {
+            if (isLoading || !hasMore) return;
+            
+            isLoading = true;
+            
+            try {
+                const response = await fetch(`/api/participants?gender=${currentGender}&page=${currentPage}&limit=10&search=${encodeURIComponent(searchTerm)}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const users = data.data.participants || [];
+                    
+                    if (currentPage === 0) {
+                        // 第一页，清空现有内容
+                        displayUsers(users);
+                    } else {
+                        // 追加内容
+                        appendUsers(users);
+                    }
+                    
+                    hasMore = users.length === 10;
+                    currentPage++;
+                } else {
+                    console.error('加载用户失败');
+                    showError('加载用户失败');
+                }
+            } catch (error) {
+                console.error('网络错误:', error);
+                showError('网络错误');
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // 显示用户
+        function displayUsers(users) {
+            const grid = document.getElementById('usersGrid');
+            
+            if (users.length === 0) {
+                grid.innerHTML = '<div class="no-results">暂无用户</div>';
+                return;
+            }
+            
+
+            
+            grid.innerHTML = users.map(user => createUserCard(user)).join('');
+            allUsers = users;
+        }
+
+        // 追加用户
+        function appendUsers(users) {
+            const grid = document.getElementById('usersGrid');
+            const userCards = users.map(user => createUserCard(user)).join('');
+            grid.insertAdjacentHTML('beforeend', userCards);
+            allUsers = allUsers.concat(users);
+        }
+
+        // 创建用户卡片
+        function createUserCard(user) {
+            const primaryPhoto = user.photos && user.photos.find(photo => photo.is_primary) || user.photos?.[0];
+            const photoUrl = primaryPhoto ? primaryPhoto.photo_url : '/placeholder.jpg';
+            
+
+            
+            return `
+                <div class="user-card" data-username="${user.username}" data-photos='${JSON.stringify(user.photos || [])}'>
+                    <img src="${photoUrl}" alt="用户照片" class="user-photo" onerror="this.src='/placeholder.jpg'">
+                    <div class="user-info">
+                        <div class="user-username">${user.username}</div>
+                        <div class="user-baptismal">${user.baptismal_name || ''}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 显示错误
+        function showError(message) {
+            const grid = document.getElementById('usersGrid');
+            grid.innerHTML = `<div class="no-results">${message}</div>`;
+        }
+
+        // 懒加载
+        function handleScroll() {
+            if (isLoading || !hasMore) return;
+            
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.documentElement.scrollHeight;
+            
+            if (scrollTop + windowHeight >= documentHeight - 100) {
+                loadUsers();
+            }
+        }
+
+        // 监听滚动事件
+        window.addEventListener('scroll', handleScroll);
+
+        // 图片查看器相关变量
+        let currentImages = [];
+        let currentImageIndex = 0;
+        let currentUsername = '';
+
+        // 打开图片查看器
+        function openImageViewer(username, photos) {
+            if (!photos || photos.length === 0) {
+                alert('该用户暂无照片');
+                return;
+            }
+
+            currentImages = photos;
+            currentImageIndex = 0;
+            currentUsername = username;
+
+            const viewer = document.getElementById('fullscreenViewer');
+            const viewerImage = document.getElementById('viewerImage');
+            const imageCounter = document.getElementById('imageCounter');
+
+            viewerImage.src = currentImages[0].photo_url;
+            imageCounter.textContent = `1 / ${currentImages.length}`;
+            updateNavigationButtons();
+
+            viewer.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 关闭图片查看器
+        function closeImageViewer() {
+            const viewer = document.getElementById('fullscreenViewer');
+            viewer.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // 显示上一张图片
+        function showPreviousImage() {
+            if (currentImageIndex > 0) {
+                currentImageIndex--;
+                updateImageViewer();
+            }
+        }
+
+        // 显示下一张图片
+        function showNextImage() {
+            if (currentImageIndex < currentImages.length - 1) {
+                currentImageIndex++;
+                updateImageViewer();
+            }
+        }
+
+        // 更新图片查看器
+        function updateImageViewer() {
+            const viewerImage = document.getElementById('viewerImage');
+            const imageCounter = document.getElementById('imageCounter');
+
+            viewerImage.src = currentImages[currentImageIndex].photo_url;
+            imageCounter.textContent = `${currentImageIndex + 1} / ${currentImages.length}`;
+            updateNavigationButtons();
+        }
+
+        // 更新导航按钮状态
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            prevBtn.disabled = currentImageIndex === 0;
+            nextBtn.disabled = currentImageIndex === currentImages.length - 1;
+        }
+
+        // 事件监听器
+        document.addEventListener('DOMContentLoaded', function() {
+            // 用户卡片点击事件（事件委托）
+            document.getElementById('usersGrid').addEventListener('click', function(e) {
+                const userCard = e.target.closest('.user-card');
+                if (userCard) {
+                    const username = userCard.dataset.username;
+                    const photos = JSON.parse(userCard.dataset.photos || '[]');
+                    openImageViewer(username, photos);
+                }
+            });
+
+            // 上一张/下一张按钮
+            document.getElementById('prevBtn').addEventListener('click', showPreviousImage);
+            document.getElementById('nextBtn').addEventListener('click', showNextImage);
+
+            // 键盘控制
+            document.addEventListener('keydown', function(e) {
+                if (!document.getElementById('fullscreenViewer').classList.contains('active')) return;
+
+                switch(e.key) {
+                    case 'Escape':
+                        closeImageViewer();
+                        break;
+                    case 'ArrowLeft':
+                        showPreviousImage();
+                        break;
+                    case 'ArrowRight':
+                        showNextImage();
+                        break;
+                }
+            });
+
+            // 点击背景或图片关闭
+            document.getElementById('fullscreenViewer').addEventListener('click', function(e) {
+                if (e.target === this || e.target.id === 'viewerImage') {
+                    closeImageViewer();
+                }
+            });
+
+            // 触摸控制（移动端）
+            let touchStartX = 0;
+            let touchEndX = 0;
+
+            document.getElementById('fullscreenViewer').addEventListener('touchstart', function(e) {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+
+            document.getElementById('fullscreenViewer').addEventListener('touchend', function(e) {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            });
+
+            function handleSwipe() {
+                const swipeThreshold = 50;
+                const diff = touchStartX - touchEndX;
+
+                if (Math.abs(diff) > swipeThreshold) {
+                    if (diff > 0) {
+                        // 向左滑动，显示下一张
+                        showNextImage();
+                    } else {
+                        // 向右滑动，显示上一张
+                        showPreviousImage();
+                    }
+                }
+            }
+        });
     </script>
 </body>
 </html>

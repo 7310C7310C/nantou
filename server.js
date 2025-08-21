@@ -9,6 +9,7 @@ process.env.TZ = 'Asia/Shanghai';
 const authController = require('./controllers/auth.controller');
 const adminController = require('./controllers/admin.controller');
 const logController = require('./controllers/log.controller');
+const participantsController = require('./controllers/participants.controller');
 const { protect, restrictTo } = require('./middleware/auth.middleware');
 
 const app = express();
@@ -79,6 +80,9 @@ app.delete('/api/admin/photos/:photo_id', protect, restrictTo('admin', 'staff'),
 // 日志管理API路由
 app.get('/api/admin/logs', protect, restrictTo('admin'), logController.getRecentLogs);
 app.get('/api/admin/logs/search', protect, restrictTo('admin'), logController.searchLogs);
+
+// 公开API路由
+app.get('/api/participants', participantsController.getParticipants);
 
 // 管理后台页面路由
 app.get('/admin', (req, res) => {
