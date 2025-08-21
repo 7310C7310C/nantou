@@ -197,6 +197,46 @@ class Logger {
     }
   }
 
+  // 按日期获取日志
+  getLogsByDate(date, level = 'all') {
+    if (level === 'all') {
+      // 获取指定日期的所有类型日志文件
+      const logTypes = ['error', 'warn', 'info', 'operation', 'success', 'security'];
+      let allLogs = [];
+      
+      logTypes.forEach(type => {
+        const logFile = path.join(this.logDir, `${type}-${date}.log`);
+        if (fs.existsSync(logFile)) {
+          const content = fs.readFileSync(logFile, 'utf8');
+          const logLines = content.split('\n').filter(line => line.trim());
+          allLogs = allLogs.concat(logLines);
+        }
+      });
+      
+      // 按时间排序
+      allLogs.sort((a, b) => {
+        const timeAMatch = a.match(/\[(.*?)\]/);
+        const timeBMatch = b.match(/\[(.*?)\]/);
+        const timeA = timeAMatch ? timeAMatch[1] : '';
+        const timeB = timeBMatch ? timeBMatch[1] : '';
+        return timeA.localeCompare(timeB);
+      });
+      
+      return allLogs;
+    } else {
+      // 获取指定日期的特定类型日志
+      const logFile = path.join(this.logDir, `${level}-${date}.log`);
+      
+      if (!fs.existsSync(logFile)) {
+        return [];
+      }
+
+      const content = fs.readFileSync(logFile, 'utf8');
+      const logLines = content.split('\n').filter(line => line.trim());
+      return logLines;
+    }
+  }
+
   // 获取错误统计
   getErrorStats(days = 7) {
     const stats = {};

@@ -2,14 +2,18 @@ const logger = require('../utils/logger');
 
 class LogController {
   /**
-   * 获取最近的日志
+   * 获取指定日期的日志
    */
   async getRecentLogs(req, res) {
     try {
-      const { level = 'all', lines = 100 } = req.query;
-      const logs = logger.getRecentLogs(level, parseInt(lines));
+      const { level = 'all', date } = req.query;
       
-      logger.operation('查看日志', req.user?.id, { level, lines });
+      // 如果没有指定日期，使用今天
+      const targetDate = date || new Date().toISOString().split('T')[0];
+      
+      const logs = logger.getLogsByDate(targetDate, level);
+      
+      // 不记录查看日志的操作，避免日志循环
       
       res.json({
         success: true,
@@ -17,7 +21,7 @@ class LogController {
           logs,
           count: logs.length,
           level,
-          lines: parseInt(lines)
+          date: targetDate
         }
       });
     } catch (error) {
@@ -30,38 +34,11 @@ class LogController {
   }
 
   /**
-   * 获取错误统计
-   */
-  async getErrorStats(req, res) {
-    try {
-      const { days = 7 } = req.query;
-      const stats = logger.getErrorStats(parseInt(days));
-      
-      logger.operation('查看错误统计', req.user?.id, { days });
-      
-      res.json({
-        success: true,
-        data: {
-          stats,
-          totalErrors: Object.values(stats).reduce((sum, count) => sum + count, 0),
-          days: parseInt(days)
-        }
-      });
-    } catch (error) {
-      logger.error('获取错误统计失败', error);
-      res.status(500).json({
-        success: false,
-        message: '获取错误统计失败'
-      });
-    }
-  }
-
-  /**
    * 搜索日志
    */
   async searchLogs(req, res) {
     try {
-      const { keyword, level = 'all', startDate, endDate } = req.query;
+      const { keyword, level = 'all', date } = req.query;
       
       if (!keyword) {
         return res.status(400).json({
@@ -70,13 +47,15 @@ class LogController {
         });
       }
 
-      // 这里可以实现更复杂的日志搜索逻辑
-      const logs = logger.getRecentLogs(level, 1000);
+      // 如果没有指定日期，使用今天
+      const targetDate = date || new Date().toISOString().split('T')[0];
+      
+      const logs = logger.getLogsByDate(targetDate, level);
       const filteredLogs = logs.filter(log => 
         log.toLowerCase().includes(keyword.toLowerCase())
       );
 
-      logger.operation('搜索日志', req.user?.id, { keyword, level });
+      // 不记录搜索日志的操作，避免日志循环
       
       res.json({
         success: true,
@@ -84,7 +63,8 @@ class LogController {
           logs: filteredLogs,
           count: filteredLogs.length,
           keyword,
-          level
+          level,
+          date: targetDate
         }
       });
     } catch (error) {

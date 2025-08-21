@@ -78,7 +78,6 @@ app.delete('/api/admin/photos/:photo_id', protect, restrictTo('admin', 'staff'),
 
 // 日志管理API路由
 app.get('/api/admin/logs', protect, restrictTo('admin'), logController.getRecentLogs);
-app.get('/api/admin/logs/stats', protect, restrictTo('admin'), logController.getErrorStats);
 app.get('/api/admin/logs/search', protect, restrictTo('admin'), logController.searchLogs);
 
 // 管理后台页面路由

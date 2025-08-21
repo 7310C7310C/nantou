@@ -6,6 +6,10 @@
     <title>系统日志 - 一线牵</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
+        body {
+            background-color: #f5f1eb; /* 浅棕色背景 */
+        }
+
         .logs-container {
             max-width: 1200px;
             margin: 20px auto;
@@ -18,8 +22,9 @@
             align-items: center;
             margin-bottom: 20px;
             padding: 15px;
-            background: #f8f9fa;
+            background: #faf7f2; /* 浅米色背景 */
             border-radius: 8px;
+            border: 1px solid #e8d5c4;
         }
         
         .logs-controls {
@@ -31,88 +36,137 @@
         .logs-controls select,
         .logs-controls input {
             padding: 8px 12px;
-            border: 1px solid #ddd;
+            border: 1px solid #e8d5c4;
             border-radius: 4px;
             font-size: 14px;
+            background-color: white;
         }
         
         .logs-controls button {
             padding: 8px 16px;
-            background: #007bff;
+            background: #8b6f47; /* 棕色按钮 */
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            transition: background-color 0.3s;
         }
         
         .logs-controls button:hover {
-            background: #0056b3;
+            background: #6d5a3a;
         }
         
         .logs-content {
-            background: white;
-            border: 1px solid #ddd;
+            background: #faf7f2; /* 浅米色背景 */
+            border: 1px solid #e8d5c4;
             border-radius: 8px;
             max-height: 600px;
             overflow-y: auto;
         }
         
         .log-entry {
-            padding: 10px 15px;
-            border-bottom: 1px solid #eee;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e8d5c4;
             font-family: 'Courier New', monospace;
             font-size: 13px;
-            line-height: 1.4;
+            line-height: 1.5;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 15px;
+            align-items: start;
+        }
+        
+        .log-message {
+            word-break: break-word;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+        }
+        
+        .log-message .message-text {
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .log-message .operation-details {
+            margin-top: 8px;
+            padding-left: 20px;
+            color: #666;
+            font-size: 12px;
+            border-left: 2px solid #e8d5c4;
+        }
+        
+        .log-data {
+            color: #8b6f47;
+            font-size: 12px;
+            font-style: italic;
+            border-left: 2px solid #d4c4b3;
+            background-color: rgba(139, 111, 71, 0.05);
+            padding: 8px 12px;
+            border-radius: 4px;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .log-message .data-section {
+            margin-top: 5px;
+            padding-left: 20px;
+            color: #8b6f47;
+            font-size: 12px;
+            font-style: italic;
+            border-left: 2px solid #d4c4b3;
+            background-color: rgba(139, 111, 71, 0.05);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-left: 10px;
         }
         
         .log-entry:last-child {
             border-bottom: none;
         }
         
-        .log-entry.error {
-            background: #fff5f5;
+        .log-timestamp {
+            color: #8b6f47;
+            font-weight: bold;
+            word-break: break-word;
+        }
+        
+        .log-level {
+            text-align: center;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            word-break: break-word;
+        }
+        
+        .log-level.error {
+            background: #ffe6e6;
             color: #d73a49;
         }
         
-        .log-entry.warn {
-            background: #fffbf0;
+        .log-level.warn {
+            background: #fff3cd;
             color: #f6a434;
         }
         
-        .log-entry.operation {
-            background: #f0f8ff;
+        .log-level.operation {
+            background: #e6f3ff;
             color: #0366d6;
         }
         
-        .log-entry.success {
-            background: #f0fff4;
+        .log-level.success {
+            background: #e6ffe6;
             color: #28a745;
         }
         
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            text-align: center;
-        }
-        
-        .stat-number {
-            font-size: 24px;
-            font-weight: bold;
-            color: #007bff;
-        }
-        
-        .stat-label {
+        .log-level.info {
+            background: #f0f0f0;
             color: #666;
-            margin-top: 5px;
+        }
+        
+        .log-message {
+            word-break: break-word;
         }
         
         .search-box {
@@ -124,17 +178,96 @@
         .search-box input {
             flex: 1;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid #e8d5c4;
             border-radius: 4px;
+            background-color: white;
         }
         
         .search-box button {
             padding: 10px 20px;
-            background: #28a745;
+            background: #7d6b4a; /* 棕色搜索按钮 */
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .search-box button:hover {
+            background: #5d4e37;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .logs-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+            
+            .logs-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .log-entry {
+                grid-template-columns: 1fr 1fr 1fr 1fr;
+                gap: 6px;
+                font-size: 11px;
+                padding: 8px 10px;
+            }
+            
+            .log-timestamp {
+                font-size: 10px;
+            }
+            
+            .log-level {
+                font-size: 9px;
+                padding: 1px 4px;
+            }
+            
+            .log-message {
+                font-size: 11px;
+            }
+            
+            .log-data {
+                font-size: 10px;
+                padding: 4px 6px;
+            }
+            
+            .log-message .data-section {
+                margin-left: 5px;
+                padding-left: 15px;
+                font-size: 11px;
+            }
+        }
+        
+        /* 超小屏幕适配 */
+        @media (max-width: 480px) {
+            .log-entry {
+                grid-template-columns: 1fr 1fr 1fr 1fr;
+                gap: 4px;
+                font-size: 10px;
+                padding: 6px 8px;
+            }
+            
+            .log-timestamp {
+                font-size: 9px;
+            }
+            
+            .log-level {
+                font-size: 8px;
+                padding: 1px 2px;
+            }
+            
+            .log-message {
+                font-size: 10px;
+            }
+            
+            .log-data {
+                font-size: 9px;
+                padding: 3px 4px;
+            }
         }
     </style>
 </head>
@@ -143,20 +276,17 @@
         <div class="logs-header">
             <h1>📊 系统日志</h1>
             <div class="logs-controls">
-                <select id="logLevel">
+                <input type="date" id="logDate" onchange="loadLogs()">
+                <select id="logLevel" onchange="loadLogs()">
                     <option value="all">所有级别</option>
                     <option value="error">错误</option>
                     <option value="warn">警告</option>
                     <option value="operation">操作</option>
                     <option value="success">成功</option>
+                    <option value="info">信息</option>
                 </select>
-                <input type="number" id="logLines" value="100" min="10" max="1000" placeholder="行数">
-                <button onclick="loadLogs()">刷新日志</button>
+                <button onclick="loadLogs()">刷新</button>
             </div>
-        </div>
-
-        <div class="stats-container" id="statsContainer">
-            <!-- 统计信息将在这里显示 -->
         </div>
 
         <div class="search-box">
@@ -178,13 +308,158 @@
             window.location.href = '/admin';
         }
 
+        // 设置默认日期为今天
+        function setDefaultDate() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const dateString = `${year}-${month}-${day}`;
+            document.getElementById('logDate').value = dateString;
+        }
+
+        // 格式化时间戳
+        function formatTimestamp(timestamp) {
+            try {
+                const date = new Date(timestamp);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                
+                return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            } catch (error) {
+                return timestamp;
+            }
+        }
+
+        // 解析日志级别
+        function parseLogLevel(logText) {
+            // 匹配日志格式：[时间戳] 级别: 消息内容
+            const logPattern = /^\[([^\]]+)\]\s+(\w+):/;
+            const match = logText.match(logPattern);
+            
+            if (match) {
+                const level = match[2].toLowerCase();
+                // 映射级别名称
+                const levelMap = {
+                    'error': 'error',
+                    'warn': 'warn',
+                    'warning': 'warn',
+                    'operation': 'operation',
+                    'success': 'success',
+                    'info': 'info',
+                    'debug': 'info'
+                };
+                return levelMap[level] || 'info';
+            }
+            
+            // 后备方法：在文本中查找级别关键词
+            if (logText.includes('ERROR')) return 'error';
+            if (logText.includes('WARN')) return 'warn';
+            if (logText.includes('OPERATION')) return 'operation';
+            if (logText.includes('SUCCESS')) return 'success';
+            if (logText.includes('INFO')) return 'info';
+            return 'info';
+        }
+
+        // 解析日志时间戳
+        function parseLogTimestamp(logText) {
+            // 匹配日志格式：[时间戳] 级别: 消息内容
+            const logPattern = /^\[([^\]]+)\]/;
+            const match = logText.match(logPattern);
+            
+            if (match) {
+                const timestamp = match[1];
+                // 尝试格式化时间戳
+                return formatTimestamp(timestamp);
+            }
+            
+            // 后备方法：匹配ISO格式的时间戳
+            const timestampMatch = logText.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}/);
+            if (timestampMatch) {
+                return formatTimestamp(timestampMatch[0]);
+            }
+            
+            // 匹配其他格式的时间戳
+            const otherMatch = logText.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/);
+            if (otherMatch) {
+                return otherMatch[0];
+            }
+            
+            return '未知时间';
+        }
+
+        // 提取日志消息内容
+        function extractLogMessage(logText) {
+            // 匹配日志格式：[时间戳] 级别: 消息内容 | 数据
+            const logPattern = /^\[([^\]]+)\]\s+(\w+):\s+(.+?)(?:\s+\|\s+(.+))?$/;
+            const match = logText.match(logPattern);
+            
+            if (match) {
+                // 提取消息内容（第3个捕获组）
+                let message = match[3].trim();
+                
+                return `<span class="message-text">${message}</span>`;
+            }
+            
+            // 如果正则匹配失败，使用原来的方法作为后备
+            let message = logText;
+            
+            // 移除时间戳部分
+            message = message.replace(/^\[[^\]]+\]\s*/, '');
+            
+            // 移除日志级别标识
+            message = message.replace(/^(ERROR|WARN|OPERATION|SUCCESS|INFO|DEBUG):\s*/, '');
+            
+            // 清理多余的空格和符号
+            message = message.replace(/^[\s\-:]+/, '').trim();
+            
+            return `<span class="message-text">${message || logText}</span>`;
+        }
+
+        // 提取日志数据内容
+        function extractLogData(logText) {
+            // 匹配日志格式：[时间戳] 级别: 消息内容 | 数据
+            const logPattern = /^\[([^\]]+)\]\s+(\w+):\s+(.+?)(?:\s+\|\s+(.+))?$/;
+            const match = logText.match(logPattern);
+            
+            if (match && match[4]) {
+                const data = match[4].trim();
+                
+                try {
+                    // 尝试解析JSON数据
+                    const parsedData = JSON.parse(data);
+                    if (typeof parsedData === 'object' && parsedData !== null) {
+                        // 格式化对象数据，每个字段一行
+                        const formattedData = Object.entries(parsedData)
+                            .map(([key, value]) => {
+                                const valueStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                                return `<div style="margin: 2px 0;"><strong>${key}:</strong> ${valueStr}</div>`;
+                            })
+                            .join('');
+                        return `<div class="log-data">📊 数据:<br>${formattedData}</div>`;
+                    } else {
+                        return `<div class="log-data">📊 数据: ${data}</div>`;
+                    }
+                } catch (e) {
+                    // 如果不是JSON，直接显示原始数据
+                    return `<div class="log-data">📊 数据: ${data}</div>`;
+                }
+            }
+            
+            return '';
+        }
+
         // 加载日志
         async function loadLogs() {
             try {
                 const level = document.getElementById('logLevel').value;
-                const lines = document.getElementById('logLines').value;
+                const date = document.getElementById('logDate').value;
                 
-                const response = await fetch(`/api/admin/logs?level=${level}&lines=${lines}`, {
+                const response = await fetch(`/api/admin/logs?level=${level}&date=${date}`, {
                     headers: {
                         'Authorization': `Bearer ${authToken}`
                     }
@@ -193,7 +468,6 @@
                 if (response.ok) {
                     const data = await response.json();
                     displayLogs(data.data.logs);
-                    loadStats();
                 } else {
                     alert('加载日志失败');
                 }
@@ -208,57 +482,28 @@
             const container = document.getElementById('logsContent');
             
             if (logs.length === 0) {
-                container.innerHTML = '<div class="log-entry">暂无日志</div>';
+                container.innerHTML = '<div class="log-entry"><div class="log-timestamp">-</div><div class="log-level info">-</div><div class="log-message">暂无日志</div><div class="log-data-column"></div></div>';
                 return;
             }
 
-            container.innerHTML = logs.map(log => {
-                let className = 'log-entry';
-                if (log.includes('ERROR')) className += ' error';
-                else if (log.includes('WARN')) className += ' warn';
-                else if (log.includes('OPERATION')) className += ' operation';
-                else if (log.includes('SUCCESS')) className += ' success';
-                
-                return `<div class="${className}">${log}</div>`;
-            }).join('');
-        }
-
-        // 加载统计信息
-        async function loadStats() {
-            try {
-                const response = await fetch('/api/admin/logs/stats?days=7', {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    displayStats(data.data);
-                }
-            } catch (error) {
-                console.error('加载统计失败:', error);
-            }
-        }
-
-        // 显示统计信息
-        function displayStats(data) {
-            const container = document.getElementById('statsContainer');
+            // 反转数组，让最新的日志显示在最上面
+            const reversedLogs = logs.reverse();
             
-            container.innerHTML = `
-                <div class="stat-card">
-                    <div class="stat-number">${data.totalErrors}</div>
-                    <div class="stat-label">总错误数</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">${data.days}</div>
-                    <div class="stat-label">统计天数</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">${Math.round(data.totalErrors / data.days)}</div>
-                    <div class="stat-label">日均错误</div>
-                </div>
-            `;
+            container.innerHTML = reversedLogs.map(log => {
+                const level = parseLogLevel(log);
+                const timestamp = parseLogTimestamp(log);
+                const message = extractLogMessage(log);
+                const data = extractLogData(log);
+                
+                return `
+                    <div class="log-entry">
+                        <div class="log-timestamp">${timestamp}</div>
+                        <div class="log-level ${level}">${level}</div>
+                        <div class="log-message">${message}</div>
+                        <div class="log-data-column">${data}</div>
+                    </div>
+                `;
+            }).join('');
         }
 
         // 搜索日志
@@ -266,13 +511,14 @@
             try {
                 const keyword = document.getElementById('searchKeyword').value.trim();
                 const level = document.getElementById('logLevel').value;
+                const date = document.getElementById('logDate').value;
                 
                 if (!keyword) {
                     alert('请输入搜索关键词');
                     return;
                 }
 
-                const response = await fetch(`/api/admin/logs/search?keyword=${encodeURIComponent(keyword)}&level=${level}`, {
+                const response = await fetch(`/api/admin/logs/search?keyword=${encodeURIComponent(keyword)}&level=${level}&date=${date}`, {
                     headers: {
                         'Authorization': `Bearer ${authToken}`
                     }
@@ -292,6 +538,7 @@
 
         // 页面加载时自动加载日志
         document.addEventListener('DOMContentLoaded', () => {
+            setDefaultDate();
             loadLogs();
         });
 
