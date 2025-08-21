@@ -41,6 +41,15 @@ const deleteConfirmInput = document.getElementById('deleteConfirmInput');
 const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 
+// 重设密码相关元素
+const resetPasswordModal = document.getElementById('resetPasswordModal');
+const resetPasswordUserInfo = document.getElementById('resetPasswordUserInfo');
+const cancelResetPasswordBtn = document.getElementById('cancelResetPasswordBtn');
+const confirmResetPasswordBtn = document.getElementById('confirmResetPasswordBtn');
+const resetPasswordResultModal = document.getElementById('resetPasswordResultModal');
+const newPasswordInfo = document.getElementById('newPasswordInfo');
+const closeResetPasswordResultBtn = document.getElementById('closeResetPasswordResultBtn');
+
 // 确认弹窗元素
 const confirmModal = document.getElementById('confirmModal');
 const confirmInfo = document.getElementById('confirmInfo');
@@ -87,6 +96,11 @@ function setupEventListeners() {
     confirmDeleteBtn.addEventListener('click', handleDeleteParticipant);
     deleteConfirmInput.addEventListener('input', validateDeleteConfirm);
 
+    // 重设密码功能
+    cancelResetPasswordBtn.addEventListener('click', closeResetPasswordModal);
+    confirmResetPasswordBtn.addEventListener('click', handleResetPassword);
+    closeResetPasswordResultBtn.addEventListener('click', closeResetPasswordResultModal);
+
     // 照片上传
     photoUpload.addEventListener('click', () => photoInput.click());
     photoInput.addEventListener('change', handlePhotoSelect);
@@ -114,6 +128,12 @@ function setupEventListeners() {
     });
     deleteModal.addEventListener('click', (e) => {
         if (e.target === deleteModal) closeDeleteModal();
+    });
+    resetPasswordModal.addEventListener('click', (e) => {
+        if (e.target === resetPasswordModal) closeResetPasswordModal();
+    });
+    resetPasswordResultModal.addEventListener('click', (e) => {
+        if (e.target === resetPasswordResultModal) closeResetPasswordResultModal();
     });
 }
 
@@ -280,7 +300,10 @@ function displayParticipants(participants) {
                     <span>录入时间：${new Date(participant.created_at).toLocaleString()}</span>
                 </div>
             </div>
-            <button class="delete-btn" onclick="showDeleteConfirm(${participant.id}, '${participant.name}')">删除账号</button>
+            <div class="participant-actions">
+                <button class="reset-password-btn" onclick="showResetPasswordConfirm(${participant.id}, '${participant.name}', '${participant.username}')">重设密码</button>
+                <button class="delete-btn" onclick="showDeleteConfirm(${participant.id}, '${participant.name}')">删除账号</button>
+            </div>
         </div>
     `).join('');
 }
@@ -533,8 +556,8 @@ function compressImage(file) {
         
         img.onload = () => {
             // 计算压缩后的尺寸
-            const maxWidth = 1080;
-            const maxHeight = 1080;
+            const maxWidth = 720;
+            const maxHeight = 720;
             let { width, height } = img;
             
             if (width > height) {
@@ -573,7 +596,7 @@ function showResultModal(data) {
         <p><strong>密码：</strong>${data.password}</p>
         <p><strong>照片数量：</strong>${data.photo_count}张</p>
         <div>
-            <button class="copy-btn" onclick="copyAccountInfo('${data.username}', '${data.password}')">再次复制账号密码</button>
+            <button class="copy-btn" onclick="copyAccountInfo('${data.username}', '${data.password}')">复制账号密码</button>
         </div>
     `;
     
@@ -778,5 +801,131 @@ function copyToClipboard(text) {
         document.execCommand('copy');
         document.body.removeChild(textArea);
         alert('已复制到剪贴板');
+    });
+}
+
+// 显示重设密码确认弹窗
+async function showResetPasswordConfirm(participantId, participantName, username) {
+    window.currentResetPasswordParticipantId = participantId;
+    window.currentResetPasswordParticipantName = participantName;
+    window.currentResetPasswordUsername = username;
+    
+    // 显示用户信息
+    resetPasswordUserInfo.innerHTML = `
+        <h4>📋 要重设密码的用户信息</h4>
+        <div class="user-details">
+            <p><strong>姓名：</strong>${participantName}</p>
+            <p><strong>用户名：</strong>${username}</p>
+        </div>
+    `;
+    
+    resetPasswordModal.style.display = 'block';
+}
+
+// 关闭重设密码确认弹窗
+function closeResetPasswordModal() {
+    resetPasswordModal.style.display = 'none';
+    window.currentResetPasswordParticipantId = null;
+    window.currentResetPasswordParticipantName = null;
+    window.currentResetPasswordUsername = null;
+}
+
+// 处理重设密码
+async function handleResetPassword() {
+    if (!window.currentResetPasswordParticipantId) {
+        alert('重设密码信息丢失，请重试');
+        return;
+    }
+
+    try {
+        showLoading('正在重设密码...', '请稍候，正在生成新密码');
+        
+        // 发送重设密码请求
+        const response = await fetch(`/api/admin/participants/${window.currentResetPasswordParticipantId}/reset-password`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            closeResetPasswordModal();
+            showResetPasswordResult(data.data);
+        } else {
+            const errorText = await response.text();
+            try {
+                const errorData = JSON.parse(errorText);
+                alert(errorData.message || '重设密码失败');
+            } catch (parseError) {
+                alert('重设密码失败: ' + errorText);
+            }
+        }
+    } catch (error) {
+        console.error('重设密码失败:', error);
+        alert('网络错误，请重试');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 显示重设密码结果
+function showResetPasswordResult(data) {
+    newPasswordInfo.innerHTML = `
+        <h4>🔑 新密码信息</h4>
+        <div class="password-details">
+            <p><strong>用户名：</strong>${data.username}</p>
+            <p><strong>新密码：</strong>${data.new_password}</p>
+        </div>
+        <div style="margin-top: 15px;">
+            <button class="btn btn-secondary" onclick="copyNewPassword('${data.username}', '${data.new_password}')">复制账号密码</button>
+        </div>
+    `;
+    
+    resetPasswordResultModal.style.display = 'block';
+    
+    // 自动复制账号密码
+    setTimeout(async () => {
+        try {
+            await copyNewPassword(data.username, data.new_password, false);
+            // 复制成功后显示绿色提示
+            const copyStatus = document.createElement('p');
+            copyStatus.style.cssText = 'color: #28a745; font-size: 14px; margin: 10px 0;';
+            copyStatus.textContent = '✅ 新密码已自动复制到剪贴板';
+            newPasswordInfo.insertBefore(copyStatus, newPasswordInfo.querySelector('.btn').parentNode);
+        } catch (error) {
+            console.error('自动复制失败:', error);
+        }
+    }, 500); // 延迟500毫秒，确保弹窗完全显示后再复制
+}
+
+// 关闭重设密码结果弹窗
+function closeResetPasswordResultModal() {
+    resetPasswordResultModal.style.display = 'none';
+}
+
+// 复制新密码
+function copyNewPassword(username, password, showAlert = true) {
+    const accountInfo = `用户名：${username}\n密码：${password}`;
+    
+    return new Promise((resolve, reject) => {
+        navigator.clipboard.writeText(accountInfo).then(() => {
+            if (showAlert) {
+                alert('新密码已复制到剪贴板');
+            }
+            resolve();
+        }).catch(() => {
+            // 降级方案
+            const textArea = document.createElement('textarea');
+            textArea.value = accountInfo;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            if (showAlert) {
+                alert('新密码已复制到剪贴板');
+            }
+            resolve();
+        });
     });
 } 

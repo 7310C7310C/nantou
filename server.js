@@ -63,6 +63,7 @@ app.get('/api/admin/participants', protect, restrictTo('admin', 'staff'), adminC
 app.get('/api/admin/participants/:participant_id/photos', protect, restrictTo('admin', 'staff'), adminController.getParticipantPhotos);
 app.get('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.getParticipantById);
 app.delete('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.deleteParticipant);
+app.post('/api/admin/participants/:participant_id/reset-password', protect, restrictTo('admin', 'staff'), adminController.resetParticipantPassword);
 app.post('/api/admin/photos/primary', protect, restrictTo('admin', 'staff'), adminController.setPrimaryPhoto);
 app.delete('/api/admin/photos/:photo_id', protect, restrictTo('admin', 'staff'), adminController.deletePhoto);
 

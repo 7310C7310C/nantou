@@ -1,5 +1,5 @@
 const multer = require('multer');
-const { registerNewParticipant, deleteParticipantById } = require('../services/participant.service');
+const { registerNewParticipant, deleteParticipantById, resetParticipantPasswordById } = require('../services/participant.service');
 const { pool } = require('../config/database');
 const logger = require('../utils/logger');
 
@@ -341,6 +341,43 @@ async function deleteParticipant(req, res) {
   }
 }
 
+/**
+ * 重设参与者密码
+ */
+async function resetParticipantPassword(req, res) {
+  try {
+    const { participant_id } = req.params;
+    logger.operation('重设参与者密码', req.user?.id, { participant_id });
+    
+    // 调用服务层处理重设密码逻辑
+    const result = await resetParticipantPasswordById(participant_id);
+    
+    if (result.success) {
+      logger.success('密码重设成功', { participant_id });
+      res.json({
+        success: true,
+        message: '密码重设成功',
+        data: {
+          username: result.username,
+          new_password: result.new_password
+        }
+      });
+    } else {
+      logger.warn('密码重设失败', { participant_id, reason: result.message });
+      res.status(404).json({
+        success: false,
+        message: result.message || '参与者不存在'
+      });
+    }
+  } catch (error) {
+    logger.error('重设密码错误', error);
+    res.status(500).json({
+      success: false,
+      message: '服务器内部错误'
+    });
+  }
+}
+
 module.exports = {
   registerParticipant,
   getAllParticipants,
@@ -348,5 +385,6 @@ module.exports = {
   getParticipantPhotos,
   setPrimaryPhoto,
   deletePhoto,
-  deleteParticipant
+  deleteParticipant,
+  resetParticipantPassword
 };

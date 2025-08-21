@@ -331,16 +331,24 @@ async function generateUsername(gender) {
 }
 
 /**
- * 生成8位密码（大小字母+数字，排除1l0oO）
+ * 生成8位密码（前4位字母，后4位数字）
  * @returns {string} 生成的密码
  */
 function generatePassword() {
-  const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const letters = 'ABCDEFGHIJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
+  const numbers = '23456789';
   let password = '';
   
-  for (let i = 0; i < 8; i++) {
-    const randomIndex = Math.floor(Math.random() * chars.length);
-    password += chars[randomIndex];
+  // 生成前4位字母
+  for (let i = 0; i < 4; i++) {
+    const randomIndex = Math.floor(Math.random() * letters.length);
+    password += letters[randomIndex];
+  }
+  
+  // 生成后4位数字
+  for (let i = 0; i < 4; i++) {
+    const randomIndex = Math.floor(Math.random() * numbers.length);
+    password += numbers[randomIndex];
   }
   
   return password;
@@ -366,6 +374,58 @@ async function verifyPassword(password, hashedPassword) {
   return await bcrypt.compare(password, hashedPassword);
 }
 
+/**
+ * 重设参与者密码
+ * @param {number} participantId - 参与者ID
+ * @returns {Object} 重设结果
+ */
+async function resetParticipantPasswordById(participantId) {
+  const connection = await pool.getConnection();
+  
+  try {
+    // 1. 检查参与者是否存在
+    const [participants] = await connection.execute(
+      'SELECT id, username FROM participants WHERE id = ?',
+      [participantId]
+    );
+
+    if (participants.length === 0) {
+      return {
+        success: false,
+        message: '参与者不存在'
+      };
+    }
+
+    const participant = participants[0];
+
+    // 2. 生成新密码
+    const newPassword = generatePassword();
+
+    // 3. 加密新密码
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // 4. 更新数据库中的密码
+    await connection.execute(
+      'UPDATE participants SET password = ? WHERE id = ?',
+      [hashedPassword, participantId]
+    );
+
+    return {
+      success: true,
+      message: '密码重设成功',
+      username: participant.username,
+      new_password: newPassword
+    };
+
+  } catch (error) {
+    console.error('重设密码错误:', error);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   registerNewParticipant,
   getParticipantByUsername,
@@ -374,5 +434,6 @@ module.exports = {
   updateParticipant,
   deleteParticipant,
   deleteParticipantById,
-  verifyPassword
+  verifyPassword,
+  resetParticipantPasswordById
 };
