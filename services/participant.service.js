@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
 const { uploadPhoto, deletePhoto } = require('./oss.service');
+const logger = require('../utils/logger');
 
 /**
  * 注册新参与者（支持多照片上传）
@@ -25,6 +26,9 @@ async function registerNewParticipant(participantData) {
     );
 
     if (existingPhones.length > 0) {
+      logger.warn('注册失败：手机号已存在', { 
+        phone: participantData.phone.substring(0, 3) + '****' + participantData.phone.substring(7) 
+      });
       const error = new Error('手机号已被注册');
       error.isBusinessError = true; // 标记为业务错误
       throw error;
@@ -32,9 +36,11 @@ async function registerNewParticipant(participantData) {
 
     // 2. 生成用户名（男：1001,1002... 女：2001,2002...）
     const username = await generateUsername(participantData.gender);
+    logger.info('生成用户名', { username, gender: participantData.gender });
 
     // 3. 生成8位密码（大小字母+数字，排除1l0oO）
     const plainPassword = generatePassword();
+    logger.info('生成密码', { username });
 
     // 4. 加密密码
     const saltRounds = 10;
@@ -55,10 +61,22 @@ async function registerNewParticipant(participantData) {
     );
 
     const participantId = result.insertId;
+    logger.info('参与者基本信息插入成功', { 
+      participant_id: participantId, 
+      username, 
+      name: participantData.name 
+    });
+    
     const photoUrls = [];
 
     // 5. 处理多张照片上传
     if (participantData.photos && participantData.photos.length > 0) {
+      logger.info('开始处理照片上传', { 
+        participant_id: participantId, 
+        username, 
+        photo_count: participantData.photos.length 
+      });
+      
       for (let i = 0; i < participantData.photos.length; i++) {
         const photo = participantData.photos[i];
         
@@ -79,14 +97,32 @@ async function registerNewParticipant(participantData) {
             [participantId, photoUrl, isPrimary, i + 1]
           );
           
+          logger.info(`照片 ${i + 1} 上传成功`, { 
+            participant_id: participantId, 
+            username, 
+            fileName, 
+            isPrimary 
+          });
+          
         } catch (uploadError) {
-          console.error(`照片 ${i + 1} 上传失败:`, uploadError);
+          logger.error(`照片 ${i + 1} 上传失败`, { 
+            participant_id: participantId, 
+            username, 
+            fileName: `${username}_${i + 1}.${fileExtension}`, 
+            error: uploadError.message 
+          });
           // 继续处理其他照片，不中断整个流程
         }
       }
     }
 
     await connection.commit();
+
+    logger.success('参与者注册完成', { 
+      participant_id: participantId, 
+      username, 
+      photo_count: photoUrls.length 
+    });
 
     return {
       participant_id: participantId,
@@ -254,16 +290,20 @@ async function deleteParticipantById(id) {
     );
 
     if (participantRows.length === 0) {
+      logger.warn('删除失败：参与者不存在', { participantId: id });
       return { success: false, message: '参与者不存在' };
     }
 
     const username = participantRows[0].username;
+    logger.info('开始删除参与者', { participantId: id, username });
 
     // 2. 获取所有照片URL
     const [photoRows] = await connection.execute(
       'SELECT photo_url FROM participant_photos WHERE participant_id = ?',
       [id]
     );
+
+    logger.info('开始删除OSS照片文件', { participantId: id, username, photo_count: photoRows.length });
 
     // 3. 删除OSS中的照片文件
     for (const photo of photoRows) {
@@ -272,8 +312,9 @@ async function deleteParticipantById(id) {
         const urlParts = photo.photo_url.split('/');
         const fileName = urlParts[urlParts.length - 1];
         await deletePhoto(fileName);
+        logger.info('OSS照片文件删除成功', { participantId: id, username, fileName });
       } catch (ossError) {
-        console.error('删除OSS文件失败:', ossError);
+        logger.error('删除OSS文件失败', { participantId: id, username, fileName, error: ossError.message });
         // 继续删除其他文件，不中断流程
       }
     }
@@ -291,6 +332,8 @@ async function deleteParticipantById(id) {
     );
 
     await connection.commit();
+    
+    logger.success('参与者删除完成', { participantId: id, username, deletedPhotos: photoRows.length });
     
     return { 
       success: true, 
@@ -390,6 +433,7 @@ async function resetParticipantPasswordById(participantId) {
     );
 
     if (participants.length === 0) {
+      logger.warn('重设密码失败：参与者不存在', { participantId });
       return {
         success: false,
         message: '参与者不存在'
@@ -397,9 +441,11 @@ async function resetParticipantPasswordById(participantId) {
     }
 
     const participant = participants[0];
+    logger.info('开始重设密码', { participantId, username: participant.username });
 
     // 2. 生成新密码
     const newPassword = generatePassword();
+    logger.info('生成新密码', { participantId, username: participant.username });
 
     // 3. 加密新密码
     const saltRounds = 10;
@@ -410,6 +456,8 @@ async function resetParticipantPasswordById(participantId) {
       'UPDATE participants SET password = ? WHERE id = ?',
       [hashedPassword, participantId]
     );
+
+    logger.success('密码重设完成', { participantId, username: participant.username });
 
     return {
       success: true,

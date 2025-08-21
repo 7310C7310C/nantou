@@ -28,27 +28,36 @@ app.get('/', (req, res) => {
 
 // 健康检查端点
 app.get('/health', (req, res) => {
+  const now = new Date();
+  const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}+08:00`;
+  
   res.json({ 
     status: 'OK', 
     message: '服务器运行正常',
-    timestamp: new Date().toISOString()
+    timestamp: timestamp
   });
 });
 
 // 测试路由 - 用于调试
 app.get('/api/test', (req, res) => {
+  const now = new Date();
+  const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}+08:00`;
+  
   res.json({ 
     message: 'API路由正常工作',
-    timestamp: new Date().toISOString()
+    timestamp: timestamp
   });
 });
 
 // 测试认证路由 - 用于调试
 app.get('/api/test-auth', protect, (req, res) => {
+  const now = new Date();
+  const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}.${String(now.getMilliseconds()).padStart(3, '0')}+08:00`;
+  
   res.json({ 
     message: '认证正常工作',
     user: req.user,
-    timestamp: new Date().toISOString()
+    timestamp: timestamp
   });
 });
 

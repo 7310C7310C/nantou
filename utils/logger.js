@@ -21,12 +21,16 @@ class Logger {
   }
 
   getLogFileName(level) {
-    const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const date = `${year}-${month}-${day}`; // YYYY-MM-DD
     return path.join(this.logDir, `${level}-${date}.log`);
   }
 
   writeToFile(level, message, data = null) {
-    const timestamp = new Date().toISOString();
+    const timestamp = this.getLocalTimestamp();
     const logFile = this.getLogFileName(level);
     
     let logEntry = `[${timestamp}] ${level.toUpperCase()}: ${message}`;
@@ -43,11 +47,25 @@ class Logger {
     });
   }
 
+  // 获取本地时间戳
+  getLocalTimestamp() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds}+08:00`;
+  }
+
   /**
    * 信息日志 - 重要操作信息
    */
   info(message, data = null) {
-    const timestamp = new Date().toISOString();
+    const timestamp = this.getLocalTimestamp();
     console.log(`[${timestamp}] ℹ️  ${message}`);
     if (data && this.isDevelopment) {
       console.log('   📊 数据:', data);
@@ -59,7 +77,7 @@ class Logger {
    * 成功日志 - 操作成功
    */
   success(message, data = null) {
-    const timestamp = new Date().toISOString();
+    const timestamp = this.getLocalTimestamp();
     console.log(`[${timestamp}] ✅ ${message}`);
     if (data && this.isDevelopment) {
       console.log('   📊 数据:', data);
@@ -71,7 +89,7 @@ class Logger {
    * 警告日志 - 需要注意但不致命的问题
    */
   warn(message, data = null) {
-    const timestamp = new Date().toISOString();
+    const timestamp = this.getLocalTimestamp();
     console.warn(`[${timestamp}] ⚠️  ${message}`);
     if (data && this.isDevelopment) {
       console.warn('   📊 数据:', data);
@@ -83,7 +101,7 @@ class Logger {
    * 错误日志 - 错误和异常
    */
   error(message, error = null) {
-    const timestamp = new Date().toISOString();
+    const timestamp = this.getLocalTimestamp();
     console.error(`[${timestamp}] ❌ ${message}`);
     if (error) {
       console.error('   🔍 错误详情:', error.message || error);
@@ -103,7 +121,7 @@ class Logger {
   debug(message, data = null) {
     if (!this.isDevelopment) return;
     
-    const timestamp = new Date().toISOString();
+    const timestamp = this.getLocalTimestamp();
     console.log(`[${timestamp}] 🐛 ${message}`);
     if (data) {
       console.log('   📊 调试数据:', data);
@@ -115,7 +133,7 @@ class Logger {
    * 操作日志 - 记录重要业务操作
    */
   operation(operation, userId = null, details = null) {
-    const timestamp = new Date().toISOString();
+    const timestamp = this.getLocalTimestamp();
     const userInfo = userId ? `[用户: ${userId}]` : '';
     console.log(`[${timestamp}] 🔄 ${operation} ${userInfo}`);
     
@@ -129,7 +147,7 @@ class Logger {
    * 安全日志 - 记录安全相关事件
    */
   security(event, userId = null, details = null) {
-    const timestamp = new Date().toISOString();
+    const timestamp = this.getLocalTimestamp();
     const userInfo = userId ? `[用户: ${userId}]` : '';
     console.warn(`[${timestamp}] 🔒 ${event} ${userInfo}`);
     
@@ -187,7 +205,10 @@ class Logger {
     for (let i = 0; i < days; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
       const logFile = path.join(this.logDir, `error-${dateStr}.log`);
       
       if (fs.existsSync(logFile)) {

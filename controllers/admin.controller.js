@@ -72,6 +72,15 @@ async function registerParticipant(req, res) {
         });
       }
 
+      // 记录注册操作开始
+      logger.operation('开始注册参与者', req.user?.id, { 
+        name, 
+        baptismal_name, 
+        gender, 
+        phone: phone.substring(0, 3) + '****' + phone.substring(7), // 隐藏部分手机号
+        photo_count: req.files.length 
+      });
+
       // 调用服务层处理注册逻辑
       const result = await registerNewParticipant({
         name,
@@ -79,6 +88,14 @@ async function registerParticipant(req, res) {
         gender,
         phone,
         photos: req.files // 传递文件数组
+      });
+
+      // 记录注册成功
+      logger.success('参与者注册成功', { 
+        participant_id: result.participant_id,
+        username: result.username,
+        photo_count: result.photo_count,
+        operator: req.user?.username
       });
 
       res.status(201).json({
@@ -120,6 +137,8 @@ async function registerParticipant(req, res) {
  */
 async function getAllParticipants(req, res) {
   try {
+    logger.operation('获取参与者列表', req.user?.id, { operator: req.user?.username });
+    
     const [rows] = await pool.execute(`
       SELECT 
         p.id,
@@ -136,6 +155,8 @@ async function getAllParticipants(req, res) {
       GROUP BY p.id
       ORDER BY p.created_at DESC
     `);
+
+    logger.info('参与者列表获取成功', { count: rows.length, operator: req.user?.username });
 
     res.json({
       success: true,
@@ -156,7 +177,8 @@ async function getAllParticipants(req, res) {
 async function getParticipantById(req, res) {
   try {
     const { participant_id } = req.params;
-    logger.debug('获取参与者信息请求', { participant_id });
+    
+    logger.operation('获取参与者信息', req.user?.id, { participant_id, operator: req.user?.username });
     
     const [rows] = await pool.execute(`
       SELECT 
@@ -176,14 +198,15 @@ async function getParticipantById(req, res) {
     `, [participant_id]);
 
     if (rows.length === 0) {
-      logger.warn('参与者不存在', { participant_id });
+      logger.warn('获取参与者信息失败：参与者不存在', { participant_id, operator: req.user?.username });
       return res.status(404).json({
         success: false,
         message: '参与者不存在'
       });
     }
 
-    logger.operation('获取参与者信息', req.user?.id, { participant_id });
+    logger.info('参与者信息获取成功', { participant_id, operator: req.user?.username });
+
     res.json({
       success: true,
       data: rows[0]

@@ -2,14 +2,30 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>一线牵 - 管理后台</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
+        body {
+            background-color: #f5f1eb; /* 浅棕色背景 */
+        }
+
+        /* 默认隐藏登录界面，避免刷新时闪现 */
+        #loginSection {
+            display: none;
+        }
+
         .admin-container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 10px;
+            }
         }
 
         .header {
@@ -21,10 +37,25 @@
             border-bottom: 2px solid #e0e0e0;
         }
 
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+        }
+
         .logo {
             font-size: 24px;
             font-weight: bold;
             color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 20px;
+                text-align: center;
+            }
         }
 
         .login-section {
@@ -33,10 +64,25 @@
             gap: 15px;
         }
 
+        @media (max-width: 768px) {
+            .login-section {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
         .login-form {
             display: flex;
             gap: 10px;
             align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .login-form {
+                flex-direction: column;
+                width: 100%;
+                gap: 8px;
+            }
         }
 
         .login-form input {
@@ -46,9 +92,17 @@
             font-size: 14px;
         }
 
+        @media (max-width: 768px) {
+            .login-form input {
+                width: 100%;
+                padding: 12px;
+                font-size: 16px; /* 防止iOS缩放 */
+            }
+        }
+
         .login-form button {
             padding: 8px 16px;
-            background-color: #007bff;
+            background-color: #8b6f47; /* 棕色登录按钮 */
             color: white;
             border: none;
             border-radius: 4px;
@@ -56,41 +110,123 @@
             font-size: 14px;
         }
 
+        @media (max-width: 768px) {
+            .login-form button {
+                width: 100%;
+                padding: 12px;
+                font-size: 16px;
+            }
+        }
+
         .login-form button:hover {
-            background-color: #0056b3;
+            background-color: #6d5a3a;
         }
 
         .user-info {
             display: none;
-            align-items: center;
-            gap: 15px;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
         }
 
-        .user-info .username {
-            font-weight: bold;
-            color: #333;
+        @media (max-width: 768px) {
+            .user-info {
+                top: 10px;
+                right: 10px;
+            }
         }
 
-        .user-info .role {
-            background-color: #28a745;
+        .user-info .role-btn {
+            background-color: #8b6f47; /* 棕色角色按钮 */
             color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(139, 111, 71, 0.3);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .user-info .role-btn::after {
+            content: '▼';
+            font-size: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .user-info .role-btn.active::after {
+            transform: rotate(180deg);
+        }
+
+        .user-info .role-btn:hover {
+            background-color: #6d5a3a;
+            box-shadow: 0 4px 12px rgba(139, 111, 71, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .user-info .role-btn {
+                padding: 10px 18px;
+                font-size: 16px;
+                min-height: 44px;
+            }
+        }
+
+        .user-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .user-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: #faf7f2; /* 浅米色下拉菜单背景 */
+            min-width: 120px;
+            box-shadow: 0 4px 12px rgba(93, 78, 55, 0.2);
+            border-radius: 8px;
+            padding: 8px 0;
+            margin-top: 8px;
+            z-index: 1001;
+            border: 1px solid #e8d5c4;
+        }
+
+        .user-dropdown-menu.show {
+            display: block;
         }
 
         .logout-btn {
-            padding: 6px 12px;
-            background-color: #dc3545;
-            color: white;
+            display: block;
+            width: 100%;
+            padding: 8px 16px;
+            background: none;
             border: none;
-            border-radius: 4px;
+            color: #333;
+            text-align: left;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
+            transition: background-color 0.2s;
         }
 
         .logout-btn:hover {
-            background-color: #c82333;
+            background-color: #e8d5c4;
+            color: #8b6f47;
+        }
+
+        @media (max-width: 768px) {
+            .user-dropdown-menu {
+                min-width: 140px;
+                right: -10px; /* 稍微调整位置避免超出屏幕 */
+            }
+            
+            .logout-btn {
+                padding: 10px 18px;
+                font-size: 16px;
+            }
         }
 
         .main-content {
@@ -99,9 +235,9 @@
         }
 
         .welcome-message {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
+            background-color: #e8d5c4; /* 浅棕色欢迎消息 */
+            border: 1px solid #d4c4b3;
+            color: #5d4e37;
             padding: 15px;
             border-radius: 4px;
             margin-bottom: 20px;
@@ -114,12 +250,25 @@
             margin-top: 20px;
         }
 
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+        }
+
         .dashboard-card {
-            background: white;
-            border: 1px solid #e0e0e0;
+            background: #faf7f2; /* 浅米色卡片背景 */
+            border: 1px solid #e8d5c4;
             border-radius: 8px;
             padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(93, 78, 55, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-card {
+                padding: 15px;
+            }
         }
 
         .dashboard-card h3 {
@@ -161,22 +310,30 @@
             transition: background-color 0.3s;
         }
 
+        @media (max-width: 768px) {
+            .btn {
+                padding: 12px 20px;
+                font-size: 16px;
+                min-height: 44px; /* 确保触摸目标足够大 */
+            }
+        }
+
         .btn-primary {
-            background-color: #007bff;
+            background-color: #8b6f47; /* 棕色主按钮 */
             color: white;
         }
 
         .btn-primary:hover {
-            background-color: #0056b3;
+            background-color: #6d5a3a;
         }
 
         .btn-success {
-            background-color: #28a745;
+            background-color: #7d6b4a; /* 棕色成功按钮 */
             color: white;
         }
 
         .btn-success:hover {
-            background-color: #1e7e34;
+            background-color: #5d4e37;
         }
 
         .btn-secondary {
@@ -205,13 +362,24 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: white;
+            background-color: #faf7f2; /* 浅米色弹窗背景 */
             padding: 30px;
             border-radius: 8px;
             width: 90%;
             max-width: 600px;
             max-height: 90vh;
             overflow-y: auto;
+            border: 1px solid #e8d5c4;
+        }
+
+        @media (max-width: 768px) {
+            .registration-content {
+                width: 95%;
+                padding: 20px;
+                max-height: 95vh;
+                top: 2.5%;
+                transform: translateX(-50%);
+            }
         }
 
         .registration-header {
@@ -261,6 +429,14 @@
             box-sizing: border-box;
         }
 
+        @media (max-width: 768px) {
+            .form-group input,
+            .form-group select {
+                padding: 12px;
+                font-size: 16px; /* 防止iOS缩放 */
+            }
+        }
+
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
@@ -293,6 +469,12 @@
             margin-top: 10px;
         }
 
+        @media (max-width: 768px) {
+            .photo-preview {
+                gap: 8px;
+            }
+        }
+
         .photo-item {
             position: relative;
             width: 100px;
@@ -300,6 +482,13 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .photo-item {
+                width: 80px;
+                height: 80px;
+            }
         }
 
         .photo-item img {
@@ -320,6 +509,41 @@
             height: 20px;
             cursor: pointer;
             font-size: 12px;
+        }
+
+        .photo-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+            padding: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .primary-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 2px 6px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .primary-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .primary-btn.active {
+            background-color: #28a745;
+        }
+
+        .primary-btn.active:hover {
+            background-color: #1e7e34;
         }
 
         .form-actions {
@@ -346,18 +570,31 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: white;
+            background-color: #faf7f2; /* 浅米色弹窗背景 */
             padding: 30px;
             border-radius: 8px;
             width: 90%;
             max-width: 500px;
+            border: 1px solid #e8d5c4;
+        }
+
+        @media (max-width: 768px) {
+            .confirm-content {
+                width: 95%;
+                padding: 20px;
+                top: 2.5%;
+                transform: translateX(-50%);
+                max-height: 95vh;
+                overflow-y: auto;
+            }
         }
 
         .confirm-info {
             margin: 20px 0;
             padding: 15px;
-            background-color: #f8f9fa;
+            background-color: #e8d5c4; /* 浅棕色确认信息背景 */
             border-radius: 4px;
+            border: 1px solid #d4c4b3;
         }
 
         .confirm-info p {
@@ -381,17 +618,29 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: white;
+            background-color: #faf7f2; /* 浅米色弹窗背景 */
             padding: 30px;
             border-radius: 8px;
             width: 90%;
             max-width: 400px;
             text-align: center;
+            border: 1px solid #e8d5c4;
+        }
+
+        @media (max-width: 768px) {
+            .result-content {
+                width: 95%;
+                padding: 20px;
+                top: 2.5%;
+                transform: translateX(-50%);
+                max-height: 95vh;
+                overflow-y: auto;
+            }
         }
 
         .account-info {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
+            background-color: #e8d5c4; /* 浅棕色账号信息背景 */
+            border: 1px solid #d4c4b3;
             border-radius: 4px;
             padding: 15px;
             margin: 20px 0;
@@ -399,7 +648,7 @@
 
         .account-info h3 {
             margin-top: 0;
-            color: #155724;
+            color: #5d4e37;
         }
 
         .copy-btn {
@@ -431,11 +680,12 @@
         }
 
         .loading-content {
-            background-color: white;
+            background-color: #faf7f2; /* 浅米色加载背景 */
             padding: 30px;
             border-radius: 8px;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(93, 78, 55, 0.15);
+            border: 1px solid #e8d5c4;
         }
 
         .spinner {
@@ -470,13 +720,24 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: white;
+            background-color: #faf7f2; /* 浅米色弹窗背景 */
             padding: 30px;
             border-radius: 8px;
             width: 95%;
             max-width: 1000px;
             max-height: 90vh;
             overflow-y: auto;
+            border: 1px solid #e8d5c4;
+        }
+
+        @media (max-width: 768px) {
+            .manage-content {
+                width: 98%;
+                padding: 15px;
+                max-height: 95vh;
+                top: 2.5%;
+                transform: translateX(-50%);
+            }
         }
 
         .manage-header {
@@ -500,6 +761,13 @@
             flex-wrap: wrap;
         }
 
+        @media (max-width: 768px) {
+            .manage-filters {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
         .search-input {
             flex: 1;
             min-width: 200px;
@@ -507,6 +775,14 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .search-input {
+                min-width: auto;
+                padding: 12px;
+                font-size: 16px;
+            }
         }
 
         .filter-select {
@@ -517,9 +793,24 @@
             min-width: 120px;
         }
 
+        @media (max-width: 768px) {
+            .filter-select {
+                padding: 12px;
+                font-size: 16px;
+                min-width: auto;
+            }
+        }
+
         .participants-list {
             max-height: 500px;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
+        }
+
+        @media (max-width: 768px) {
+            .participants-list {
+                max-height: 60vh;
+            }
         }
 
         .participant-item {
@@ -527,10 +818,18 @@
             justify-content: space-between;
             align-items: center;
             padding: 15px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #e8d5c4;
             border-radius: 4px;
             margin-bottom: 10px;
-            background-color: #f9f9f9;
+            background-color: #faf7f2; /* 浅米色参与者项目背景 */
+        }
+
+        @media (max-width: 768px) {
+            .participant-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
         }
 
         .participant-info {
@@ -553,6 +852,18 @@
             margin-right: 15px;
         }
 
+        @media (max-width: 768px) {
+            .participant-details {
+                font-size: 12px;
+            }
+            
+            .participant-details span {
+                display: block;
+                margin-right: 0;
+                margin-bottom: 5px;
+            }
+        }
+
         .delete-btn {
             background-color: #dc3545;
             color: white;
@@ -561,6 +872,14 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .delete-btn {
+                padding: 12px 16px;
+                font-size: 16px;
+                min-height: 44px;
+            }
         }
 
         .delete-btn:hover {
@@ -584,11 +903,23 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: white;
+            background-color: #faf7f2; /* 浅米色弹窗背景 */
             padding: 30px;
             border-radius: 8px;
             width: 90%;
             max-width: 500px;
+            border: 1px solid #e8d5c4;
+        }
+
+        @media (max-width: 768px) {
+            .delete-content {
+                width: 95%;
+                padding: 20px;
+                top: 2.5%;
+                transform: translateX(-50%);
+                max-height: 95vh;
+                overflow-y: auto;
+            }
         }
 
         .delete-warning {
@@ -644,8 +975,8 @@
 
         /* 删除确认弹窗中的用户信息样式 */
         .delete-user-info {
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
+            background-color: #e8d5c4; /* 浅棕色用户信息背景 */
+            border: 1px solid #d4c4b3;
             border-radius: 4px;
             padding: 15px;
             margin: 20px 0;
@@ -690,11 +1021,23 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: white;
+            background-color: #faf7f2; /* 浅米色弹窗背景 */
             padding: 30px;
             border-radius: 8px;
             width: 90%;
             max-width: 500px;
+            border: 1px solid #e8d5c4;
+        }
+
+        @media (max-width: 768px) {
+            .reset-password-content {
+                width: 95%;
+                padding: 20px;
+                top: 2.5%;
+                transform: translateX(-50%);
+                max-height: 95vh;
+                overflow-y: auto;
+            }
         }
 
         .reset-password-warning {
@@ -707,8 +1050,8 @@
         }
 
         .reset-password-user-info {
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
+            background-color: #e8d5c4; /* 浅棕色用户信息背景 */
+            border: 1px solid #d4c4b3;
             border-radius: 4px;
             padding: 15px;
             margin: 20px 0;
@@ -762,16 +1105,28 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: white;
+            background-color: #faf7f2; /* 浅米色弹窗背景 */
             padding: 30px;
             border-radius: 8px;
             width: 90%;
             max-width: 500px;
+            border: 1px solid #e8d5c4;
+        }
+
+        @media (max-width: 768px) {
+            .reset-password-result-content {
+                width: 95%;
+                padding: 20px;
+                top: 2.5%;
+                transform: translateX(-50%);
+                max-height: 95vh;
+                overflow-y: auto;
+            }
         }
 
         .new-password-info {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
+            background-color: #e8d5c4; /* 浅棕色密码信息背景 */
+            border: 1px solid #d4c4b3;
             border-radius: 4px;
             padding: 20px;
             margin: 20px 0;
@@ -779,7 +1134,7 @@
 
         .new-password-info h4 {
             margin: 0 0 15px 0;
-            color: #155724;
+            color: #5d4e37;
             font-size: 16px;
         }
 
@@ -792,11 +1147,11 @@
 
         .new-password-info .password-details p {
             margin: 5px 0;
-            color: #155724;
+            color: #5d4e37;
         }
 
         .new-password-info .password-details strong {
-            color: #155724;
+            color: #5d4e37;
         }
 
         /* 参与者操作按钮样式 */
@@ -804,6 +1159,13 @@
             display: flex;
             gap: 10px;
             flex-direction: column;
+        }
+
+        @media (max-width: 768px) {
+            .participant-actions {
+                flex-direction: row;
+                justify-content: space-between;
+            }
         }
 
         .reset-password-btn {
@@ -816,8 +1178,54 @@
             font-size: 14px;
         }
 
+        @media (max-width: 768px) {
+            .reset-password-btn {
+                padding: 12px 16px;
+                font-size: 16px;
+                min-height: 44px;
+            }
+        }
+
         .reset-password-btn:hover {
             background-color: #e0a800;
+        }
+
+        /* 移动端全局优化 */
+        @media (max-width: 768px) {
+            /* 防止文本选择 */
+            * {
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+            
+            /* 允许输入框选择 */
+            input, textarea {
+                -webkit-user-select: text;
+                -khtml-user-select: text;
+                -moz-user-select: text;
+                -ms-user-select: text;
+                user-select: text;
+            }
+            
+            /* 触摸优化 */
+            button, .btn, input[type="button"], input[type="submit"] {
+                -webkit-tap-highlight-color: transparent;
+                touch-action: manipulation;
+            }
+            
+            /* 滚动优化 */
+            body {
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* 防止双击缩放 */
+            * {
+                touch-action: manipulation;
+            }
         }
     </style>
 </head>
@@ -839,9 +1247,12 @@
 
             <!-- 用户信息 -->
             <div class="user-info" id="userInfo">
-                <span class="username" id="displayUsername"></span>
-                <span class="role" id="displayRole"></span>
-                <button class="logout-btn" id="logoutBtn">登出</button>
+                <div class="user-dropdown">
+                    <button class="role-btn" id="roleBtn">角色名</button>
+                    <div class="user-dropdown-menu" id="userDropdownMenu">
+                        <button class="logout-btn" id="logoutBtn">登出</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -918,6 +1329,7 @@
                     <label>照片 * (最多5张)</label>
                     <div class="photo-upload" id="photoUpload">
                         <p>点击选择或拖拽照片到此处</p>
+                        <p style="font-size: 12px; color: #666; margin-top: 5px;">💡 提示：第一张照片将作为主图，可点击"设为主图"按钮调整</p>
                         <input type="file" id="photoInput" multiple accept="image/*" style="display: none;">
                     </div>
                     <div class="photo-preview" id="photoPreview"></div>
@@ -1052,4 +1464,5 @@
 
     <script src="js/admin.js"></script>
 </body>
+</html> 
 </html> 

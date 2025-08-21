@@ -11,9 +11,7 @@ let currentUser = null;
         const loginForm = document.getElementById('loginForm');
 const loginSection = document.getElementById('loginSection');
 const userInfo = document.getElementById('userInfo');
-const displayUsername = document.getElementById('displayUsername');
-const displayRole = document.getElementById('displayRole');
-        const logoutBtn = document.getElementById('logoutBtn');
+const logoutBtn = document.getElementById('logoutBtn');
 const mainContent = document.getElementById('mainContent');
 const loginError = document.getElementById('loginError');
 
@@ -69,6 +67,11 @@ let selectedPhotos = [];
 
 // 页面加载时检查登录状态
 document.addEventListener('DOMContentLoaded', function() {
+    // 先隐藏所有界面，避免闪现
+    loginSection.style.display = 'none';
+    userInfo.style.display = 'none';
+    mainContent.style.display = 'none';
+    
     checkAuthStatus();
     setupEventListeners();
 });
@@ -78,6 +81,24 @@ function setupEventListeners() {
     // 登录表单
     loginForm.addEventListener('submit', handleLogin);
     logoutBtn.addEventListener('click', handleLogout);
+    
+    // 角色按钮下拉菜单
+    const roleBtn = document.getElementById('roleBtn');
+    const userDropdownMenu = document.getElementById('userDropdownMenu');
+    
+    roleBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        userDropdownMenu.classList.toggle('show');
+        roleBtn.classList.toggle('active');
+    });
+    
+    // 点击其他地方关闭下拉菜单
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.user-dropdown')) {
+            userDropdownMenu.classList.remove('show');
+            roleBtn.classList.remove('active');
+        }
+    });
 
     // 录入界面
     openRegistrationBtn.addEventListener('click', openRegistrationModal);
@@ -177,11 +198,21 @@ function showLoginUI() {
 // 显示已认证界面
 function showAuthenticatedUI() {
     loginSection.style.display = 'none';
-    userInfo.style.display = 'flex';
+    userInfo.style.display = 'block';
     mainContent.style.display = 'block';
     
-    displayUsername.textContent = currentUser.username;
-    displayRole.textContent = currentUser.role;
+    // 更新角色按钮文本
+    document.getElementById('roleBtn').textContent = getRoleDisplayName(currentUser.role);
+}
+
+// 获取角色显示名称
+function getRoleDisplayName(role) {
+    const roleMap = {
+        'admin': '管理员',
+        'staff': '工作人员',
+        'matchmaker': '红娘'
+    };
+    return roleMap[role] || role;
 }
 
 // 处理登录
@@ -388,7 +419,12 @@ function updatePhotoPreview() {
             photoItem.className = 'photo-item';
             photoItem.innerHTML = `
                 <img src="${e.target.result}" alt="预览">
-                <button type="button" class="remove-btn" onclick="removePhoto(${index})">&times;</button>
+                <div class="photo-controls">
+                    <button type="button" class="primary-btn ${index === 0 ? 'active' : ''}" onclick="setPrimaryPhoto(${index})">
+                        ${index === 0 ? '主图' : '设为主图'}
+                    </button>
+                    <button type="button" class="remove-btn" onclick="removePhoto(${index})">&times;</button>
+                </div>
             `;
             photoPreview.appendChild(photoItem);
         };
@@ -399,6 +435,19 @@ function updatePhotoPreview() {
 // 移除照片
 function removePhoto(index) {
     selectedPhotos.splice(index, 1);
+    updatePhotoPreview();
+}
+
+// 设置主图
+function setPrimaryPhoto(index) {
+    if (index === 0) return; // 如果已经是主图，不做任何操作
+    
+    // 将选中的照片移到第一位
+    const selectedPhoto = selectedPhotos[index];
+    selectedPhotos.splice(index, 1);
+    selectedPhotos.unshift(selectedPhoto);
+    
+    // 重新更新预览
     updatePhotoPreview();
 }
 
