@@ -8,7 +8,11 @@ const dbConfig = {
   database: process.env.DB_NAME || 'nantou',
   port: process.env.DB_PORT || 3306,
   charset: 'utf8mb4',
-  timezone: '+08:00'
+  timezone: '+08:00',
+  // 确保时区设置生效
+  dateStrings: false,
+  supportBigNumbers: true,
+  bigNumberStrings: true
 };
 
 // 创建连接池

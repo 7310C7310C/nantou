@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统日志 - 一线牵</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .logs-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .logs-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .logs-controls select,
+        .logs-controls input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .logs-controls button {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .logs-controls button:hover {
+            background: #0056b3;
+        }
+        
+        .logs-content {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .log-entry.error {
+            background: #fff5f5;
+            color: #d73a49;
+        }
+        
+        .log-entry.warn {
+            background: #fffbf0;
+            color: #f6a434;
+        }
+        
+        .log-entry.operation {
+            background: #f0f8ff;
+            color: #0366d6;
+        }
+        
+        .log-entry.success {
+            background: #f0fff4;
+            color: #28a745;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .search-box input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .search-box button {
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="logs-container">
+        <div class="logs-header">
+            <h1>📊 系统日志</h1>
+            <div class="logs-controls">
+                <select id="logLevel">
+                    <option value="all">所有级别</option>
+                    <option value="error">错误</option>
+                    <option value="warn">警告</option>
+                    <option value="operation">操作</option>
+                    <option value="success">成功</option>
+                </select>
+                <input type="number" id="logLines" value="100" min="10" max="1000" placeholder="行数">
+                <button onclick="loadLogs()">刷新日志</button>
+            </div>
+        </div>
+
+        <div class="stats-container" id="statsContainer">
+            <!-- 统计信息将在这里显示 -->
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchKeyword" placeholder="搜索日志关键词...">
+            <button onclick="searchLogs()">搜索</button>
+        </div>
+
+        <div class="logs-content" id="logsContent">
+            <div class="log-entry">正在加载日志...</div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('authToken');
+        
+        // 检查认证状态
+        if (!authToken) {
+            alert('请先登录');
+            window.location.href = '/admin';
+        }
+
+        // 加载日志
+        async function loadLogs() {
+            try {
+                const level = document.getElementById('logLevel').value;
+                const lines = document.getElementById('logLines').value;
+                
+                const response = await fetch(`/api/admin/logs?level=${level}&lines=${lines}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayLogs(data.data.logs);
+                    loadStats();
+                } else {
+                    alert('加载日志失败');
+                }
+            } catch (error) {
+                console.error('加载日志失败:', error);
+                alert('网络错误');
+            }
+        }
+
+        // 显示日志
+        function displayLogs(logs) {
+            const container = document.getElementById('logsContent');
+            
+            if (logs.length === 0) {
+                container.innerHTML = '<div class="log-entry">暂无日志</div>';
+                return;
+            }
+
+            container.innerHTML = logs.map(log => {
+                let className = 'log-entry';
+                if (log.includes('ERROR')) className += ' error';
+                else if (log.includes('WARN')) className += ' warn';
+                else if (log.includes('OPERATION')) className += ' operation';
+                else if (log.includes('SUCCESS')) className += ' success';
+                
+                return `<div class="${className}">${log}</div>`;
+            }).join('');
+        }
+
+        // 加载统计信息
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/admin/logs/stats?days=7', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayStats(data.data);
+                }
+            } catch (error) {
+                console.error('加载统计失败:', error);
+            }
+        }
+
+        // 显示统计信息
+        function displayStats(data) {
+            const container = document.getElementById('statsContainer');
+            
+            container.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${data.totalErrors}</div>
+                    <div class="stat-label">总错误数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${data.days}</div>
+                    <div class="stat-label">统计天数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${Math.round(data.totalErrors / data.days)}</div>
+                    <div class="stat-label">日均错误</div>
+                </div>
+            `;
+        }
+
+        // 搜索日志
+        async function searchLogs() {
+            try {
+                const keyword = document.getElementById('searchKeyword').value.trim();
+                const level = document.getElementById('logLevel').value;
+                
+                if (!keyword) {
+                    alert('请输入搜索关键词');
+                    return;
+                }
+
+                const response = await fetch(`/api/admin/logs/search?keyword=${encodeURIComponent(keyword)}&level=${level}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayLogs(data.data.logs);
+                } else {
+                    alert('搜索失败');
+                }
+            } catch (error) {
+                console.error('搜索失败:', error);
+                alert('网络错误');
+            }
+        }
+
+        // 页面加载时自动加载日志
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLogs();
+        });
+
+        // 回车键搜索
+        document.getElementById('searchKeyword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchLogs();
+            }
+        });
+    </script>
+</body>
+</html> 

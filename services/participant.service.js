@@ -25,7 +25,9 @@ async function registerNewParticipant(participantData) {
     );
 
     if (existingPhones.length > 0) {
-      throw new Error('手机号已被注册');
+      const error = new Error('手机号已被注册');
+      error.isBusinessError = true; // 标记为业务错误
+      throw error;
     }
 
     // 2. 生成用户名（男：1001,1002... 女：2001,2002...）

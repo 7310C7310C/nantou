@@ -657,7 +657,7 @@ async function showDeleteConfirm(participantId, participantName) {
 // 加载删除用户的详细信息
 async function loadDeleteUserInfo(participantId) {
     try {
-        console.log('请求用户信息:', participantId);
+        // 请求用户信息
         
         const response = await fetch(`/api/admin/participants/${participantId}`, {
             headers: {
@@ -665,12 +665,11 @@ async function loadDeleteUserInfo(participantId) {
             }
         });
 
-        console.log('用户信息响应状态:', response.status);
-        console.log('用户信息响应头:', response.headers);
+        // 检查响应状态
 
         if (response.ok) {
             const data = await response.json();
-            console.log('用户信息数据:', data);
+            // 处理用户信息数据
             displayDeleteUserInfo(data.data);
         } else {
             const errorText = await response.text();
@@ -731,7 +730,7 @@ async function handleDeleteParticipant() {
     try {
         showLoading('正在删除...', '请稍候，正在删除账号及相关数据');
         
-        console.log('发送删除请求:', window.currentDeleteParticipantId);
+        // 发送删除请求
         
         const response = await fetch(`/api/admin/participants/${window.currentDeleteParticipantId}`, {
             method: 'DELETE',
@@ -740,8 +739,7 @@ async function handleDeleteParticipant() {
             }
         });
 
-        console.log('删除响应状态:', response.status);
-        console.log('删除响应头:', response.headers);
+                    // 检查删除响应
 
         if (response.ok) {
             const data = await response.json();
@@ -750,7 +748,7 @@ async function handleDeleteParticipant() {
             await loadParticipants(); // 重新加载列表
         } else {
             const errorText = await response.text();
-            console.log('删除错误响应:', errorText);
+                            // 处理删除错误响应
             
             try {
                 const errorData = JSON.parse(errorText);

@@ -2,9 +2,13 @@ const express = require('express');
 const path = require('path');
 require('dotenv').config();
 
+// 设置时区为北京时间
+process.env.TZ = 'Asia/Shanghai';
+
 // 导入控制器和中间件
 const authController = require('./controllers/auth.controller');
 const adminController = require('./controllers/admin.controller');
+const logController = require('./controllers/log.controller');
 const { protect, restrictTo } = require('./middleware/auth.middleware');
 
 const app = express();
@@ -62,9 +66,45 @@ app.delete('/api/admin/participants/:participant_id', protect, restrictTo('admin
 app.post('/api/admin/photos/primary', protect, restrictTo('admin', 'staff'), adminController.setPrimaryPhoto);
 app.delete('/api/admin/photos/:photo_id', protect, restrictTo('admin', 'staff'), adminController.deletePhoto);
 
+// 日志管理API路由
+app.get('/api/admin/logs', protect, restrictTo('admin'), logController.getRecentLogs);
+app.get('/api/admin/logs/stats', protect, restrictTo('admin'), logController.getErrorStats);
+app.get('/api/admin/logs/search', protect, restrictTo('admin'), logController.searchLogs);
+
 // 管理后台页面路由
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// 日志查看页面路由
+app.get('/logs', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'logs.html'));
+});
+
+// 404 错误处理
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: '请求的资源不存在'
+  });
+});
+
+// 全局错误处理中间件
+app.use((error, req, res, next) => {
+  // 根据错误类型使用不同的日志级别
+  if (error.isBusinessError || error.message === '手机号已被注册') {
+    console.warn('业务错误:', error.message);
+    return res.status(409).json({
+      success: false,
+      message: error.message
+    });
+  }
+  
+  console.error('未捕获的系统错误:', error);
+  res.status(500).json({
+    success: false,
+    message: '服务器内部错误'
+  });
 });
 
 // 启动服务器

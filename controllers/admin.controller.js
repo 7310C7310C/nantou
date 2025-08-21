@@ -1,6 +1,7 @@
 const multer = require('multer');
 const { registerNewParticipant, deleteParticipantById } = require('../services/participant.service');
 const { pool } = require('../config/database');
+const logger = require('../utils/logger');
 
 // 配置 multer 用于内存存储
 const upload = multer({
@@ -25,11 +26,11 @@ const uploadPhotos = upload.array('photos', 5);
  * 注册新参与者（支持多照片上传）
  */
 async function registerParticipant(req, res) {
-  try {
-    // 使用多文件上传中间件
-    uploadPhotos(req, res, async (err) => {
+  // 使用多文件上传中间件
+  uploadPhotos(req, res, async (err) => {
+    try {
       if (err) {
-        console.error('文件上传错误:', err);
+        logger.error('文件上传错误', err);
         return res.status(400).json({
           success: false,
           message: err.message || '文件上传失败'
@@ -91,14 +92,27 @@ async function registerParticipant(req, res) {
         }
       });
 
-    });
-  } catch (error) {
-    console.error('注册参与者错误:', error);
-    res.status(500).json({
-      success: false,
-      message: '服务器内部错误'
-    });
-  }
+    } catch (error) {
+      // 根据错误类型使用不同的日志级别
+      if (error.isBusinessError || error.message === '手机号已被注册') {
+        logger.warn('注册参与者业务错误', { 
+          message: error.message, 
+          phone: req.body.phone 
+        });
+        
+        return res.status(409).json({
+          success: false,
+          message: error.message
+        });
+      }
+      
+      logger.error('注册参与者系统错误', error);
+      res.status(500).json({
+        success: false,
+        message: '服务器内部错误'
+      });
+    }
+  });
 }
 
 /**
@@ -128,7 +142,7 @@ async function getAllParticipants(req, res) {
       data: rows
     });
   } catch (error) {
-    console.error('获取参与者列表错误:', error);
+    logger.error('获取参与者列表错误', error);
     res.status(500).json({
       success: false,
       message: '服务器内部错误'
@@ -142,7 +156,7 @@ async function getAllParticipants(req, res) {
 async function getParticipantById(req, res) {
   try {
     const { participant_id } = req.params;
-    console.log('获取参与者信息请求:', { participant_id });
+    logger.debug('获取参与者信息请求', { participant_id });
     
     const [rows] = await pool.execute(`
       SELECT 
@@ -161,23 +175,21 @@ async function getParticipantById(req, res) {
       GROUP BY p.id
     `, [participant_id]);
 
-    console.log('查询结果:', rows);
-
     if (rows.length === 0) {
-      console.log('参与者不存在:', participant_id);
+      logger.warn('参与者不存在', { participant_id });
       return res.status(404).json({
         success: false,
         message: '参与者不存在'
       });
     }
 
-    console.log('返回参与者信息:', rows[0]);
+    logger.operation('获取参与者信息', req.user?.id, { participant_id });
     res.json({
       success: true,
       data: rows[0]
     });
   } catch (error) {
-    console.error('获取参与者信息错误:', error);
+    logger.error('获取参与者信息错误', error);
     res.status(500).json({
       success: false,
       message: '服务器内部错误'
@@ -256,7 +268,7 @@ async function setPrimaryPhoto(req, res) {
       throw error;
     }
   } catch (error) {
-    console.error('设置主照片错误:', error);
+    logger.error('设置主照片错误', error);
     res.status(500).json({
       success: false,
       message: '服务器内部错误'
@@ -288,7 +300,7 @@ async function deletePhoto(req, res) {
       message: '照片删除成功'
     });
   } catch (error) {
-    console.error('删除照片错误:', error);
+    logger.error('删除照片错误', error);
     res.status(500).json({
       success: false,
       message: '服务器内部错误'
@@ -302,25 +314,26 @@ async function deletePhoto(req, res) {
 async function deleteParticipant(req, res) {
   try {
     const { participant_id } = req.params;
-    console.log('删除参与者请求:', { participant_id });
+    logger.operation('删除参与者', req.user?.id, { participant_id });
     
     // 调用服务层处理删除逻辑
     const result = await deleteParticipantById(participant_id);
-    console.log('删除结果:', result);
     
     if (result.success) {
+      logger.success('参与者删除成功', { participant_id });
       res.json({
         success: true,
         message: '参与者删除成功'
       });
     } else {
+      logger.warn('参与者删除失败', { participant_id, reason: result.message });
       res.status(404).json({
         success: false,
         message: result.message || '参与者不存在'
       });
     }
   } catch (error) {
-    console.error('删除参与者错误:', error);
+    logger.error('删除参与者错误', error);
     res.status(500).json({
       success: false,
       message: '服务器内部错误'
