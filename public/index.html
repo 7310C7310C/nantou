@@ -16,6 +16,10 @@
             background: linear-gradient(135deg, #db909a 0%, #c084fc 50%, #a855f7 100%);
             min-height: 100vh;
             padding: 20px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
         .header {
@@ -53,6 +57,10 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             outline: none;
             transition: all 0.3s ease;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
         }
 
         .clear-btn {
@@ -232,6 +240,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
         .viewer-content img {
@@ -240,6 +255,30 @@
             object-fit: contain;
             border-radius: 8px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            position: relative;
+        }
+
+        .viewer-user-info {
+            position: absolute;
+            bottom: 10px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+            font-size: 18px;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        .viewer-username {
+            text-align: left;
+        }
+
+        .viewer-baptismal {
+            text-align: right;
         }
 
         .viewer-controls {
@@ -310,6 +349,13 @@
                 font-size: 14px;
                 min-width: 50px;
             }
+
+                    .viewer-user-info {
+            bottom: 8px;
+            left: 15px;
+            right: 15px;
+            font-size: 16px;
+        }
         }
 
         /* 移动端适配 */
@@ -389,6 +435,10 @@
     <div class="fullscreen-viewer" id="fullscreenViewer">
         <div class="viewer-content">
             <img id="viewerImage" src="" alt="用户照片">
+            <div class="viewer-user-info">
+                <div class="viewer-username" id="viewerUsername"></div>
+                <div class="viewer-baptismal" id="viewerBaptismal"></div>
+            </div>
             <div class="viewer-controls">
                 <button class="control-btn prev-btn" id="prevBtn">‹</button>
                 <span class="image-counter" id="imageCounter">1 / 1</span>
@@ -565,6 +615,31 @@
             return text.replace(regex, '<mark style="background-color: #ffeb3b; color: #333; padding: 2px 4px; border-radius: 3px;">$1</mark>');
         }
 
+        // 调整用户信息位置
+        function adjustUserInfoPosition() {
+            const viewerImage = document.getElementById('viewerImage');
+            const viewerUserInfo = document.querySelector('.viewer-user-info');
+            
+            if (!viewerImage || !viewerUserInfo) return;
+            
+            const imageRect = viewerImage.getBoundingClientRect();
+            const viewerRect = document.getElementById('fullscreenViewer').getBoundingClientRect();
+            
+            // 计算图片在视窗中的实际位置
+            const imageLeft = imageRect.left - viewerRect.left;
+            const imageBottom = imageRect.bottom - viewerRect.top;
+            
+            // 设置用户信息位置，确保在图片内部且有边距
+            const margin = 20;
+            const bottomMargin = 10;
+            const mobileMargin = window.innerWidth <= 768 ? 15 : margin;
+            const mobileBottomMargin = window.innerWidth <= 768 ? 8 : bottomMargin;
+            
+            viewerUserInfo.style.left = Math.max(mobileMargin, imageLeft + mobileMargin) + 'px';
+            viewerUserInfo.style.right = Math.max(mobileMargin, viewerRect.width - imageRect.right + mobileMargin) + 'px';
+            viewerUserInfo.style.bottom = Math.max(mobileBottomMargin, viewerRect.height - imageBottom + mobileBottomMargin) + 'px';
+        }
+
         // 显示错误
         function showError(message) {
             const grid = document.getElementById('usersGrid');
@@ -591,9 +666,10 @@
         let currentImages = [];
         let currentImageIndex = 0;
         let currentUsername = '';
+        let currentBaptismalName = '';
 
         // 打开图片查看器
-        function openImageViewer(username, photos) {
+        function openImageViewer(username, photos, baptismalName) {
             if (!photos || photos.length === 0) {
                 alert('该用户暂无照片');
                 return;
@@ -602,17 +678,27 @@
             currentImages = photos;
             currentImageIndex = 0;
             currentUsername = username;
+            currentBaptismalName = baptismalName || '';
 
             const viewer = document.getElementById('fullscreenViewer');
             const viewerImage = document.getElementById('viewerImage');
             const imageCounter = document.getElementById('imageCounter');
+            const viewerUsername = document.getElementById('viewerUsername');
+            const viewerBaptismal = document.getElementById('viewerBaptismal');
 
             viewerImage.src = currentImages[0].photo_url;
             imageCounter.textContent = `1 / ${currentImages.length}`;
+            viewerUsername.textContent = username;
+            viewerBaptismal.textContent = currentBaptismalName;
             updateNavigationButtons();
 
             viewer.classList.add('active');
             document.body.style.overflow = 'hidden';
+            
+            // 图片加载完成后调整用户信息位置
+            viewerImage.onload = function() {
+                adjustUserInfoPosition();
+            };
         }
 
         // 关闭图片查看器
@@ -642,10 +728,19 @@
         function updateImageViewer() {
             const viewerImage = document.getElementById('viewerImage');
             const imageCounter = document.getElementById('imageCounter');
+            const viewerUsername = document.getElementById('viewerUsername');
+            const viewerBaptismal = document.getElementById('viewerBaptismal');
 
             viewerImage.src = currentImages[currentImageIndex].photo_url;
             imageCounter.textContent = `${currentImageIndex + 1} / ${currentImages.length}`;
+            viewerUsername.textContent = currentUsername;
+            viewerBaptismal.textContent = currentBaptismalName;
             updateNavigationButtons();
+            
+            // 图片加载完成后调整用户信息位置
+            viewerImage.onload = function() {
+                adjustUserInfoPosition();
+            };
         }
 
         // 更新导航按钮状态
@@ -665,7 +760,8 @@
                 if (userCard) {
                     const username = userCard.dataset.username;
                     const photos = JSON.parse(userCard.dataset.photos || '[]');
-                    openImageViewer(username, photos);
+                    const baptismalName = userCard.querySelector('.user-baptismal').textContent;
+                    openImageViewer(username, photos, baptismalName);
                 }
             });
 
@@ -690,9 +786,16 @@
                 }
             });
 
+            // 窗口大小改变时重新调整位置
+            window.addEventListener('resize', function() {
+                if (document.getElementById('fullscreenViewer').classList.contains('active')) {
+                    adjustUserInfoPosition();
+                }
+            });
+
             // 点击背景或图片关闭
             document.getElementById('fullscreenViewer').addEventListener('click', function(e) {
-                if (e.target === this || e.target.id === 'viewerImage') {
+                if (e.target === this || e.target.classList.contains('viewer-content') || e.target.id === 'viewerImage') {
                     closeImageViewer();
                 }
             });
