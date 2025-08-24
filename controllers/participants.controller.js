@@ -12,31 +12,53 @@ async function getParticipants(req, res) {
     const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 10));
     const offset = pageNum * limitNum;
     
-
+    // 确保参数是数字类型
+    const limitNumInt = parseInt(limitNum) || 10;
+    const offsetInt = parseInt(offset) || 0;
     
     let participants;
     
-    // 简化查询，先测试基本功能
-    const [rows] = await pool.execute(`
-      SELECT 
-        p.id,
-        p.username,
-        p.name,
-        p.baptismal_name,
-        p.gender,
-        p.created_at,
-        COUNT(pp.id) as photo_count
-      FROM participants p
-      LEFT JOIN participant_photos pp ON p.id = pp.participant_id
-      WHERE p.gender = ?
-      GROUP BY p.id
-      ORDER BY p.created_at DESC
-    `, [genderParam]);
+    // 执行查询
+    let rows;
+    if (search && /^\d+$/.test(search)) {
+      // 有搜索条件
+      const params1 = [genderParam, `%${search}%`, limitNumInt, offsetInt];
+      [rows] = await pool.query(`
+        SELECT 
+          p.id,
+          p.username,
+          p.name,
+          p.baptismal_name,
+          p.gender,
+          p.created_at
+        FROM participants p
+        WHERE p.gender = ? AND p.username LIKE ?
+        ORDER BY p.created_at DESC
+        LIMIT ? OFFSET ?
+      `, params1);
+    } else {
+      // 无搜索条件
+      const params2 = [genderParam, limitNumInt, offsetInt];
+      [rows] = await pool.query(`
+        SELECT 
+          p.id,
+          p.username,
+          p.name,
+          p.baptismal_name,
+          p.gender,
+          p.created_at
+        FROM participants p
+        WHERE p.gender = ?
+        ORDER BY p.created_at DESC
+        LIMIT ? OFFSET ?
+      `, params2);
+    }
+    
     participants = rows;
 
     // 获取每个参与者的主图
     const participantsWithPhotos = await Promise.all(participants.map(async (participant) => {
-      const [photos] = await pool.execute(`
+      const [photos] = await pool.query(`
         SELECT 
           id,
           photo_url,
@@ -48,33 +70,41 @@ async function getParticipants(req, res) {
         ORDER BY is_primary DESC, sort_order ASC, created_at ASC
       `, [participant.id]);
 
-
-
       return {
         ...participant,
         photos: photos
       };
     }));
 
+    // 获取总数用于分页
+    let totalCount = 0;
+    if (search && /^\d+$/.test(search)) {
+      const [countRows] = await pool.query(`
+        SELECT COUNT(DISTINCT p.id) as total
+        FROM participants p
+        WHERE p.gender = ? AND p.username LIKE ?
+      `, [genderParam, `%${search}%`]);
+      totalCount = countRows[0].total;
+    } else {
+      const [countRows] = await pool.query(`
+        SELECT COUNT(DISTINCT p.id) as total
+        FROM participants p
+        WHERE p.gender = ?
+      `, [genderParam]);
+      totalCount = countRows[0].total;
+    }
 
 
-    logger.info('首页获取参与者列表', { 
-      gender: genderParam, 
-      page: pageNum, 
-      limit: limitNum, 
-      search, 
-      count: participantsWithPhotos.length 
-    });
 
     res.json({
       success: true,
       data: {
         participants: participantsWithPhotos,
         pagination: {
-          page: 0,
-          limit: participantsWithPhotos.length,
-          total: participantsWithPhotos.length,
-          hasMore: false
+          page: pageNum,
+          limit: limitNumInt,
+          total: totalCount,
+          hasMore: (pageNum + 1) * limitNumInt < totalCount
         }
       }
     });

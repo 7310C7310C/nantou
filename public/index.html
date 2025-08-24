@@ -54,6 +54,10 @@
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
 
+        .search-input:invalid {
+            border: 2px solid rgba(255, 0, 0, 0.3);
+        }
+
         .gender-toggle {
             text-align: center;
             margin-bottom: 30px;
@@ -324,7 +328,7 @@
     </div>
 
     <div class="search-container">
-        <input type="text" class="search-input" id="searchInput" placeholder="搜索账户号..." oninput="searchUsers()">
+        <input type="text" class="search-input" id="searchInput" placeholder="请输入账号数字..." pattern="[0-9]*" inputmode="numeric" oninput="handleSearchInput(this)">
     </div>
 
     <div class="gender-toggle">
@@ -358,6 +362,7 @@
         let hasMore = true;
         let searchTerm = '';
         let allUsers = [];
+        let searchTimeout = null;
 
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -375,6 +380,10 @@
             currentPage = 0;
             hasMore = true;
             allUsers = [];
+            searchTerm = '';
+            
+            // 清空搜索框
+            document.getElementById('searchInput').value = '';
             
             // 更新按钮状态
             document.getElementById('femaleBtn').classList.toggle('active', gender === 'female');
@@ -382,6 +391,22 @@
             
             // 重新加载用户
             loadUsers();
+        }
+
+        // 处理搜索输入
+        function handleSearchInput(input) {
+            // 只允许输入数字
+            input.value = input.value.replace(/[^0-9]/g, '');
+            
+            // 清除之前的定时器
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+            
+            // 设置防抖延迟，300ms后执行搜索
+            searchTimeout = setTimeout(() => {
+                searchUsers();
+            }, 300);
         }
 
         // 搜索用户
@@ -414,7 +439,8 @@
                         appendUsers(users);
                     }
                     
-                    hasMore = users.length === 10;
+                    // 使用后端返回的分页信息
+                    hasMore = data.data.pagination.hasMore;
                     currentPage++;
                 } else {
                     console.error('加载用户失败');
@@ -433,11 +459,13 @@
             const grid = document.getElementById('usersGrid');
             
             if (users.length === 0) {
-                grid.innerHTML = '<div class="no-results">暂无用户</div>';
+                if (searchTerm && searchTerm.length > 0) {
+                    grid.innerHTML = '<div class="no-results">未找到包含 "' + searchTerm + '" 的用户</div>';
+                } else {
+                    grid.innerHTML = '<div class="no-results">暂无用户</div>';
+                }
                 return;
             }
-            
-
             
             grid.innerHTML = users.map(user => createUserCard(user)).join('');
             allUsers = users;
