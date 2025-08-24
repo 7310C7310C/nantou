@@ -156,6 +156,13 @@
             height: 100%;
             object-fit: cover;
             position: relative;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            pointer-events: none;
         }
 
         .user-info {
@@ -257,6 +264,12 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
             pointer-events: none;
             position: relative;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .viewer-user-info {
@@ -462,6 +475,30 @@
             document.getElementById('femaleBtn').classList.add('active');
             // 加载用户数据
             loadUsers();
+            
+            // 禁止图片右键菜单和长按保存
+            document.addEventListener('contextmenu', function(e) {
+                if (e.target.tagName === 'IMG') {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+            
+            // 禁止图片拖拽
+            document.addEventListener('dragstart', function(e) {
+                if (e.target.tagName === 'IMG') {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+            
+            // 禁止图片选择
+            document.addEventListener('selectstart', function(e) {
+                if (e.target.tagName === 'IMG') {
+                    e.preventDefault();
+                    return false;
+                }
+            });
         });
 
         // 切换性别
