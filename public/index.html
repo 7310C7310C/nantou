@@ -35,10 +35,16 @@
             text-align: center;
         }
 
+        .search-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
         .search-input {
             width: 300px;
             max-width: 90%;
             padding: 12px 20px;
+            padding-right: 55px;
             border: none;
             border-radius: 25px;
             font-size: 16px;
@@ -47,6 +53,31 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             outline: none;
             transition: all 0.3s ease;
+        }
+
+        .clear-btn {
+            position: absolute;
+            right: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .clear-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+            color: #333;
         }
 
         .search-input:focus {
@@ -291,6 +322,14 @@
                 width: 250px;
                 font-size: 14px;
                 padding: 10px 16px;
+                padding-right: 50px;
+            }
+
+            .clear-btn {
+                right: 20px;
+                font-size: 18px;
+                width: 25px;
+                height: 25px;
             }
 
             .gender-btn {
@@ -328,7 +367,10 @@
     </div>
 
     <div class="search-container">
-        <input type="text" class="search-input" id="searchInput" placeholder="请输入账号数字..." pattern="[0-9]*" inputmode="numeric" oninput="handleSearchInput(this)">
+        <div class="search-wrapper">
+            <input type="text" class="search-input" id="searchInput" placeholder="请输入账号数字..." pattern="[0-9]*" inputmode="numeric" oninput="handleSearchInput(this)">
+            <button class="clear-btn" id="clearBtn" onclick="clearSearch()" style="display: none;">×</button>
+        </div>
     </div>
 
     <div class="gender-toggle">
@@ -384,6 +426,7 @@
             
             // 清空搜索框
             document.getElementById('searchInput').value = '';
+            document.getElementById('clearBtn').style.display = 'none';
             
             // 更新按钮状态
             document.getElementById('femaleBtn').classList.toggle('active', gender === 'female');
@@ -398,6 +441,10 @@
             // 只允许输入数字
             input.value = input.value.replace(/[^0-9]/g, '');
             
+            // 显示或隐藏清除按钮
+            const clearBtn = document.getElementById('clearBtn');
+            clearBtn.style.display = input.value.length > 0 ? 'flex' : 'none';
+            
             // 清除之前的定时器
             if (searchTimeout) {
                 clearTimeout(searchTimeout);
@@ -407,6 +454,16 @@
             searchTimeout = setTimeout(() => {
                 searchUsers();
             }, 300);
+        }
+
+        // 清除搜索
+        function clearSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const clearBtn = document.getElementById('clearBtn');
+            
+            searchInput.value = '';
+            clearBtn.style.display = 'none';
+            searchUsers();
         }
 
         // 搜索用户
@@ -484,17 +541,28 @@
             const primaryPhoto = user.photos && user.photos.find(photo => photo.is_primary) || user.photos?.[0];
             const photoUrl = primaryPhoto ? primaryPhoto.photo_url : '/placeholder.jpg';
             
-
+            // 高亮搜索内容
+            const highlightedUsername = highlightSearchTerm(user.username, searchTerm);
             
             return `
                 <div class="user-card" data-username="${user.username}" data-photos='${JSON.stringify(user.photos || [])}'>
                     <img src="${photoUrl}" alt="用户照片" class="user-photo" onerror="this.src='/placeholder.jpg'">
                     <div class="user-info">
-                        <div class="user-username">${user.username}</div>
+                        <div class="user-username">${highlightedUsername}</div>
                         <div class="user-baptismal">${user.baptismal_name || ''}</div>
                     </div>
                 </div>
             `;
+        }
+
+        // 高亮搜索内容
+        function highlightSearchTerm(text, searchTerm) {
+            if (!searchTerm || searchTerm.length === 0) {
+                return text;
+            }
+            
+            const regex = new RegExp(`(${searchTerm})`, 'gi');
+            return text.replace(regex, '<mark style="background-color: #ffeb3b; color: #333; padding: 2px 4px; border-radius: 3px;">$1</mark>');
         }
 
         // 显示错误
