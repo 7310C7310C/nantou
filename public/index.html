@@ -23,8 +23,29 @@
         }
 
         .header {
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 30px;
+        }
+
+        .login-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
 
         .title {
@@ -395,8 +416,33 @@
 
         /* 移动端适配 */
         @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
             .title {
                 font-size: 28px;
+            }
+
+            .login-btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+
+            .role-btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+
+            .user-dropdown-menu {
+                min-width: 100px;
+                margin-top: 3px;
+            }
+
+            .logout-btn {
+                padding: 10px 14px;
+                font-size: 13px;
             }
 
             .search-input {
@@ -440,16 +486,231 @@
                 aspect-ratio: 3/4;
             }
         }
+
+        /* 登录模态框样式 */
+        .login-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-modal.active {
+            display: flex;
+        }
+
+        .login-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .login-header h2 {
+            color: #333;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(168, 85, 247, 0.2);
+            border-radius: 10px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #a855f7;
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-align: center;
+            min-height: 20px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 用户信息样式 */
+        #userInfo {
+            display: none;
+            position: relative;
+        }
+
+        .role-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .role-btn::after {
+            content: '▼';
+            font-size: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .role-btn.active::after {
+            transform: rotate(180deg);
+        }
+
+        .role-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .user-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .user-dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            min-width: 120px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            margin-top: 5px;
+            padding: 8px 0;
+        }
+
+        .user-dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            color: #333;
+            font-size: 14px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(168, 85, 247, 0.1);
+            color: #a855f7;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1 class="title">一线牵</h1>
+        <button class="login-btn" id="loginBtn">登录</button>
+        
+        <!-- 用户信息 -->
+        <div class="user-dropdown" id="userInfo">
+            <button class="role-btn" id="roleBtn">角色名</button>
+            <div class="user-dropdown-menu" id="userDropdownMenu">
+                <button class="logout-btn" id="logoutBtn">登出</button>
+            </div>
+        </div>
     </div>
 
     <div class="search-container">
         <div class="search-wrapper">
-            <input type="text" class="search-input" id="searchInput" placeholder="请输入账号数字..." pattern="[0-9]*" inputmode="numeric" oninput="handleSearchInput(this)">
+            <input type="text" class="search-input" id="searchInput" placeholder="输入编号……" pattern="[0-9]*" inputmode="numeric" oninput="handleSearchInput(this)">
             <button class="clear-btn" id="clearBtn" onclick="clearSearch()" style="display: none;">×</button>
         </div>
     </div>
@@ -486,6 +747,28 @@
         </div>
     </div>
 
+    <!-- 登录模态框 -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-content">
+            <div class="login-header">
+                <h2>登录</h2>
+                <button class="close-btn" id="closeLoginBtn">&times;</button>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername">用户名</label>
+                    <input type="text" id="loginUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">密码</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <div class="error-message" id="loginError"></div>
+                <button type="submit" class="submit-btn">登录</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         let currentGender = 'female';
         let currentPage = 0;
@@ -494,6 +777,7 @@
         let searchTerm = '';
         let allUsers = [];
         let searchTimeout = null;
+        let preloadedImages = new Map(); // 存储预加载的图片
 
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -525,6 +809,12 @@
                     return false;
                 }
             });
+
+            // 登录相关事件
+            setupLoginEvents();
+            
+            // 检查登录状态
+            checkLoginStatus();
         });
 
         // 切换性别
@@ -536,6 +826,9 @@
             hasMore = true;
             allUsers = [];
             searchTerm = '';
+            
+            // 清空预加载的图片缓存
+            preloadedImages.clear();
             
             // 清空搜索框
             document.getElementById('searchInput').value = '';
@@ -585,6 +878,10 @@
             currentPage = 0;
             hasMore = true;
             allUsers = [];
+            
+            // 清空预加载的图片缓存
+            preloadedImages.clear();
+            
             loadUsers();
         }
 
@@ -689,12 +986,15 @@
             users.forEach(user => {
                 if (user.photos && user.photos.length > 0) {
                     user.photos.forEach(photo => {
-                        const img = new Image();
-                        img.src = photo.photo_url;
-                        // 静默加载，不显示错误
-                        img.onerror = function() {
-                            // 忽略加载错误
-                        };
+                        if (!preloadedImages.has(photo.photo_url)) {
+                            const img = new Image();
+                            img.src = photo.photo_url;
+                            preloadedImages.set(photo.photo_url, img);
+                            // 静默加载，不显示错误
+                            img.onerror = function() {
+                                // 忽略加载错误
+                            };
+                        }
                     });
                 }
             });
@@ -772,11 +1072,22 @@
             const viewerBaptismal = document.getElementById('viewerBaptismal');
             const viewerLoading = document.getElementById('viewerLoading');
 
-            // 显示加载提示
-            viewerLoading.style.display = 'block';
-            viewerImage.style.display = 'none';
+            // 检查第一张图片是否已预加载完成
+            const firstPhoto = currentImages[0];
+            const preloadedImg = preloadedImages.get(firstPhoto.photo_url);
+            const isPreloaded = preloadedImg && preloadedImg.complete;
 
-            viewerImage.src = currentImages[0].photo_url;
+            if (!isPreloaded) {
+                // 显示加载提示
+                viewerLoading.style.display = 'block';
+                viewerImage.style.display = 'none';
+            } else {
+                // 已预加载完成，直接显示
+                viewerLoading.style.display = 'none';
+                viewerImage.style.display = 'block';
+            }
+
+            viewerImage.src = firstPhoto.photo_url;
             imageCounter.textContent = `1 / ${currentImages.length}`;
             viewerUsername.textContent = username;
             viewerBaptismal.textContent = currentBaptismalName;
@@ -831,11 +1142,22 @@
             const viewerBaptismal = document.getElementById('viewerBaptismal');
             const viewerLoading = document.getElementById('viewerLoading');
 
-            // 显示加载提示
-            viewerLoading.style.display = 'block';
-            viewerImage.style.display = 'none';
+            // 检查当前图片是否已预加载完成
+            const currentPhoto = currentImages[currentImageIndex];
+            const preloadedImg = preloadedImages.get(currentPhoto.photo_url);
+            const isPreloaded = preloadedImg && preloadedImg.complete;
 
-            viewerImage.src = currentImages[currentImageIndex].photo_url;
+            if (!isPreloaded) {
+                // 显示加载提示
+                viewerLoading.style.display = 'block';
+                viewerImage.style.display = 'none';
+            } else {
+                // 已预加载完成，直接显示
+                viewerLoading.style.display = 'none';
+                viewerImage.style.display = 'block';
+            }
+
+            viewerImage.src = currentPhoto.photo_url;
             imageCounter.textContent = `${currentImageIndex + 1} / ${currentImages.length}`;
             viewerUsername.textContent = currentUsername;
             viewerBaptismal.textContent = currentBaptismalName;
@@ -941,6 +1263,166 @@
                 }
             }
         });
+
+        // 登录相关函数
+        function setupLoginEvents() {
+            const loginBtn = document.getElementById('loginBtn');
+            const loginModal = document.getElementById('loginModal');
+            const closeLoginBtn = document.getElementById('closeLoginBtn');
+            const loginForm = document.getElementById('loginForm');
+            const loginError = document.getElementById('loginError');
+
+            // 打开登录模态框
+            loginBtn.addEventListener('click', function() {
+                loginModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+
+            // 关闭登录模态框
+            closeLoginBtn.addEventListener('click', closeLoginModal);
+            loginModal.addEventListener('click', function(e) {
+                if (e.target === loginModal) {
+                    closeLoginModal();
+                }
+            });
+
+            // 登录表单提交
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('loginUsername').value;
+                const password = document.getElementById('loginPassword').value;
+                const submitBtn = loginForm.querySelector('.submit-btn');
+                
+                // 禁用提交按钮
+                submitBtn.disabled = true;
+                submitBtn.textContent = '登录中...';
+                loginError.textContent = '';
+
+                try {
+                    const response = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+
+                    const data = await response.json();
+                    
+                    // 调试信息
+                    console.log('登录响应数据:', data);
+
+                    if (response.ok) {
+                        // 登录成功
+                        localStorage.setItem('authToken', data.token);
+                        
+                        // 安全地获取用户信息
+                        const userRole = data.data?.user?.role || data.user?.role || data.role || 'participant';
+                        const userUsername = data.data?.user?.username || data.user?.username || data.username || username;
+                        
+                        localStorage.setItem('userRole', userRole);
+                        localStorage.setItem('username', userUsername);
+                        
+                        // 根据角色跳转
+                        if (['admin', 'staff', 'matchmaker'].includes(userRole)) {
+                            // 管理员角色跳转到管理后台
+                            window.location.href = '/admin';
+                        } else {
+                            // 参与者角色，关闭模态框并更新界面
+                            closeLoginModal();
+                            updateUserInterface(userUsername, userRole);
+                        }
+                    } else {
+                        // 登录失败
+                        loginError.textContent = data.message || '登录失败，请检查用户名和密码';
+                    }
+                } catch (error) {
+                    console.error('登录错误:', error);
+                    loginError.textContent = '网络错误，请重试';
+                } finally {
+                    // 恢复提交按钮
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '登录';
+                }
+            });
+        }
+
+        function closeLoginModal() {
+            const loginModal = document.getElementById('loginModal');
+            loginModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            
+            // 清空表单
+            document.getElementById('loginForm').reset();
+            document.getElementById('loginError').textContent = '';
+        }
+
+        // 更新用户界面
+        function updateUserInterface(username, role) {
+            const loginBtn = document.getElementById('loginBtn');
+            const userInfo = document.getElementById('userInfo');
+            const roleBtn = document.getElementById('roleBtn');
+            
+            // 隐藏登录按钮，显示用户信息
+            loginBtn.style.display = 'none';
+            userInfo.style.display = 'block';
+            
+            // 设置角色按钮文本
+            roleBtn.textContent = username;
+            
+            // 添加下拉菜单事件
+            setupUserDropdown();
+        }
+
+        // 设置用户下拉菜单
+        function setupUserDropdown() {
+            const roleBtn = document.getElementById('roleBtn');
+            const userDropdownMenu = document.getElementById('userDropdownMenu');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            // 点击角色按钮显示/隐藏下拉菜单
+            roleBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                roleBtn.classList.toggle('active');
+                userDropdownMenu.classList.toggle('show');
+            });
+
+            // 点击其他地方隐藏下拉菜单
+            document.addEventListener('click', function() {
+                roleBtn.classList.remove('active');
+                userDropdownMenu.classList.remove('show');
+            });
+
+            // 登出功能
+            logoutBtn.addEventListener('click', function() {
+                // 清除本地存储
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('username');
+                
+                // 恢复登录按钮，隐藏用户信息
+                const loginBtn = document.getElementById('loginBtn');
+                const userInfo = document.getElementById('userInfo');
+                loginBtn.style.display = 'block';
+                userInfo.style.display = 'none';
+                
+                // 重新设置登录事件
+                setupLoginEvents();
+            });
+        }
+
+        // 页面加载时检查登录状态
+        function checkLoginStatus() {
+            const authToken = localStorage.getItem('authToken');
+            const username = localStorage.getItem('username');
+            const userRole = localStorage.getItem('userRole');
+            
+            if (authToken && username && userRole) {
+                // 如果已登录，更新界面
+                updateUserInterface(username, userRole);
+            }
+        }
     </script>
 </body>
 </html>

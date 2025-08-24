@@ -40,16 +40,16 @@ async function getParticipants(req, res) {
       // 无搜索条件
       const params2 = [genderParam, limitNumInt, offsetInt];
       [rows] = await pool.query(`
-        SELECT 
-          p.id,
-          p.username,
-          p.name,
-          p.baptismal_name,
-          p.gender,
+      SELECT 
+        p.id,
+        p.username,
+        p.name,
+        p.baptismal_name,
+        p.gender,
           p.created_at
-        FROM participants p
-        WHERE p.gender = ?
-        ORDER BY p.created_at DESC
+      FROM participants p
+      WHERE p.gender = ?
+      ORDER BY p.created_at DESC
         LIMIT ? OFFSET ?
       `, params2);
     }

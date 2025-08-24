@@ -51,14 +51,25 @@ class AuthController {
         });
       }
 
+      // 构建用户信息对象
+      const userInfo = {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        userType: user.userType
+      };
+
+      // 如果是参与者，添加额外信息
+      if (user.userType === 'participant') {
+        userInfo.name = user.name;
+        userInfo.baptismal_name = user.baptismal_name;
+        userInfo.gender = user.gender;
+      }
+
       res.status(200).json({
         success: true,
         data: {
-          user: {
-            id: user.id,
-            username: user.username,
-            role: user.role
-          }
+          user: userInfo
         }
       });
 

@@ -27,8 +27,9 @@ const protect = async (req, res, next) => {
       // 验证令牌
       const decoded = authService.verifyToken(token);
       
-      // 获取用户信息
-      const user = await authService.getUserById(decoded.id);
+      // 根据用户类型获取用户信息
+      const userType = decoded.userType || 'staff'; // 兼容旧令牌
+      const user = await authService.getUserById(decoded.id, userType);
       
       // 将用户信息添加到请求对象
       req.user = user;
@@ -102,8 +103,9 @@ const optionalAuth = async (req, res, next) => {
       // 验证令牌
       const decoded = authService.verifyToken(token);
       
-      // 获取用户信息
-      const user = await authService.getUserById(decoded.id);
+      // 根据用户类型获取用户信息
+      const userType = decoded.userType || 'staff'; // 兼容旧令牌
+      const user = await authService.getUserById(decoded.id, userType);
       
       // 将用户信息添加到请求对象
       req.user = user;
