@@ -272,6 +272,28 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        .viewer-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .viewer-loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 10px;
+        }
+
         .viewer-user-info {
             position: absolute;
             bottom: 10px;
@@ -447,6 +469,10 @@
     <!-- 全屏图片查看器 -->
     <div class="fullscreen-viewer" id="fullscreenViewer">
         <div class="viewer-content">
+            <div class="viewer-loading" id="viewerLoading" style="display: none;">
+                <div class="viewer-loading-spinner"></div>
+                加载中...
+            </div>
             <img id="viewerImage" src="" alt="用户照片">
             <div class="viewer-user-info">
                 <div class="viewer-username" id="viewerUsername"></div>
@@ -613,6 +639,9 @@
             
             grid.innerHTML = users.map(user => createUserCard(user)).join('');
             allUsers = users;
+            
+            // 预加载所有用户的照片
+            preloadUserPhotos(users);
         }
 
         // 追加用户
@@ -621,6 +650,9 @@
             const userCards = users.map(user => createUserCard(user)).join('');
             grid.insertAdjacentHTML('beforeend', userCards);
             allUsers = allUsers.concat(users);
+            
+            // 预加载新添加用户的照片
+            preloadUserPhotos(users);
         }
 
         // 创建用户卡片
@@ -650,6 +682,22 @@
             
             const regex = new RegExp(`(${searchTerm})`, 'gi');
             return text.replace(regex, '<mark style="background-color: #ffeb3b; color: #333; padding: 2px 4px; border-radius: 3px;">$1</mark>');
+        }
+
+        // 预加载用户照片
+        function preloadUserPhotos(users) {
+            users.forEach(user => {
+                if (user.photos && user.photos.length > 0) {
+                    user.photos.forEach(photo => {
+                        const img = new Image();
+                        img.src = photo.photo_url;
+                        // 静默加载，不显示错误
+                        img.onerror = function() {
+                            // 忽略加载错误
+                        };
+                    });
+                }
+            });
         }
 
         // 调整用户信息位置
@@ -722,6 +770,11 @@
             const imageCounter = document.getElementById('imageCounter');
             const viewerUsername = document.getElementById('viewerUsername');
             const viewerBaptismal = document.getElementById('viewerBaptismal');
+            const viewerLoading = document.getElementById('viewerLoading');
+
+            // 显示加载提示
+            viewerLoading.style.display = 'block';
+            viewerImage.style.display = 'none';
 
             viewerImage.src = currentImages[0].photo_url;
             imageCounter.textContent = `1 / ${currentImages.length}`;
@@ -732,8 +785,17 @@
             viewer.classList.add('active');
             document.body.style.overflow = 'hidden';
             
-            // 图片加载完成后调整用户信息位置
+            // 图片加载完成后隐藏加载提示并调整位置
             viewerImage.onload = function() {
+                viewerLoading.style.display = 'none';
+                viewerImage.style.display = 'block';
+                adjustUserInfoPosition();
+            };
+            
+            // 图片加载失败时也隐藏加载提示
+            viewerImage.onerror = function() {
+                viewerLoading.style.display = 'none';
+                viewerImage.style.display = 'block';
                 adjustUserInfoPosition();
             };
         }
@@ -767,6 +829,11 @@
             const imageCounter = document.getElementById('imageCounter');
             const viewerUsername = document.getElementById('viewerUsername');
             const viewerBaptismal = document.getElementById('viewerBaptismal');
+            const viewerLoading = document.getElementById('viewerLoading');
+
+            // 显示加载提示
+            viewerLoading.style.display = 'block';
+            viewerImage.style.display = 'none';
 
             viewerImage.src = currentImages[currentImageIndex].photo_url;
             imageCounter.textContent = `${currentImageIndex + 1} / ${currentImages.length}`;
@@ -774,8 +841,17 @@
             viewerBaptismal.textContent = currentBaptismalName;
             updateNavigationButtons();
             
-            // 图片加载完成后调整用户信息位置
+            // 图片加载完成后隐藏加载提示并调整位置
             viewerImage.onload = function() {
+                viewerLoading.style.display = 'none';
+                viewerImage.style.display = 'block';
+                adjustUserInfoPosition();
+            };
+            
+            // 图片加载失败时也隐藏加载提示
+            viewerImage.onerror = function() {
+                viewerLoading.style.display = 'none';
+                viewerImage.style.display = 'block';
                 adjustUserInfoPosition();
             };
         }
