@@ -47,6 +47,8 @@ services:
       - "3306:3306"             # 将您本地电脑的3306端口映射到容器的3306端口
     volumes:
       - db_data:/var/lib/mysql    # 将数据库文件持久化，防止重启容器后数据丢失
-
+      # 【新增】将您的SQL脚本挂载到MySQL容器的初始化目录中
+      # 容器首次启动时，会自动执行这个目录下的所有.sql文件
+      - ./sql:/docker-entrypoint-initdb.d
 volumes:
   db_data:
