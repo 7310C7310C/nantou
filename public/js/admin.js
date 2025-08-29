@@ -85,29 +85,39 @@ document.addEventListener('DOMContentLoaded', function() {
     userInfo.style.display = 'none';
     mainContent.style.display = 'none';
     
-    checkAuthStatus();
+    // 如果在URL中检测到returnUrl参数，说明是从首页跳转来的，直接跳过验证
+    const params = new URLSearchParams(window.location.search);
+    const returnUrl = params.get('returnUrl');
+    
+    if (returnUrl === 'index' && authToken) {
+        // 直接显示已认证界面
+        showAuthenticatedUI();
+    } else {
+        // 正常检查认证状态
+        checkAuthStatus();
+    }
+    
     setupEventListeners();
 });
 
 // 设置事件监听器
 function setupEventListeners() {
     // 登录表单
-    loginForm.addEventListener('submit', handleLogin);
-    logoutBtn.addEventListener('click', handleLogout);
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
     
     // 角色按钮下拉菜单
-    const roleBtn = document.getElementById('roleBtn');
-    const userDropdownMenu = document.getElementById('userDropdownMenu');
-    
-    roleBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        userDropdownMenu.classList.toggle('show');
-        roleBtn.classList.toggle('active');
-    });
+    setupUserDropdownMenu();
     
     // 点击其他地方关闭下拉菜单
     document.addEventListener('click', function(e) {
-        if (!e.target.closest('.user-dropdown')) {
+        const userDropdownMenu = document.getElementById('userDropdownMenu');
+        const roleBtn = document.getElementById('roleBtn');
+        if (userDropdownMenu && roleBtn && !e.target.closest('.user-dropdown')) {
             userDropdownMenu.classList.remove('show');
             roleBtn.classList.remove('active');
         }
@@ -225,7 +235,12 @@ function showAuthenticatedUI() {
     mainContent.style.display = 'block';
     
     // 更新角色按钮文本
-    document.getElementById('roleBtn').textContent = getRoleDisplayName(currentUser.role);
+    document.getElementById('roleBtn').textContent = getRoleDisplayName(currentUser ? currentUser.role : localStorage.getItem('userRole'));
+
+    // 如果currentUser不存在，则从服务器获取
+    if (!currentUser) {
+        checkAuthStatus();
+    }
 }
 
 // 获取角色显示名称
@@ -274,9 +289,35 @@ async function handleLogin(e) {
 // 处理登出
 function handleLogout() {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('userRole');
     authToken = null;
     currentUser = null;
     showLoginUI();
+}
+
+// 设置用户下拉菜单
+function setupUserDropdownMenu() {
+    const roleBtn = document.getElementById('roleBtn');
+    const userDropdownMenu = document.getElementById('userDropdownMenu');
+    
+    if (!roleBtn || !userDropdownMenu) return;
+
+    // 移除可能已存在的旧事件监听器
+    roleBtn.removeEventListener('click', handleRoleBtnClick);
+    // 添加新的事件监听器
+    roleBtn.addEventListener('click', handleRoleBtnClick);
+}
+
+// 处理角色按钮点击
+function handleRoleBtnClick(e) {
+    e.stopPropagation();
+    const userDropdownMenu = document.getElementById('userDropdownMenu');
+    const roleBtn = e.target;
+    
+    if (userDropdownMenu) {
+        userDropdownMenu.classList.toggle('show');
+        roleBtn.classList.toggle('active');
+    }
 }
 
 // 显示错误信息

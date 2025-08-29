@@ -1315,19 +1315,19 @@
 
                     if (response.ok) {
                         // 登录成功
-                        localStorage.setItem('authToken', data.token);
+                        localStorage.setItem('authToken', data.data.token);
                         
                         // 安全地获取用户信息
-                        const userRole = data.data?.user?.role || data.user?.role || data.role || 'participant';
-                        const userUsername = data.data?.user?.username || data.user?.username || data.username || username;
+                        const userRole = data.data?.user?.role || 'participant';
+                        const userUsername = data.data?.user?.username || username;
                         
                         localStorage.setItem('userRole', userRole);
                         localStorage.setItem('username', userUsername);
                         
                         // 根据角色跳转
                         if (['admin', 'staff', 'matchmaker'].includes(userRole)) {
-                            // 管理员角色跳转到管理后台
-                            window.location.href = '/admin';
+                            // 管理员角色跳转到管理后台，带上returnUrl参数
+                            window.location.href = '/admin?returnUrl=index';
                         } else {
                             // 参与者角色，关闭模态框并更新界面
                             closeLoginModal();
