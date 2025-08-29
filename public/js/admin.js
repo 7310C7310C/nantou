@@ -8,12 +8,9 @@ let authToken = localStorage.getItem('authToken');
 let currentUser = null;
 
 // DOM 元素
-        const loginForm = document.getElementById('loginForm');
-const loginSection = document.getElementById('loginSection');
 const userInfo = document.getElementById('userInfo');
 const logoutBtn = document.getElementById('logoutBtn');
 const mainContent = document.getElementById('mainContent');
-const loginError = document.getElementById('loginError');
 
 // 录入相关元素
 const openRegistrationBtn = document.getElementById('openRegistrationBtn');
@@ -81,31 +78,16 @@ let selectedPhotos = [];
 // 页面加载时检查登录状态
 document.addEventListener('DOMContentLoaded', function() {
     // 先隐藏所有界面，避免闪现
-    loginSection.style.display = 'none';
     userInfo.style.display = 'none';
     mainContent.style.display = 'none';
     
-    // 如果在URL中检测到returnUrl参数，说明是从首页跳转来的，直接跳过验证
-    const params = new URLSearchParams(window.location.search);
-    const returnUrl = params.get('returnUrl');
-    
-    if (returnUrl === 'index' && authToken) {
-        // 直接显示已认证界面
-        showAuthenticatedUI();
-    } else {
-        // 正常检查认证状态
-        checkAuthStatus();
-    }
-    
+    checkAuthStatus();
     setupEventListeners();
 });
 
 // 设置事件监听器
 function setupEventListeners() {
-    // 登录表单
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-    }
+    // 登出按钮
     if (logoutBtn) {
         logoutBtn.addEventListener('click', handleLogout);
     }
@@ -206,31 +188,24 @@ async function checkAuthStatus() {
                 currentUser = user.data.user;
                 showAuthenticatedUI();
             } else {
-                localStorage.removeItem('authToken');
-                authToken = null;
-                showLoginUI();
+                redirectToLogin();
             }
         } catch (error) {
             console.error('检查认证状态失败:', error);
-            localStorage.removeItem('authToken');
-            authToken = null;
-            showLoginUI();
+            redirectToLogin();
         }
     } else {
-        showLoginUI();
+        redirectToLogin();
     }
 }
 
-// 显示登录界面
-function showLoginUI() {
-    loginSection.style.display = 'flex';
-    userInfo.style.display = 'none';
-    mainContent.style.display = 'none';
+// 重定向到首页登录
+function redirectToLogin() {
+    window.location.href = '/';
 }
 
 // 显示已认证界面
 function showAuthenticatedUI() {
-    loginSection.style.display = 'none';
     userInfo.style.display = 'block';
     mainContent.style.display = 'block';
     
@@ -253,46 +228,13 @@ function getRoleDisplayName(role) {
     return roleMap[role] || role;
 }
 
-// 处理登录
-async function handleLogin(e) {
-    e.preventDefault();
-        
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-
-        try {
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password })
-            });
-
-            const data = await response.json();
-
-                if (response.ok) {
-            authToken = data.data.token;
-            localStorage.setItem('authToken', authToken);
-            currentUser = data.data.user;
-            showAuthenticatedUI();
-            loginError.style.display = 'none';
-        } else {
-            showError(data.message || '登录失败');
-        }
-    } catch (error) {
-        console.error('登录错误:', error);
-        showError('网络错误，请重试');
-    }
-}
-
 // 处理登出
 function handleLogout() {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userRole');
     authToken = null;
     currentUser = null;
-    showLoginUI();
+    redirectToLogin();
 }
 
 // 设置用户下拉菜单
@@ -318,12 +260,6 @@ function handleRoleBtnClick(e) {
         userDropdownMenu.classList.toggle('show');
         roleBtn.classList.toggle('active');
     }
-}
-
-// 显示错误信息
-function showError(message) {
-    loginError.textContent = message;
-    loginError.style.display = 'block';
 }
 
 // 打开录入界面
