@@ -423,6 +423,7 @@
 
             .title {
                 font-size: 28px;
+                text-align: center;
             }
 
             .login-btn {
@@ -611,7 +612,17 @@
         /* 用户信息样式 */
         #userInfo {
             display: none;
-            position: relative;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        @media (max-width: 768px) {
+            #userInfo {
+                top: 10px;
+                right: 10px;
+            }
         }
 
         .role-btn {
@@ -646,6 +657,14 @@
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
 
+        @media (max-width: 768px) {
+            .role-btn {
+                padding: 8px 16px;
+                font-size: 14px;
+                min-height: 44px;
+            }
+        }
+
         .user-dropdown {
             position: relative;
             display: inline-block;
@@ -664,15 +683,23 @@
             visibility: hidden;
             transform: translateY(-10px);
             transition: all 0.3s ease;
-            z-index: 1000;
-            margin-top: 5px;
+            z-index: 1001;
+            margin-top: 8px;
             padding: 8px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .user-dropdown-menu.show {
             opacity: 1;
             visibility: visible;
             transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .user-dropdown-menu {
+                min-width: 140px;
+                right: -10px;
+            }
         }
 
         .logout-btn {
@@ -685,7 +712,7 @@
             cursor: pointer;
             text-align: left;
             transition: all 0.3s ease;
-            border-radius: 10px;
+            border-radius: 8px;
         }
 
         .logout-btn:hover {
@@ -693,8 +720,19 @@
             color: #a855f7;
         }
 
+        @media (max-width: 768px) {
+            .logout-btn {
+                padding: 10px 18px;
+                font-size: 16px;
+            }
+        }
+
         /* 管理后台按钮样式 */
-        .btn {
+        #adminPanelBtn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
             padding: 10px 20px;
             border: none;
             border-radius: 20px;
@@ -704,18 +742,25 @@
             backdrop-filter: blur(10px);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary {
+            display: none;
             background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
             color: white;
             font-weight: bold;
         }
 
-        .btn-primary:hover {
+        #adminPanelBtn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            #adminPanelBtn {
+                top: 10px;
+                left: 10px;
+                padding: 8px 16px;
+                font-size: 14px;
+                min-height: 44px;
+            }
         }
     </style>
 </head>
@@ -723,7 +768,6 @@
     <div class="header">
         <div style="display: flex; align-items: center; gap: 16px;">
             <h1 class="title">一线牵</h1>
-            <button class="btn btn-primary" id="adminPanelBtn" style="display:none;">管理后台</button>
         </div>
         <button class="login-btn" id="loginBtn">登录</button>
         <!-- 用户信息 -->
@@ -734,6 +778,9 @@
             </div>
         </div>
     </div>
+
+    <!-- 管理后台按钮 - 固定在左上角 -->
+    <button id="adminPanelBtn">管理后台</button>
 
     <div class="search-container">
         <div class="search-wrapper">
@@ -1390,7 +1437,7 @@
             roleBtn.textContent = username;
             // 管理后台按钮显示逻辑
             if (['admin', 'staff', 'matchmaker'].includes(role)) {
-                adminPanelBtn.style.display = 'inline-block';
+                adminPanelBtn.style.display = 'block';
             } else {
                 adminPanelBtn.style.display = 'none';
             }
@@ -1404,17 +1451,23 @@
             const userDropdownMenu = document.getElementById('userDropdownMenu');
             const logoutBtn = document.getElementById('logoutBtn');
 
+            // 移除可能已存在的事件监听器
+            const newRoleBtn = roleBtn.cloneNode(true);
+            roleBtn.parentNode.replaceChild(newRoleBtn, roleBtn);
+
             // 点击角色按钮显示/隐藏下拉菜单
-            roleBtn.addEventListener('click', function(e) {
+            newRoleBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
-                roleBtn.classList.toggle('active');
+                newRoleBtn.classList.toggle('active');
                 userDropdownMenu.classList.toggle('show');
             });
 
             // 点击其他地方隐藏下拉菜单
-            document.addEventListener('click', function() {
-                roleBtn.classList.remove('active');
-                userDropdownMenu.classList.remove('show');
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.user-dropdown')) {
+                    newRoleBtn.classList.remove('active');
+                    userDropdownMenu.classList.remove('show');
+                }
             });
 
             // 登出功能
@@ -1428,6 +1481,7 @@
                 loginBtn.style.display = 'block';
                 userInfo.style.display = 'none';
                 adminPanelBtn.style.display = 'none';
+                // 重新设置登录事件
                 setupLoginEvents();
             });
         }
