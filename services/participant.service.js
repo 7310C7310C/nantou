@@ -81,9 +81,9 @@ async function registerNewParticipant(participantData) {
         const photo = participantData.photos[i];
         
         try {
-          // 生成文件名：{username}_{index}.jpg
+          // 生成文件名：{username}_{timestamp}.jpg
           const fileExtension = getFileExtension(photo.originalname);
-          const fileName = `${username}_${i + 1}.${fileExtension}`;
+          const fileName = `${username}_${Date.now()}.${fileExtension}`;
           
           // 上传到OSS
           const photoUrl = await uploadPhoto(photo.buffer, fileName);
@@ -108,7 +108,7 @@ async function registerNewParticipant(participantData) {
           logger.error(`照片 ${i + 1} 上传失败`, { 
             participant_id: participantId, 
             username, 
-            fileName: `${username}_${i + 1}.${fileExtension}`, 
+            fileName, 
             error: uploadError.message 
           });
           // 继续处理其他照片，不中断整个流程
