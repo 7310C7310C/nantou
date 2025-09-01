@@ -31,9 +31,35 @@ async function registerParticipant(req, res) {
     try {
       if (err) {
         logger.error('文件上传错误', err);
+        
+        // 根据错误类型返回不同的错误信息
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({
+            success: false,
+            message: '文件大小超过限制',
+            error_type: 'FILE_SIZE_LIMIT',
+            details: '单个文件大小不能超过5MB'
+          });
+        } else if (err.code === 'LIMIT_FILE_COUNT') {
+          return res.status(400).json({
+            success: false,
+            message: '文件数量超过限制',
+            error_type: 'FILE_COUNT_LIMIT',
+            details: '最多只能上传5张照片'
+          });
+        } else if (err.message === '只允许上传图片文件') {
+          return res.status(400).json({
+            success: false,
+            message: '文件格式不支持',
+            error_type: 'FILE_TYPE_ERROR',
+            details: '只支持JPG、PNG、GIF等图片格式'
+          });
+        }
+        
         return res.status(400).json({
           success: false,
-          message: err.message || '文件上传失败'
+          message: err.message || '文件上传失败',
+          error_type: 'UPLOAD_ERROR'
         });
       }
 

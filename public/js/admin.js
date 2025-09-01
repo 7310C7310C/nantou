@@ -148,6 +148,10 @@ function setupEventListeners() {
     // 结果弹窗
     closeResultBtn.addEventListener('click', closeResultModal);
 
+    // 错误弹窗
+    const closeErrorBtn = document.getElementById('closeErrorBtn');
+    closeErrorBtn.addEventListener('click', closeErrorModal);
+
     // 日志功能
     openLogsBtn.addEventListener('click', openLogsModal);
     closeLogsBtn.addEventListener('click', closeLogsModal);
@@ -167,6 +171,10 @@ function setupEventListeners() {
     });
     resultModal.addEventListener('click', (e) => {
         if (e.target === resultModal) closeResultModal();
+    });
+    const errorModal = document.getElementById('errorModal');
+    errorModal.addEventListener('click', (e) => {
+        if (e.target === errorModal) closeErrorModal();
     });
     deleteModal.addEventListener('click', (e) => {
         if (e.target === deleteModal) closeDeleteModal();
@@ -517,8 +525,42 @@ function handlePhotoSelect(e) {
 function handleFiles(files) {
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
     
+    // 检查文件数量限制
     if (selectedPhotos.length + imageFiles.length > 5) {
-        alert('最多只能选择5张照片');
+        showErrorModal(
+            '照片数量限制',
+            '最多只能选择5张照片',
+            `当前已选择 ${selectedPhotos.length} 张，尝试添加 ${imageFiles.length} 张，超出限制。`
+        );
+        return;
+    }
+
+    // 检查文件大小限制 (5MB)
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
+    const oversizedFiles = imageFiles.filter(file => file.size > maxFileSize);
+    
+    if (oversizedFiles.length > 0) {
+        const fileDetails = oversizedFiles.map(file => 
+            `${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`
+        );
+        
+        showErrorModal(
+            '文件大小超限',
+            '以下文件超过5MB限制，请压缩后重新上传：',
+            fileDetails
+        );
+        return;
+    }
+
+    // 检查文件格式
+    const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
+    if (invalidFiles.length > 0) {
+        const fileNames = invalidFiles.map(file => file.name);
+        showErrorModal(
+            '文件格式错误',
+            '只能上传图片文件，以下文件格式不支持：',
+            fileNames
+        );
         return;
     }
 
@@ -698,12 +740,49 @@ async function submitRegistration() {
             showResultModal(data.data);
         } else {
             hideLoading();
-            alert(data.message || '创建账号失败');
+            closeConfirmModal();
+            
+            // 根据错误类型显示不同的错误信息
+            if (data.error_type) {
+                let errorDetails = null;
+                
+                switch (data.error_type) {
+                    case 'FILE_SIZE_LIMIT':
+                        errorDetails = '请将图片压缩至5MB以下后重新上传';
+                        break;
+                    case 'FILE_COUNT_LIMIT':
+                        errorDetails = '请减少照片数量至5张以内';
+                        break;
+                    case 'FILE_TYPE_ERROR':
+                        errorDetails = '请确保上传的文件是图片格式（JPG、PNG、GIF等）';
+                        break;
+                    default:
+                        errorDetails = data.details || '请检查网络连接后重试';
+                }
+                
+                showErrorModal(
+                    '上传失败',
+                    data.message || '服务器处理失败',
+                    errorDetails
+                );
+            } else {
+                showErrorModal(
+                    '提交失败',
+                    data.message || '创建账号失败',
+                    '请检查输入信息是否正确，或稍后重试'
+                );
+            }
         }
     } catch (error) {
         console.error('提交注册失败:', error);
         hideLoading();
-        alert('网络错误，请重试');
+        closeConfirmModal();
+        
+        showErrorModal(
+            '网络错误',
+            '无法连接到服务器',
+            '请检查网络连接后重试'
+        );
     }
 }
 
@@ -799,6 +878,35 @@ function showResultModal(data) {
 function closeResultModal() {
     resultModal.style.display = 'none';
     closeRegistrationModal();
+}
+
+// 显示错误弹窗
+function showErrorModal(title, message, details = null) {
+    const errorModal = document.getElementById('errorModal');
+    const errorInfo = document.getElementById('errorInfo');
+    
+    let errorContent = `<p><strong>${message}</strong></p>`;
+    
+    if (details) {
+        if (typeof details === 'string') {
+            errorContent += `<p>${details}</p>`;
+        } else if (Array.isArray(details)) {
+            errorContent += '<div class="file-list">';
+            details.forEach(detail => {
+                errorContent += `<div class="file-item">• ${detail}</div>`;
+            });
+            errorContent += '</div>';
+        }
+    }
+    
+    errorInfo.innerHTML = errorContent;
+    errorModal.style.display = 'block';
+}
+
+// 关闭错误弹窗
+function closeErrorModal() {
+    const errorModal = document.getElementById('errorModal');
+    errorModal.style.display = 'none';
 }
 
 // 显示进度提示
