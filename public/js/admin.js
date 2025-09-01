@@ -16,6 +16,17 @@ function getAuthToken() {
   return authToken;
 }
 
+// DOM加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 返回首页按钮事件
+    var backHomeBtn = document.getElementById('backHomeBtn');
+    if (backHomeBtn) {
+        backHomeBtn.addEventListener('click', function() {
+            window.location.href = '/';
+        });
+    }
+});
+
 // DOM 元素
 const userInfo = document.getElementById('userInfo');
 const logoutBtn = document.getElementById('logoutBtn');
