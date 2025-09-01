@@ -1594,3 +1594,14 @@ body {
         touch-action: manipulation;
     }
 }
+
+/* 宽屏适配 */
+@media (min-width: 1200px) {
+    .header {
+        justify-content: center;
+    }
+    
+    .logo {
+        text-align: center;
+    }
+}

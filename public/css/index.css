@@ -614,6 +614,30 @@ body {
     box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
 }
 
+/* 宽屏适配 */
+@media (min-width: 1200px) {
+    .header {
+        justify-content: center;
+        position: relative;
+    }
+    
+    .header > div:first-child {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .title {
+        text-align: center;
+    }
+    
+    .login-btn,
+    #userInfo {
+        position: absolute;
+        right: 0;
+    }
+}
+
 /* 移动端适配 */
 @media (max-width: 768px) {
     #userInfo {
