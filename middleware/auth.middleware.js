@@ -69,6 +69,11 @@ const restrictTo = (...roles) => {
 
     // 检查用户角色是否在允许的角色列表中
     if (!roles.includes(req.user.role)) {
+      // 如果是页面请求，返回一个简单的HTML错误页面
+      if (req.accepts('html')) {
+        return res.status(403).send('<h1>无权限访问</h1><p>您没有权限访问此页面。</p><a href="/">返回首页</a>');
+      }
+      // 否则，返回JSON格式的错误（适用于API请求）
       return res.status(403).json({
         success: false,
         message: '权限不足，无法访问此资源'

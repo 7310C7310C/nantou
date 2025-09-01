@@ -692,13 +692,40 @@
             background: rgba(168, 85, 247, 0.1);
             color: #a855f7;
         }
+
+        /* 管理后台按钮样式 */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1 class="title">一线牵</h1>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <h1 class="title">一线牵</h1>
+            <button class="btn btn-primary" id="adminPanelBtn" style="display:none;">管理后台</button>
+        </div>
         <button class="login-btn" id="loginBtn">登录</button>
-        
         <!-- 用户信息 -->
         <div class="user-dropdown" id="userInfo">
             <button class="role-btn" id="roleBtn">角色名</button>
@@ -781,40 +808,32 @@
 
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', function() {
-            // 设置默认性别按钮状态
             document.getElementById('femaleBtn').classList.add('active');
-            // 加载用户数据
             loadUsers();
-            
-            // 禁止图片右键菜单和长按保存
             document.addEventListener('contextmenu', function(e) {
                 if (e.target.tagName === 'IMG') {
                     e.preventDefault();
                     return false;
                 }
             });
-            
-            // 禁止图片拖拽
             document.addEventListener('dragstart', function(e) {
                 if (e.target.tagName === 'IMG') {
                     e.preventDefault();
                     return false;
                 }
             });
-            
-            // 禁止图片选择
             document.addEventListener('selectstart', function(e) {
                 if (e.target.tagName === 'IMG') {
                     e.preventDefault();
                     return false;
                 }
             });
-
-            // 登录相关事件
             setupLoginEvents();
-            
-            // 检查登录状态
             checkLoginStatus();
+            // 管理后台按钮跳转
+            document.getElementById('adminPanelBtn').addEventListener('click', function() {
+                window.location.href = '/admin';
+            });
         });
 
         // 切换性别
@@ -1363,14 +1382,18 @@
             const loginBtn = document.getElementById('loginBtn');
             const userInfo = document.getElementById('userInfo');
             const roleBtn = document.getElementById('roleBtn');
-            
+            const adminPanelBtn = document.getElementById('adminPanelBtn');
             // 隐藏登录按钮，显示用户信息
             loginBtn.style.display = 'none';
             userInfo.style.display = 'block';
-            
             // 设置角色按钮文本
             roleBtn.textContent = username;
-            
+            // 管理后台按钮显示逻辑
+            if (['admin', 'staff', 'matchmaker'].includes(role)) {
+                adminPanelBtn.style.display = 'inline-block';
+            } else {
+                adminPanelBtn.style.display = 'none';
+            }
             // 添加下拉菜单事件
             setupUserDropdown();
         }
@@ -1396,18 +1419,15 @@
 
             // 登出功能
             logoutBtn.addEventListener('click', function() {
-                // 清除本地存储
                 localStorage.removeItem('authToken');
                 localStorage.removeItem('userRole');
                 localStorage.removeItem('username');
-                
-                // 恢复登录按钮，隐藏用户信息
                 const loginBtn = document.getElementById('loginBtn');
                 const userInfo = document.getElementById('userInfo');
+                const adminPanelBtn = document.getElementById('adminPanelBtn');
                 loginBtn.style.display = 'block';
                 userInfo.style.display = 'none';
-                
-                // 重新设置登录事件
+                adminPanelBtn.style.display = 'none';
                 setupLoginEvents();
             });
         }

@@ -19,6 +19,34 @@ const PORT = process.env.PORT || 3001;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// CORS 中间件
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // 允许的来源
+  const allowedOrigins = [
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+    'http://0.0.0.0:3001'
+  ];
+  
+  // 如果请求来自允许的源或者是同源请求
+  if (!origin || allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // 处理预检请求
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 // 静态文件服务
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -84,7 +112,7 @@ app.get('/api/admin/logs/search', protect, restrictTo('admin'), logController.se
 // 公开API路由
 app.get('/api/participants', participantsController.getParticipants);
 
-// 管理后台页面路由
+// 管理后台页面路由 - 不需要服务器端认证，由客户端JavaScript处理
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });

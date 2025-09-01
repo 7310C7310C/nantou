@@ -4,8 +4,17 @@
  */
 
 // 全局变量
-let authToken = localStorage.getItem('authToken');
+let authToken = null;
 let currentUser = null;
+
+// 获取最新的认证令牌
+function getAuthToken() {
+  if (!authToken) {
+    authToken = localStorage.getItem('authToken');
+  }
+  
+  return authToken;
+}
 
 // DOM 元素
 const userInfo = document.getElementById('userInfo');
@@ -175,28 +184,109 @@ function setupEventListeners() {
 
 // 检查认证状态
 async function checkAuthStatus() {
-    if (authToken) {
-            try {
-                const response = await fetch('/api/auth/me', {
-                    headers: {
-                    'Authorization': `Bearer ${authToken}`
-                    }
-                });
+    const token = getAuthToken();
+    if (token) {
+        try {
+            const response = await fetch('/api/auth/me', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin',
+                cache: 'no-cache'
+            });
 
-                            if (response.ok) {
+            if (response.ok) {
                 const user = await response.json();
                 currentUser = user.data.user;
+                authToken = token; // 确保authToken被设置
+                
+                // 安全检查：验证用户角色权限
+                if (!isAuthorizedRole(currentUser.role)) {
+                    showUnauthorizedMessage();
+                    return;
+                }
+                
                 showAuthenticatedUI();
             } else {
+                // 清除无效的token
+                localStorage.removeItem('authToken');
+                authToken = null;
                 redirectToLogin();
             }
         } catch (error) {
             console.error('检查认证状态失败:', error);
+            // 清除可能损坏的token
+            localStorage.removeItem('authToken');
+            authToken = null;
             redirectToLogin();
         }
     } else {
         redirectToLogin();
     }
+}
+
+// 检查用户角色是否有权限访问管理页面
+function isAuthorizedRole(role) {
+    const authorizedRoles = ['admin', 'staff', 'matchmaker'];
+    return authorizedRoles.includes(role);
+}
+
+// 显示权限不足消息并重定向
+function showUnauthorizedMessage() {
+    // 清除认证数据
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('username');
+    authToken = null;
+    currentUser = null;
+    
+    // 显示权限不足消息
+    document.body.innerHTML = `
+        <div style="
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+        ">
+            <div style="
+                background: white;
+                padding: 40px;
+                border-radius: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                max-width: 500px;
+            ">
+                <h1 style="color: #dc3545; margin-bottom: 20px;">❌ 访问被拒绝</h1>
+                <p style="color: #6c757d; margin-bottom: 30px; font-size: 16px;">
+                    抱歉，您没有权限访问管理后台。<br>
+                    只有管理员、工作人员和红娘可以访问此页面。
+                </p>
+                <button onclick="window.location.href='/'" style="
+                    background-color: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 5px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                " onmouseover="this.style.backgroundColor='#0056b3'" 
+                   onmouseout="this.style.backgroundColor='#007bff'">
+                    返回首页
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // 3秒后自动重定向到首页
+    setTimeout(() => {
+        window.location.href = '/';
+    }, 3000);
 }
 
 // 重定向到首页登录
@@ -232,6 +322,7 @@ function getRoleDisplayName(role) {
 function handleLogout() {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userRole');
+    localStorage.removeItem('username');
     authToken = null;
     currentUser = null;
     redirectToLogin();
@@ -291,10 +382,20 @@ function closeManageModal() {
 async function loadParticipants() {
     try {
         showLoading('正在加载...', '请稍候，正在获取参与者列表');
+        const token = getAuthToken();
+        
+        if (!token) {
+            throw new Error('认证令牌不存在');
+        }
+        
         const response = await fetch('/api/admin/participants', {
+            method: 'GET',
             headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin',
+            cache: 'no-cache'
         });
 
         const data = await response.json();
@@ -302,10 +403,21 @@ async function loadParticipants() {
         if (response.ok) {
             displayParticipants(data.data);
         } else {
+            if (response.status === 401) {
+                // 认证失败，重新登录
+                localStorage.removeItem('authToken');
+                authToken = null;
+                redirectToLogin();
+                return;
+            }
             alert(data.message || '加载参与者列表失败');
         }
     } catch (error) {
         console.error('加载参与者列表失败:', error);
+        if (error.message === '认证令牌不存在') {
+            redirectToLogin();
+            return;
+        }
         alert('网络错误，请重试');
     } finally {
         hideLoading();
@@ -564,10 +676,16 @@ async function submitRegistration() {
         });
 
         // 发送请求
+        const token = getAuthToken();
+        
+        if (!token) {
+            throw new Error('认证令牌不存在');
+        }
+        
         const response = await fetch('/api/admin/participants', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${token}`
             },
             body: formData
         });
@@ -741,10 +859,15 @@ async function showDeleteConfirm(participantId, participantName) {
 async function loadDeleteUserInfo(participantId) {
     try {
         // 请求用户信息
+        const token = getAuthToken();
+        
+        if (!token) {
+            throw new Error('认证令牌不存在');
+        }
         
         const response = await fetch(`/api/admin/participants/${participantId}`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${token}`
             }
         });
 
@@ -814,11 +937,16 @@ async function handleDeleteParticipant() {
         showLoading('正在删除...', '请稍候，正在删除账号及相关数据');
         
         // 发送删除请求
+        const token = getAuthToken();
+        
+        if (!token) {
+            throw new Error('认证令牌不存在');
+        }
         
         const response = await fetch(`/api/admin/participants/${window.currentDeleteParticipantId}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${token}`
             }
         });
 
@@ -901,10 +1029,16 @@ async function handleResetPassword() {
         showLoading('正在重设密码...', '请稍候，正在生成新密码');
         
         // 发送重设密码请求
+        const token = getAuthToken();
+        
+        if (!token) {
+            throw new Error('认证令牌不存在');
+        }
+        
         const response = await fetch(`/api/admin/participants/${window.currentResetPasswordParticipantId}/reset-password`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${token}`
             }
         });
 
@@ -1160,10 +1294,15 @@ async function loadLogs() {
     try {
         const level = logLevel.value;
         const date = logDate.value;
+        const token = getAuthToken();
         
+        if (!token) {
+            throw new Error('认证令牌不存在');
+        }
+
         const response = await fetch(`/api/admin/logs?level=${level}&date=${date}`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${token}`
             }
         });
 
@@ -1176,9 +1315,7 @@ async function loadLogs() {
     } catch (error) {
         console.error('加载日志失败:', error);
     }
-}
-
-// 显示日志
+}// 显示日志
 function displayLogs(logs) {
     if (logs.length === 0) {
         logsDisplay.innerHTML = '<div style="text-align: center; padding: 40px; color: #666; font-size: 16px;">暂无日志</div>';
@@ -1211,6 +1348,11 @@ async function searchLogs() {
         const keyword = searchKeyword.value.trim();
         const level = logLevel.value;
         const date = logDate.value;
+        const token = getAuthToken();
+        
+        if (!token) {
+            throw new Error('认证令牌不存在');
+        }
         
         // 如果没有关键词，显示所有日志
         if (!keyword) {
@@ -1220,7 +1362,7 @@ async function searchLogs() {
 
         const response = await fetch(`/api/admin/logs/search?keyword=${encodeURIComponent(keyword)}&level=${level}&date=${date}`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${token}`
             }
         });
 

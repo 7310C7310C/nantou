@@ -1569,8 +1569,10 @@
     <div class="admin-container">
         <!-- 头部 -->
         <div class="header">
-            <div class="logo">一线牵 - 管理后台</div>
-            
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <button class="btn btn-primary" id="backHomeBtn">返回首页</button>
+                <div class="logo">一线牵 - 管理后台</div>
+            </div>
             <!-- 用户信息 -->
             <div class="user-info" id="userInfo">
                 <div class="user-dropdown">
@@ -1826,6 +1828,16 @@
     </div>
 
     <script src="js/admin.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var backHomeBtn = document.getElementById('backHomeBtn');
+            if (backHomeBtn) {
+                backHomeBtn.addEventListener('click', function() {
+                    window.location.href = '/';
+                });
+            }
+        });
+    </script
 </body>
 </html> 
 </html> 
