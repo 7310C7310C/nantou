@@ -568,6 +568,73 @@ async function updateParticipantCheckin(req, res) {
   }
 }
 
+/**
+ * 清空所有人的签到状态
+ */
+async function clearAllCheckins(req, res) {
+  try {
+    const { action } = req.body;
+    
+    // 验证操作确认
+    if (action !== '确定') {
+      return res.status(400).json({ 
+        success: false,
+        message: '操作未确认，请输入"确定"以确认清空操作' 
+      });
+    }
+
+    // 验证操作员权限
+    if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+      return res.status(403).json({ 
+        success: false,
+        message: '权限不足，只有管理员或工作人员可以清空签到状态' 
+      });
+    }
+
+    logger.operation('开始清空所有签到状态', req.user?.id, { 
+      operator: req.user?.username,
+      timestamp: new Date().toISOString()
+    });
+
+    // 获取清空前的统计信息
+    const [beforeStats] = await pool.execute(
+      'SELECT COUNT(*) as total, SUM(is_checked_in) as checkedIn FROM participants'
+    );
+    
+    // 执行清空操作
+    const [result] = await pool.execute('UPDATE participants SET is_checked_in = 0');
+
+    // 记录操作成功
+    logger.success('清空签到状态成功', {
+      operatorId: req.user.id,
+      operatorRole: req.user.role,
+      operatorUsername: req.user.username,
+      totalParticipants: beforeStats[0].total,
+      previousCheckedIn: beforeStats[0].checkedIn,
+      affectedRows: result.affectedRows,
+      timestamp: new Date().toISOString()
+    });
+
+    res.json({
+      success: true,
+      message: '所有签到状态已清空',
+      data: {
+        totalParticipants: beforeStats[0].total,
+        previousCheckedIn: beforeStats[0].checkedIn,
+        affectedRows: result.affectedRows
+      }
+    });
+
+  } catch (error) {
+    logger.error('清空签到状态失败', error);
+    res.status(500).json({ 
+      success: false,
+      message: '清空签到状态失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
 module.exports = {
   registerParticipant,
   getAllParticipants,
@@ -578,5 +645,6 @@ module.exports = {
   deleteParticipant,
   resetParticipantPassword,
   getParticipantsForCheckin,
-  updateParticipantCheckin
+  updateParticipantCheckin,
+  clearAllCheckins
 };

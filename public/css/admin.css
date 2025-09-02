@@ -1904,6 +1904,29 @@ body {
     font-weight: 600;
     color: #333;
     letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 状态标签样式 */
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+.status-checked {
+    background-color: #28a745;
+    color: white;
+}
+
+.status-unchecked {
+    background-color: #dc3545;
+    color: white;
 }
 
 .checkin-action {
@@ -2023,6 +2046,86 @@ body {
     margin-top: 20px;
 }
 
+/* 清空签到确认弹窗 */
+.clear-checkin-modal {
+    display: none;
+    position: fixed;
+    z-index: 1002;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.clear-checkin-content {
+    background-color: #fefefe;
+    margin: 0;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.clear-checkin-warning {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8d7da;
+    border-radius: 8px;
+    border-left: 4px solid #dc3545;
+    color: #721c24;
+    text-align: left;
+}
+
+.clear-checkin-warning p {
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+.clear-checkin-confirm {
+    margin: 20px 0;
+    text-align: left;
+}
+
+.clear-checkin-confirm p {
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #333;
+}
+
+.clear-checkin-content .confirm-input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+.clear-checkin-content .confirm-input:focus {
+    outline: none;
+    border-color: #28a745;
+}
+
+.clear-checkin-content .form-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.clear-checkin-content .form-actions .btn {
+    flex: 1;
+}
+
 /* 移动端适配 */
 @media (max-width: 768px) {
     .checkin-content {
@@ -2110,6 +2213,13 @@ body {
         font-size: 16px;
         text-align: left;
         flex: 1;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .status-badge {
+        font-size: 11px;
+        padding: 3px 6px;
     }
     
     .checkin-action {
@@ -2125,5 +2235,21 @@ body {
     
     .checkin-list {
         padding: 12px 15px 15px 15px;
+    }
+    
+    .clear-checkin-content {
+        width: 95%;
+        max-width: none;
+        padding: 25px 20px;
+    }
+    
+    .clear-checkin-content .form-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .clear-checkin-content .form-actions .btn {
+        width: 100%;
+        margin: 0;
     }
 }

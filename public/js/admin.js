@@ -139,9 +139,13 @@ function setupEventListeners() {
 
     // 现场签到界面
     const openCheckinBtn = document.getElementById('openCheckinBtn');
+    const clearCheckinBtn = document.getElementById('clearCheckinBtn');
     const closeCheckinBtn = document.getElementById('closeCheckinBtn');
     if (openCheckinBtn) {
         openCheckinBtn.addEventListener('click', openCheckinModal);
+    }
+    if (clearCheckinBtn) {
+        clearCheckinBtn.addEventListener('click', openClearCheckinModal);
     }
     if (closeCheckinBtn) {
         closeCheckinBtn.addEventListener('click', closeCheckinModal);
@@ -156,6 +160,20 @@ function setupEventListeners() {
     cancelResetPasswordBtn.addEventListener('click', closeResetPasswordModal);
     confirmResetPasswordBtn.addEventListener('click', handleResetPassword);
     closeResetPasswordResultBtn.addEventListener('click', closeResetPasswordResultModal);
+
+    // 清空签到功能
+    const cancelClearCheckinBtn = document.getElementById('cancelClearCheckinBtn');
+    const confirmClearCheckinBtn = document.getElementById('confirmClearCheckinBtn');
+    const clearCheckinConfirmInput = document.getElementById('clearCheckinConfirmInput');
+    if (cancelClearCheckinBtn) {
+        cancelClearCheckinBtn.addEventListener('click', closeClearCheckinModal);
+    }
+    if (confirmClearCheckinBtn) {
+        confirmClearCheckinBtn.addEventListener('click', handleClearAllCheckins);
+    }
+    if (clearCheckinConfirmInput) {
+        clearCheckinConfirmInput.addEventListener('input', validateClearCheckinConfirm);
+    }
 
     // 照片上传
     photoUpload.addEventListener('click', () => photoInput.click());
@@ -1630,6 +1648,14 @@ function setupCheckinEventListeners() {
     checkinSuccessModal.addEventListener('click', function(e) {
         if (e.target === checkinSuccessModal) closeCheckinSuccessModal();
     });
+
+    // 清空签到弹窗外部点击关闭
+    const clearCheckinModal = document.getElementById('clearCheckinModal');
+    if (clearCheckinModal) {
+        clearCheckinModal.addEventListener('click', function(e) {
+            if (e.target === clearCheckinModal) closeClearCheckinModal();
+        });
+    }
 }
 
 // 加载参与者签到数据
@@ -1793,11 +1819,14 @@ function renderCheckinParticipants() {
         const isCheckedIn = participant.is_checked_in;
         const statusClass = isCheckedIn ? 'checked-in' : 'not-checked-in';
         const buttonText = isCheckedIn ? '取消签到' : '签到';
+        const statusBadge = isCheckedIn 
+            ? '<span class="status-badge status-checked">已签到</span>' 
+            : '<span class="status-badge status-unchecked">未签到</span>';
 
         return `
             <div class="checkin-participant ${statusClass}">
                 <div class="participant-info">
-                    ${participant.username} ${participant.name}
+                    ${participant.username} ${participant.name} ${statusBadge}
                 </div>
                 <div class="checkin-action">
                     <button class="checkin-btn" 
@@ -1915,6 +1944,124 @@ async function handleConfirmCheckin() {
     } catch (error) {
         console.error('签到操作失败:', error);
         alert(`签到操作失败：${error.message}`);
+    } finally {
+        hideLoading();
+    }
+}
+
+// ================== 清空签到功能 ==================
+
+// 打开清空签到确认弹窗
+function openClearCheckinModal() {
+    const clearCheckinModal = document.getElementById('clearCheckinModal');
+    const clearCheckinConfirmInput = document.getElementById('clearCheckinConfirmInput');
+    const confirmClearCheckinBtn = document.getElementById('confirmClearCheckinBtn');
+    
+    // 重置表单
+    if (clearCheckinConfirmInput) {
+        clearCheckinConfirmInput.value = '';
+    }
+    if (confirmClearCheckinBtn) {
+        confirmClearCheckinBtn.disabled = true;
+    }
+    
+    if (clearCheckinModal) {
+        clearCheckinModal.style.display = 'block';
+    }
+}
+
+// 关闭清空签到确认弹窗
+function closeClearCheckinModal() {
+    const clearCheckinModal = document.getElementById('clearCheckinModal');
+    if (clearCheckinModal) {
+        clearCheckinModal.style.display = 'none';
+    }
+}
+
+// 验证清空签到确认输入
+function validateClearCheckinConfirm() {
+    const clearCheckinConfirmInput = document.getElementById('clearCheckinConfirmInput');
+    const confirmClearCheckinBtn = document.getElementById('confirmClearCheckinBtn');
+    
+    if (clearCheckinConfirmInput && confirmClearCheckinBtn) {
+        const inputValue = clearCheckinConfirmInput.value.trim();
+        confirmClearCheckinBtn.disabled = inputValue !== '确定';
+    }
+}
+
+// 处理清空所有签到状态
+async function handleClearAllCheckins() {
+    const clearCheckinConfirmInput = document.getElementById('clearCheckinConfirmInput');
+    
+    if (!clearCheckinConfirmInput || clearCheckinConfirmInput.value.trim() !== '确定') {
+        alert('请输入"确定"以确认清空操作');
+        return;
+    }
+
+    try {
+        showLoading();
+        
+        const token = getAuthToken();
+        if (!token) {
+            alert('请先登录');
+            window.location.href = '/';
+            return;
+        }
+
+        const response = await fetch('/api/admin/clear-all-checkins', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action: '确定'
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || '清空签到状态失败');
+        }
+
+        if (result.success) {
+            // 关闭确认弹窗
+            closeClearCheckinModal();
+            
+            // 显示成功消息
+            const successTitle = document.getElementById('successTitle');
+            const successMessage = document.getElementById('successMessage');
+            const checkinSuccessModal = document.getElementById('checkinSuccessModal');
+            
+            if (successTitle) {
+                successTitle.textContent = '✅ 清空成功';
+            }
+            if (successMessage) {
+                const { totalParticipants, previousCheckedIn } = result.data;
+                successMessage.innerHTML = `
+                    <p><strong>清空操作已完成</strong></p>
+                    <p>总参与者：${totalParticipants} 人</p>
+                    <p>之前已签到：${previousCheckedIn} 人</p>
+                    <p>现在全部重置为未签到状态</p>
+                `;
+            }
+            if (checkinSuccessModal) {
+                checkinSuccessModal.style.display = 'block';
+            }
+            
+            // 如果签到界面是打开的，刷新数据
+            const checkinModal = document.getElementById('checkinModal');
+            if (checkinModal && checkinModal.style.display === 'block') {
+                await loadCheckinData();
+            }
+        } else {
+            throw new Error(result.message || '清空签到状态失败');
+        }
+
+    } catch (error) {
+        console.error('清空签到状态失败:', error);
+        alert('清空签到状态失败：' + error.message);
     } finally {
         hideLoading();
     }

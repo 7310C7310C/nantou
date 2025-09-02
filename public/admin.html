@@ -38,6 +38,7 @@
                 <div class="dashboard-card">
                     <h3>✅ 现场签到</h3>
                     <button class="btn btn-primary" id="openCheckinBtn">开始签到</button>
+                    <button class="btn btn-danger" id="clearCheckinBtn" style="margin-top: 10px;">清空签到</button>
                 </div>
 
                 <div class="dashboard-card">
@@ -354,6 +355,25 @@
             </div>
             <div class="form-actions">
                 <button type="button" class="btn btn-primary" id="closeSuccessBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清空签到确认弹窗 -->
+    <div class="clear-checkin-modal" id="clearCheckinModal">
+        <div class="clear-checkin-content">
+            <h3>⚠️ 清空签到确认</h3>
+            <div class="clear-checkin-warning">
+                <p><strong>警告：</strong>此操作将重置所有人员的签到状态为"未签到"。</p>
+                <p>此操作不可撤销！</p>
+            </div>
+            <div class="clear-checkin-confirm">
+                <p>请输入"<strong>确定</strong>"二字以确认清空：</p>
+                <input type="text" id="clearCheckinConfirmInput" placeholder="请输入：确定" class="confirm-input">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelClearCheckinBtn">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmClearCheckinBtn" disabled>确认清空</button>
             </div>
         </div>
     </div>

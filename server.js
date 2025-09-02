@@ -100,6 +100,7 @@ app.post('/api/admin/participants', protect, restrictTo('admin', 'staff'), admin
 app.get('/api/admin/participants', protect, restrictTo('admin', 'staff'), adminController.getAllParticipants);
 app.get('/api/admin/participants-for-checkin', protect, restrictTo('admin', 'staff'), adminController.getParticipantsForCheckin);
 app.patch('/api/admin/participants/:id/checkin', protect, restrictTo('admin', 'staff'), adminController.updateParticipantCheckin);
+app.post('/api/admin/clear-all-checkins', protect, restrictTo('admin', 'staff'), adminController.clearAllCheckins);
 app.get('/api/admin/participants/:participant_id/photos', protect, restrictTo('admin', 'staff'), adminController.getParticipantPhotos);
 app.get('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.getParticipantById);
 app.delete('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.deleteParticipant);
