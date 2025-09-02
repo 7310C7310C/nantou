@@ -98,6 +98,8 @@ app.post('/api/auth/logout', protect, authController.logout);
 // 管理后台API路由
 app.post('/api/admin/participants', protect, restrictTo('admin', 'staff'), adminController.registerParticipant);
 app.get('/api/admin/participants', protect, restrictTo('admin', 'staff'), adminController.getAllParticipants);
+app.get('/api/admin/participants-for-checkin', protect, restrictTo('admin', 'staff'), adminController.getParticipantsForCheckin);
+app.patch('/api/admin/participants/:id/checkin', protect, restrictTo('admin', 'staff'), adminController.updateParticipantCheckin);
 app.get('/api/admin/participants/:participant_id/photos', protect, restrictTo('admin', 'staff'), adminController.getParticipantPhotos);
 app.get('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.getParticipantById);
 app.delete('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.deleteParticipant);

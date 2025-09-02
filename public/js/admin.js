@@ -137,6 +137,16 @@ function setupEventListeners() {
     searchInput.addEventListener('input', filterParticipants);
     genderFilter.addEventListener('change', filterParticipants);
 
+    // 现场签到界面
+    const openCheckinBtn = document.getElementById('openCheckinBtn');
+    const closeCheckinBtn = document.getElementById('closeCheckinBtn');
+    if (openCheckinBtn) {
+        openCheckinBtn.addEventListener('click', openCheckinModal);
+    }
+    if (closeCheckinBtn) {
+        closeCheckinBtn.addEventListener('click', closeCheckinModal);
+    }
+
     // 删除功能
     cancelDeleteBtn.addEventListener('click', closeDeleteModal);
     confirmDeleteBtn.addEventListener('click', handleDeleteParticipant);
@@ -1518,4 +1528,394 @@ function showFullscreenImage(imageUrl) {
 function closeFullscreenImage() {
     fullscreenImage.style.display = 'none';
     document.body.style.overflow = ''; // 恢复背景滚动
+}
+
+// ==================== 现场签到功能 ====================
+
+// 存储当前签到数据
+let checkinData = {
+    participants: [],
+    filteredParticipants: [],
+    currentFilter: {
+        gender: 'female',
+        search: '',
+        uncheckedOnly: false
+    }
+};
+
+// 打开现场签到模态框
+async function openCheckinModal() {
+    const checkinModal = document.getElementById('checkinModal');
+    checkinModal.style.display = 'block';
+    
+    // 设置签到过滤器事件监听器
+    setupCheckinEventListeners();
+    
+    // 加载参与者数据
+    await loadCheckinParticipants();
+}
+
+// 关闭现场签到模态框
+function closeCheckinModal() {
+    const checkinModal = document.getElementById('checkinModal');
+    checkinModal.style.display = 'none';
+    
+    // 清除搜索框
+    clearCheckinSearch();
+}
+
+// 设置签到相关事件监听器
+function setupCheckinEventListeners() {
+    const checkinSearchInput = document.getElementById('checkinSearchInput');
+    const clearCheckinSearchBtn = document.getElementById('clearCheckinSearchBtn');
+    const checkinGenderRadios = document.querySelectorAll('input[name="checkinGender"]');
+    const uncheckedOnlyCheckbox = document.getElementById('uncheckedOnlyCheckbox');
+    const checkinModal = document.getElementById('checkinModal');
+    const checkinConfirmModal = document.getElementById('checkinConfirmModal');
+    const checkinSuccessModal = document.getElementById('checkinSuccessModal');
+    const cancelCheckinConfirmBtn = document.getElementById('cancelCheckinConfirmBtn');
+    const confirmCheckinBtn = document.getElementById('confirmCheckinBtn');
+    const closeSuccessBtn = document.getElementById('closeSuccessBtn');
+
+    // 搜索输入
+    if (checkinSearchInput) {
+        checkinSearchInput.removeEventListener('input', handleCheckinSearch);
+        checkinSearchInput.addEventListener('input', handleCheckinSearch);
+    }
+
+    // 清除搜索按钮
+    if (clearCheckinSearchBtn) {
+        clearCheckinSearchBtn.removeEventListener('click', clearCheckinSearch);
+        clearCheckinSearchBtn.addEventListener('click', clearCheckinSearch);
+    }
+
+    // 性别过滤
+    checkinGenderRadios.forEach(radio => {
+        radio.removeEventListener('change', handleCheckinGenderFilter);
+        radio.addEventListener('change', handleCheckinGenderFilter);
+    });
+
+    // 未签到过滤复选框
+    if (uncheckedOnlyCheckbox) {
+        uncheckedOnlyCheckbox.removeEventListener('change', handleUncheckedFilter);
+        uncheckedOnlyCheckbox.addEventListener('change', handleUncheckedFilter);
+    }
+
+    // 确认弹窗事件
+    if (cancelCheckinConfirmBtn) {
+        cancelCheckinConfirmBtn.removeEventListener('click', closeCheckinConfirmModal);
+        cancelCheckinConfirmBtn.addEventListener('click', closeCheckinConfirmModal);
+    }
+
+    if (confirmCheckinBtn) {
+        confirmCheckinBtn.removeEventListener('click', handleConfirmCheckin);
+        confirmCheckinBtn.addEventListener('click', handleConfirmCheckin);
+    }
+
+    // 成功提示弹窗事件
+    if (closeSuccessBtn) {
+        closeSuccessBtn.removeEventListener('click', closeCheckinSuccessModal);
+        closeSuccessBtn.addEventListener('click', closeCheckinSuccessModal);
+    }
+
+    // 点击模态框外部关闭
+    checkinModal.addEventListener('click', function(e) {
+        if (e.target === checkinModal) closeCheckinModal();
+    });
+
+    checkinConfirmModal.addEventListener('click', function(e) {
+        if (e.target === checkinConfirmModal) closeCheckinConfirmModal();
+    });
+
+    checkinSuccessModal.addEventListener('click', function(e) {
+        if (e.target === checkinSuccessModal) closeCheckinSuccessModal();
+    });
+}
+
+// 加载参与者签到数据
+async function loadCheckinParticipants() {
+    try {
+        showLoading();
+        const token = getAuthToken();
+        
+        if (!token) {
+            throw new Error('认证令牌不存在');
+        }
+
+        const response = await fetch('/api/admin/participants-for-checkin', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            checkinData.participants = data.data;
+            
+            // 应用当前过滤器
+            applyCheckinFilters();
+            
+            // 更新统计数据
+            updateCheckinStats();
+            
+            // 渲染参与者列表
+            renderCheckinParticipants();
+        } else {
+            throw new Error('获取参与者数据失败');
+        }
+    } catch (error) {
+        console.error('加载参与者数据失败:', error);
+        alert('加载参与者数据失败，请重试');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 处理搜索
+function handleCheckinSearch(e) {
+    const searchValue = e.target.value.trim();
+    const clearBtn = document.getElementById('clearCheckinSearchBtn');
+    
+    // 显示或隐藏清除按钮
+    if (searchValue) {
+        clearBtn.style.display = 'flex';
+    } else {
+        clearBtn.style.display = 'none';
+    }
+    
+    checkinData.currentFilter.search = searchValue;
+    applyCheckinFilters();
+    renderCheckinParticipants();
+}
+
+// 清除搜索
+function clearCheckinSearch() {
+    const checkinSearchInput = document.getElementById('checkinSearchInput');
+    const clearBtn = document.getElementById('clearCheckinSearchBtn');
+    
+    checkinSearchInput.value = '';
+    clearBtn.style.display = 'none';
+    checkinData.currentFilter.search = '';
+    
+    applyCheckinFilters();
+    renderCheckinParticipants();
+}
+
+// 处理性别过滤
+function handleCheckinGenderFilter(e) {
+    checkinData.currentFilter.gender = e.target.value;
+    applyCheckinFilters();
+    renderCheckinParticipants();
+    updateCheckinStats();
+}
+
+// 处理未签到过滤
+function handleUncheckedFilter(e) {
+    const checkbox = e.target;
+    checkinData.currentFilter.uncheckedOnly = checkbox.checked;
+    
+    applyCheckinFilters();
+    renderCheckinParticipants();
+}
+
+// 应用过滤器
+function applyCheckinFilters() {
+    const { gender, search, uncheckedOnly } = checkinData.currentFilter;
+    
+    checkinData.filteredParticipants = checkinData.participants.filter(participant => {
+        // 性别过滤
+        if (participant.gender !== gender) {
+            return false;
+        }
+        
+        // 搜索过滤
+        if (search) {
+            const searchLower = search.toLowerCase();
+            const matchesUsername = participant.username.toLowerCase().includes(searchLower);
+            const matchesName = participant.name.toLowerCase().includes(searchLower);
+            if (!matchesUsername && !matchesName) {
+                return false;
+            }
+        }
+        
+        // 未签到过滤
+        if (uncheckedOnly && participant.is_checked_in) {
+            return false;
+        }
+        
+        return true;
+    });
+}
+
+// 更新统计数据
+function updateCheckinStats() {
+    const checkedInCount = document.getElementById('checkedInCount');
+    const totalCount = document.getElementById('totalCount');
+    const maleCheckedCount = document.getElementById('maleCheckedCount');
+    const maleTotalCount = document.getElementById('maleTotalCount');
+    const femaleCheckedCount = document.getElementById('femaleCheckedCount');
+    const femaleTotalCount = document.getElementById('femaleTotalCount');
+
+    // 计算总体统计
+    const totalParticipants = checkinData.participants.length;
+    const totalCheckedIn = checkinData.participants.filter(p => p.is_checked_in).length;
+    
+    // 计算男女统计
+    const maleParticipants = checkinData.participants.filter(p => p.gender === 'male');
+    const femaleParticipants = checkinData.participants.filter(p => p.gender === 'female');
+    const maleCheckedIn = maleParticipants.filter(p => p.is_checked_in).length;
+    const femaleCheckedIn = femaleParticipants.filter(p => p.is_checked_in).length;
+
+    // 更新显示
+    if (checkedInCount) checkedInCount.textContent = totalCheckedIn;
+    if (totalCount) totalCount.textContent = totalParticipants;
+    if (maleCheckedCount) maleCheckedCount.textContent = maleCheckedIn;
+    if (maleTotalCount) maleTotalCount.textContent = maleParticipants.length;
+    if (femaleCheckedCount) femaleCheckedCount.textContent = femaleCheckedIn;
+    if (femaleTotalCount) femaleTotalCount.textContent = femaleParticipants.length;
+}
+
+// 渲染参与者列表
+function renderCheckinParticipants() {
+    const checkinList = document.getElementById('checkinList');
+    
+    if (checkinData.filteredParticipants.length === 0) {
+        checkinList.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #666; font-size: 16px;">
+                暂无符合条件的参与者
+            </div>
+        `;
+        return;
+    }
+
+    checkinList.innerHTML = checkinData.filteredParticipants.map(participant => {
+        const isCheckedIn = participant.is_checked_in;
+        const statusClass = isCheckedIn ? 'checked-in' : 'not-checked-in';
+        const buttonText = isCheckedIn ? '取消签到' : '签到';
+
+        return `
+            <div class="checkin-participant ${statusClass}">
+                <div class="participant-info">
+                    ${participant.username} ${participant.name}
+                </div>
+                <div class="checkin-action">
+                    <button class="checkin-btn" 
+                            onclick="openCheckinConfirmModal(${participant.id}, '${participant.name}', '${participant.username}', '${participant.baptismal_name || ''}', '${participant.gender}', ${isCheckedIn})">
+                        ${buttonText}
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 打开签到确认弹窗
+function openCheckinConfirmModal(id, name, username, baptismalName, gender, currentStatus) {
+    const checkinConfirmModal = document.getElementById('checkinConfirmModal');
+    const checkinConfirmTitle = document.getElementById('checkinConfirmTitle');
+    const checkinUserInfo = document.getElementById('checkinUserInfo');
+    const confirmCheckinBtn = document.getElementById('confirmCheckinBtn');
+
+    // 设置弹窗标题和按钮文字
+    const action = currentStatus ? '取消签到' : '签到';
+    checkinConfirmTitle.textContent = `确认${action}`;
+    confirmCheckinBtn.textContent = `确认${action}`;
+    confirmCheckinBtn.className = `btn ${currentStatus ? 'btn-danger' : 'btn-success'}`;
+
+    // 设置用户信息
+    checkinUserInfo.innerHTML = `
+        <h4>${name} (${username})</h4>
+        <p><strong>圣名:</strong> ${baptismalName || '无'}</p>
+        <p><strong>性别:</strong> ${gender === 'male' ? '男' : '女'}</p>
+        <p><strong>当前状态:</strong> ${currentStatus ? '已签到' : '未签到'}</p>
+        <p><strong>操作:</strong> ${action}</p>
+    `;
+
+    // 存储当前操作的参与者信息
+    checkinConfirmModal.dataset.participantId = id;
+    checkinConfirmModal.dataset.newStatus = (!currentStatus).toString();
+
+    checkinConfirmModal.style.display = 'block';
+}
+
+// 关闭签到确认弹窗
+function closeCheckinConfirmModal() {
+    const checkinConfirmModal = document.getElementById('checkinConfirmModal');
+    checkinConfirmModal.style.display = 'none';
+}
+
+// 打开签到成功提示弹窗
+function openCheckinSuccessModal(message) {
+    const checkinSuccessModal = document.getElementById('checkinSuccessModal');
+    const successTitle = document.getElementById('successTitle');
+    const successMessage = document.getElementById('successMessage');
+    
+    // 设置标题和消息
+    successTitle.textContent = `✅ ${message}`;
+    successMessage.textContent = '操作已完成';
+    checkinSuccessModal.style.display = 'block';
+}
+
+// 关闭签到成功提示弹窗
+function closeCheckinSuccessModal() {
+    const checkinSuccessModal = document.getElementById('checkinSuccessModal');
+    checkinSuccessModal.style.display = 'none';
+}
+
+// 处理确认签到
+async function handleConfirmCheckin() {
+    try {
+        const checkinConfirmModal = document.getElementById('checkinConfirmModal');
+        const participantId = checkinConfirmModal.dataset.participantId;
+        const newStatus = checkinConfirmModal.dataset.newStatus === 'true';
+        
+        showLoading();
+        const token = getAuthToken();
+        
+        if (!token) {
+            throw new Error('认证令牌不存在');
+        }
+
+        const response = await fetch(`/api/admin/participants/${participantId}/checkin`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                isCheckedIn: newStatus
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            
+            // 更新本地数据
+            const participant = checkinData.participants.find(p => p.id == participantId);
+            if (participant) {
+                participant.is_checked_in = newStatus;
+            }
+            
+            // 重新应用过滤器和渲染
+            applyCheckinFilters();
+            renderCheckinParticipants();
+            updateCheckinStats();
+            
+            // 关闭确认弹窗
+            closeCheckinConfirmModal();
+            
+            // 显示成功消息模态框，根据操作类型显示不同消息
+            const action = newStatus ? '签到成功' : '取消签到成功';
+            openCheckinSuccessModal(action);
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.message || '操作失败');
+        }
+    } catch (error) {
+        console.error('签到操作失败:', error);
+        alert(`签到操作失败：${error.message}`);
+    } finally {
+        hideLoading();
+    }
 } 

@@ -1605,3 +1605,505 @@ body {
         text-align: center;
     }
 }
+
+/* 现场签到模态框样式 */
+.checkin-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.checkin-content {
+    background-color: #fefefe;
+    margin: 1% auto;
+    padding: 0;
+    border-radius: 10px;
+    width: 95%;
+    max-width: 1200px;
+    height: 95vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* 浮动关闭按钮 */
+.close-btn-floating {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+    background-color: rgba(139, 111, 71, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.close-btn-floating:hover {
+    background-color: rgba(109, 90, 58, 0.95);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* 实时数据看板 */
+.checkin-dashboard {
+    display: flex;
+    gap: 15px;
+    padding: 20px 20px 15px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    border-radius: 10px 10px 0 0;
+}
+
+.stat-card {
+    flex: 1;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stat-card h3 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.stat-number {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+}
+
+/* 搜索和过滤器 */
+.checkin-filters {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+.search-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+}
+
+.checkin-filters .search-input {
+    width: 100%;
+    padding: 12px 40px 12px 12px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.clear-search-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #999;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.clear-search-btn:hover {
+    background-color: #f0f0f0;
+    color: #666;
+}
+
+.filter-center-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.filter-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: nowrap;
+    justify-content: center;
+}
+
+/* 性别切换按钮样式 */
+.gender-toggle {
+    display: flex;
+    background-color: #f0f0f0;
+    border-radius: 25px;
+    padding: 3px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.gender-toggle input[type="radio"] {
+    display: none;
+}
+
+.gender-btn {
+    padding: 10px 25px;
+    cursor: pointer;
+    border-radius: 22px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    background-color: transparent;
+    color: #666;
+    border: none;
+    min-width: 60px;
+    text-align: center;
+}
+
+.gender-toggle input[type="radio"]:checked + .gender-btn {
+    background-color: #8b6f47;
+    color: white;
+    box-shadow: 0 2px 8px rgba(139, 111, 71, 0.3);
+}
+
+.gender-btn:hover {
+    color: #8b6f47;
+}
+
+.gender-toggle input[type="radio"]:checked + .gender-btn:hover {
+    color: white;
+}
+
+/* 居中复选框样式 */
+.checkbox-center {
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.checkbox-option-center {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 8px 16px;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    border: 1px solid #ddd;
+    white-space: nowrap;
+}
+
+.checkbox-option-center:hover {
+    background-color: #e9ecef;
+    border-color: #8b6f47;
+}
+
+.checkbox-option-center input[type="checkbox"]:checked + span {
+    color: #8b6f47;
+    font-weight: 500;
+}
+
+.checkbox-option-center input[type="checkbox"] {
+    margin-right: 8px;
+    transform: scale(1.1);
+    accent-color: #8b6f47;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.filter-btn:hover {
+    background-color: #545b62;
+}
+
+.filter-btn.active {
+    background-color: #007bff;
+}
+
+/* 签到列表 */
+.checkin-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px 20px 20px 20px;
+}
+
+.checkin-participant {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 25px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+    border: 2px solid #eee;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.checkin-participant:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.checkin-participant.checked-in {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border-color: #28a745;
+}
+
+.checkin-participant.not-checked-in {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    border-color: #dc3545;
+}
+
+.participant-info {
+    flex: 1;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    letter-spacing: 0.5px;
+}
+
+.checkin-action {
+    margin-left: 20px;
+}
+
+.checkin-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    background-color: #8b6f47;
+    color: white;
+    min-width: 100px;
+    box-shadow: 0 3px 12px rgba(139, 111, 71, 0.3);
+}
+
+.checkin-btn:hover {
+    background-color: #6d5a3a;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(139, 111, 71, 0.4);
+}
+
+.checkin-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(139, 111, 71, 0.3);
+}
+
+/* 签到确认弹窗 */
+.checkin-confirm-modal {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.checkin-confirm-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.checkin-user-info {
+    margin: 20px 0;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.checkin-user-info h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+}
+
+.checkin-user-info p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+/* 签到成功提示弹窗 */
+.checkin-success-modal {
+    display: none;
+    position: fixed;
+    z-index: 1002;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.checkin-success-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    text-align: center;
+}
+
+.success-message {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #d4edda;
+    border-radius: 8px;
+    border-left: 4px solid #28a745;
+    color: #155724;
+    font-size: 16px;
+}
+
+.checkin-success-content .form-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .checkin-content {
+        margin: 0.5% auto;
+        height: 97vh;
+        width: 98%;
+    }
+    
+    .close-btn-floating {
+        top: 10px;
+        right: 10px;
+        width: 36px;
+        height: 36px;
+        font-size: 18px;
+    }
+    
+    .checkin-dashboard {
+        gap: 10px;
+        padding: 15px 15px 12px 15px;
+    }
+    
+    .stat-card {
+        padding: 12px;
+    }
+    
+    .stat-card h3 {
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+    
+    .stat-number {
+        font-size: 16px;
+    }
+    
+    .checkin-filters {
+        padding: 15px;
+        gap: 12px;
+    }
+    
+    .search-container {
+        max-width: none;
+    }
+    
+    .checkin-filters .search-input {
+        padding: 10px 35px 10px 10px;
+        font-size: 16px;
+    }
+    
+    .clear-search-btn {
+        right: 10px;
+        width: 22px;
+        height: 22px;
+        font-size: 16px;
+    }
+    
+    .filter-center-group {
+        gap: 12px;
+    }
+    
+    .filter-row {
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .gender-btn {
+        padding: 8px 20px;
+        font-size: 13px;
+        min-width: 50px;
+    }
+    
+    .checkbox-option-center {
+        padding: 6px 14px;
+        font-size: 13px;
+    }
+    
+    .checkin-participant {
+        padding: 15px;
+        flex-direction: row;
+        align-items: center;
+        gap: 0;
+    }
+    
+    .participant-info {
+        font-size: 16px;
+        text-align: left;
+        flex: 1;
+    }
+    
+    .checkin-action {
+        margin-left: 15px;
+        display: block;
+    }
+    
+    .checkin-btn {
+        padding: 10px 20px;
+        font-size: 15px;
+        min-width: 100px;
+    }
+    
+    .checkin-list {
+        padding: 12px 15px 15px 15px;
+    }
+}

@@ -36,6 +36,11 @@
                 </div>
 
                 <div class="dashboard-card">
+                    <h3>✅ 现场签到</h3>
+                    <button class="btn btn-primary" id="openCheckinBtn">开始签到</button>
+                </div>
+
+                <div class="dashboard-card">
                     <h3>🧮 算法操作</h3>
                     <p><strong>功能开发中...</strong></p>
                 </div>
@@ -263,6 +268,92 @@
 
             <div class="logs-display" id="logsDisplay">
                 <div class="log-entry"><div class="log-timestamp">-</div><div class="log-level info">-</div><div class="log-message">正在加载日志...</div><div class="log-data-column"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 现场签到模态框 -->
+    <div class="checkin-modal" id="checkinModal">
+        <div class="checkin-content">
+            <button class="close-btn-floating" id="closeCheckinBtn">&times;</button>
+            
+            <!-- 实时数据看板 -->
+            <div class="checkin-dashboard">
+                <div class="stat-card">
+                    <h3>已签到</h3>
+                    <div class="stat-number">
+                        <span id="checkedInCount">0</span> / <span id="totalCount">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>男生</h3>
+                    <div class="stat-number">
+                        <span id="maleCheckedCount">0</span> / <span id="maleTotalCount">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>女生</h3>
+                    <div class="stat-number">
+                        <span id="femaleCheckedCount">0</span> / <span id="femaleTotalCount">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 搜索和过滤器 -->
+            <div class="checkin-filters">
+                <div class="search-container">
+                    <input type="text" id="checkinSearchInput" placeholder="搜索用户ID或姓名..." class="search-input">
+                    <button class="clear-search-btn" id="clearCheckinSearchBtn" style="display: none;">&times;</button>
+                </div>
+                <div class="filter-row">
+                    <div class="gender-toggle">
+                        <input type="radio" id="genderFemale" name="checkinGender" value="female" checked>
+                        <label for="genderFemale" class="gender-btn">女</label>
+                        <input type="radio" id="genderMale" name="checkinGender" value="male">
+                        <label for="genderMale" class="gender-btn">男</label>
+                    </div>
+                    <div class="checkbox-center">
+                        <label class="checkbox-option-center">
+                            <input type="checkbox" id="uncheckedOnlyCheckbox">
+                            <span>只看未签到</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 参与者签到列表 -->
+            <div class="checkin-list" id="checkinList">
+                <!-- 签到列表将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 签到确认弹窗 -->
+    <div class="checkin-confirm-modal" id="checkinConfirmModal">
+        <div class="checkin-confirm-content">
+            <h3 id="checkinConfirmTitle">确认签到</h3>
+            
+            <!-- 用户信息显示区域 -->
+            <div class="checkin-user-info" id="checkinUserInfo">
+                <!-- 用户信息将在这里显示 -->
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelCheckinConfirmBtn">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmCheckinBtn">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 签到成功提示弹窗 -->
+    <div class="checkin-success-modal" id="checkinSuccessModal">
+        <div class="checkin-success-content">
+            <h3 id="successTitle">✅ 操作成功</h3>
+            <div class="success-message" id="successMessage">
+                <!-- 成功消息将在这里显示 -->
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-primary" id="closeSuccessBtn">确定</button>
             </div>
         </div>
     </div>

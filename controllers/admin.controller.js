@@ -448,6 +448,126 @@ async function resetParticipantPassword(req, res) {
   }
 }
 
+/**
+ * 获取用于签到面板的参与者列表
+ */
+async function getParticipantsForCheckin(req, res) {
+  try {
+    logger.operation('获取签到参与者列表', req.user?.id, { operator: req.user?.username });
+    
+    // 获取所有参与者的基本信息和签到状态
+    const [participants] = await pool.execute(`
+      SELECT 
+        p.id,
+        p.username,
+        p.name,
+        p.baptismal_name,
+        p.gender,
+        p.is_checked_in,
+        p.created_at
+      FROM participants p
+      ORDER BY p.id ASC
+    `);
+
+    logger.info('签到参与者列表获取成功', { count: participants.length, operator: req.user?.username });
+
+    res.json({
+      success: true,
+      data: participants
+    });
+  } catch (error) {
+    logger.error('获取签到参与者列表错误', error);
+    res.status(500).json({
+      success: false,
+      message: '服务器内部错误'
+    });
+  }
+}
+
+/**
+ * 更新参与者签到状态
+ */
+async function updateParticipantCheckin(req, res) {
+  try {
+    const { id } = req.params;
+    const { isCheckedIn } = req.body;
+    
+    // 验证参数
+    if (typeof isCheckedIn !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'isCheckedIn 必须是布尔值'
+      });
+    }
+
+    logger.operation('更新参与者签到状态', req.user?.id, { 
+      participant_id: id, 
+      isCheckedIn, 
+      operator: req.user?.username 
+    });
+
+    // 首先检查参与者是否存在
+    const [participantRows] = await pool.execute(
+      'SELECT id, username, name, baptismal_name, gender, is_checked_in FROM participants WHERE id = ?',
+      [id]
+    );
+
+    if (participantRows.length === 0) {
+      logger.warn('更新签到状态失败：参与者不存在', { participant_id: id, operator: req.user?.username });
+      return res.status(404).json({
+        success: false,
+        message: '参与者不存在'
+      });
+    }
+
+    const participant = participantRows[0];
+    
+    // 更新签到状态
+    const [result] = await pool.execute(
+      'UPDATE participants SET is_checked_in = ? WHERE id = ?',
+      [isCheckedIn, id]
+    );
+
+    if (result.affectedRows === 0) {
+      logger.warn('更新签到状态失败', { participant_id: id, operator: req.user?.username });
+      return res.status(500).json({
+        success: false,
+        message: '更新签到状态失败'
+      });
+    }
+
+    // 记录操作成功
+    const action = isCheckedIn ? '签到' : '取消签到';
+    logger.success(`参与者${action}成功`, { 
+      participant_id: id,
+      username: participant.username,
+      name: participant.name,
+      action,
+      operator: req.user?.username 
+    });
+
+    res.json({
+      success: true,
+      message: `${action}成功`,
+      data: {
+        id: participant.id,
+        username: participant.username,
+        name: participant.name,
+        baptismal_name: participant.baptismal_name,
+        gender: participant.gender,
+        is_checked_in: isCheckedIn
+      }
+    });
+
+  } catch (error) {
+    logger.error('更新签到状态错误', error);
+    res.status(500).json({
+      success: false,
+      message: '服务器内部错误'
+    });
+  }
+}
+
 module.exports = {
   registerParticipant,
   getAllParticipants,
@@ -456,5 +576,7 @@ module.exports = {
   setPrimaryPhoto,
   deletePhoto,
   deleteParticipant,
-  resetParticipantPassword
+  resetParticipantPassword,
+  getParticipantsForCheckin,
+  updateParticipantCheckin
 };
