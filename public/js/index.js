@@ -7,6 +7,24 @@ let allUsers = [];
 let searchTimeout = null;
 let preloadedImages = new Map(); // 存储预加载的图片
 
+// 按性别缓存数据
+let genderCache = {
+    female: {
+        users: [],
+        page: 0,
+        hasMore: true,
+        searchTerm: '',
+        preloadedImages: new Map()
+    },
+    male: {
+        users: [],
+        page: 0,
+        hasMore: true,
+        searchTerm: '',
+        preloadedImages: new Map()
+    }
+};
+
 // 页面加载时初始化
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('femaleBtn').classList.add('active');
@@ -41,25 +59,54 @@ document.addEventListener('DOMContentLoaded', function() {
 function switchGender(gender) {
     if (currentGender === gender) return;
     
+    // 保存当前性别的状态到缓存
+    saveCurrentGenderState();
+    
     currentGender = gender;
-    currentPage = 0;
-    hasMore = true;
-    allUsers = [];
-    searchTerm = '';
     
-    // 清空预加载的图片缓存
-    preloadedImages.clear();
-    
-    // 清空搜索框
-    document.getElementById('searchInput').value = '';
-    document.getElementById('clearBtn').style.display = 'none';
+    // 从缓存加载目标性别的状态
+    loadGenderState(gender);
     
     // 更新按钮状态
     document.getElementById('femaleBtn').classList.toggle('active', gender === 'female');
     document.getElementById('maleBtn').classList.toggle('active', gender === 'male');
     
-    // 重新加载用户
-    loadUsers();
+    // 检查是否有缓存数据
+    const cache = genderCache[gender];
+    if (cache.users.length > 0 && cache.searchTerm === searchTerm) {
+        // 有缓存数据且搜索条件相同，直接显示
+        displayUsers(cache.users);
+    } else {
+        // 没有缓存数据或搜索条件不同，重新加载
+        loadUsers();
+    }
+}
+
+// 保存当前性别状态到缓存
+function saveCurrentGenderState() {
+    const cache = genderCache[currentGender];
+    cache.users = [...allUsers];
+    cache.page = currentPage;
+    cache.hasMore = hasMore;
+    cache.searchTerm = searchTerm;
+    cache.preloadedImages = new Map(preloadedImages);
+}
+
+// 从缓存加载性别状态
+function loadGenderState(gender) {
+    const cache = genderCache[gender];
+    allUsers = [...cache.users];
+    currentPage = cache.page;
+    hasMore = cache.hasMore;
+    
+    // 只有在没有搜索条件时才恢复搜索状态
+    if (!searchTerm) {
+        searchTerm = cache.searchTerm;
+        document.getElementById('searchInput').value = searchTerm;
+        document.getElementById('clearBtn').style.display = searchTerm ? 'flex' : 'none';
+    }
+    
+    preloadedImages = new Map(cache.preloadedImages);
 }
 
 // 处理搜索输入
@@ -89,12 +136,38 @@ function clearSearch() {
     
     searchInput.value = '';
     clearBtn.style.display = 'none';
-    searchUsers();
+    
+    // 检查是否有该性别的原始缓存数据（无搜索条件的数据）
+    const cache = genderCache[currentGender];
+    if (cache.users.length > 0 && !cache.searchTerm) {
+        // 有原始缓存数据，直接恢复显示
+        searchTerm = '';
+        currentPage = cache.page;
+        hasMore = cache.hasMore;
+        allUsers = [...cache.users];
+        preloadedImages = new Map(cache.preloadedImages);
+        displayUsers(allUsers);
+    } else {
+        // 没有原始缓存数据，重新搜索
+        searchUsers();
+    }
 }
 
 // 搜索用户
 function searchUsers() {
-    searchTerm = document.getElementById('searchInput').value.trim();
+    const newSearchTerm = document.getElementById('searchInput').value.trim();
+    
+    // 如果搜索条件没有变化且当前性别有缓存数据，直接显示
+    if (newSearchTerm === searchTerm && genderCache[currentGender].users.length > 0) {
+        return;
+    }
+    
+    // 保存当前状态到缓存（如果不是搜索引起的变化）
+    if (searchTerm !== newSearchTerm) {
+        saveCurrentGenderState();
+    }
+    
+    searchTerm = newSearchTerm;
     currentPage = 0;
     hasMore = true;
     allUsers = [];
@@ -159,6 +232,9 @@ function displayUsers(users) {
     
     // 预加载所有用户的照片
     preloadUserPhotos(users);
+    
+    // 更新缓存
+    saveCurrentGenderState();
 }
 
 // 追加用户
@@ -170,6 +246,9 @@ function appendUsers(users) {
     
     // 预加载新添加用户的照片
     preloadUserPhotos(users);
+    
+    // 更新缓存
+    saveCurrentGenderState();
 }
 
 // 创建用户卡片
