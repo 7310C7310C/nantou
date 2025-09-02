@@ -55,6 +55,37 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// 为登录用户设置默认性别筛选（显示异性）
+async function setDefaultGenderForUser() {
+    try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            return;
+        }
+
+        const response = await fetch('/api/auth/me', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const userGender = data.data?.user?.gender;
+            
+            if (userGender) {
+                // 根据用户性别设置默认显示异性
+                const targetGender = userGender === 'male' ? 'female' : 'male';
+                
+                // 强制切换到异性，无论当前选择是什么
+                switchGender(targetGender);
+            }
+        }
+    } catch (error) {
+        console.log('获取用户信息失败，使用默认设置');
+    }
+}
+
 // 切换性别
 function switchGender(gender) {
     if (currentGender === gender) return;
@@ -633,6 +664,8 @@ function setupLoginEvents() {
                     // 参与者角色，关闭模态框并更新界面
                     closeLoginModal();
                     updateUserInterface(userUsername, userRole, userName);
+                    // 获取用户详细信息并设置默认性别筛选
+                    await setDefaultGenderForUser();
                 }
             } else {
                 // 登录失败
@@ -737,7 +770,7 @@ function setupUserDropdown() {
 }
 
 // 页面加载时检查登录状态
-function checkLoginStatus() {
+async function checkLoginStatus() {
     const authToken = localStorage.getItem('authToken');
     const username = localStorage.getItem('username');
     const userRole = localStorage.getItem('userRole');
@@ -746,5 +779,9 @@ function checkLoginStatus() {
     if (authToken && username && userRole) {
         // 如果已登录，更新界面
         updateUserInterface(username, userRole, userName);
+        // 为已登录的参与者设置默认性别筛选
+        if (userRole === 'participant') {
+            await setDefaultGenderForUser();
+        }
     }
 }
