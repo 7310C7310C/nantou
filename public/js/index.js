@@ -6,6 +6,8 @@ let searchTerm = '';
 let allUsers = [];
 let searchTimeout = null;
 let preloadedImages = new Map(); // 存储预加载的图片
+let favoriteIds = new Set(); // 当前用户收藏的参与者ID集合
+let favoritesLoaded = false; // 是否已加载收藏列表
 
 // 按性别缓存数据
 let genderCache = {
@@ -290,8 +292,15 @@ function createUserCard(user) {
     // 高亮搜索内容
     const highlightedUsername = highlightSearchTerm(user.username, searchTerm);
     
+    const isFavorited = user.is_favorited || favoriteIds.has(user.id);
+    const userRole = localStorage.getItem('userRole');
+    const userGender = localStorage.getItem('userGender');
+    // 仅在登录参与者浏览异性列表时显示收藏按钮
+    const showFavBtn = userRole === 'participant' && userGender && userGender !== currentGender;
+    const favBtnHtml = showFavBtn ? `<button class="favorite-toggle ${isFavorited ? 'favorited' : ''}" data-id="${user.id}" title="收藏/取消收藏">${isFavorited ? '❤' : '♡'}</button>` : '';
     return `
-        <div class="user-card" data-username="${user.username}" data-photos='${JSON.stringify(user.photos || [])}'>
+        <div class="user-card" data-id="${user.id}" data-username="${user.username}" data-photos='${JSON.stringify(user.photos || [])}'>
+            ${favBtnHtml}
             <img src="${photoUrl}" alt="用户照片" class="user-photo" onerror="this.src='/placeholder.jpg'">
             <div class="user-info">
                 <div class="user-username">${highlightedUsername}</div>
@@ -521,6 +530,13 @@ function updateNavigationButtons() {
 document.addEventListener('DOMContentLoaded', function() {
     // 用户卡片点击事件（事件委托）
     document.getElementById('usersGrid').addEventListener('click', function(e) {
+        // 收藏按钮
+        const favBtn = e.target.closest('.favorite-toggle');
+        if (favBtn) {
+            e.stopPropagation();
+            toggleFavorite(favBtn.dataset.id, favBtn);
+            return;
+        }
         const userCard = e.target.closest('.user-card');
         if (userCard) {
             const username = userCard.dataset.username;
@@ -655,6 +671,9 @@ function setupLoginEvents() {
                 localStorage.setItem('userRole', userRole);
                 localStorage.setItem('username', userUsername);
                 localStorage.setItem('userName', userName);
+                if (data.data?.user?.gender) {
+                    localStorage.setItem('userGender', data.data.user.gender);
+                }
                 
                 // 根据角色跳转
                 if (['admin', 'staff', 'matchmaker'].includes(userRole)) {
@@ -722,8 +741,9 @@ function updateUserInterface(username, role, userName = '') {
     
     // 设置角色按钮文本
     roleBtn.textContent = displayText;
-    
-    // 添加下拉菜单事件
+    // 新增: 显示收藏按钮
+    showFavoritesButtonIfParticipant(role);
+    // 恢复下拉菜单事件绑定
     setupUserDropdown();
 }
 
@@ -775,6 +795,7 @@ async function checkLoginStatus() {
     const username = localStorage.getItem('username');
     const userRole = localStorage.getItem('userRole');
     const userName = localStorage.getItem('userName');
+    const userGender = localStorage.getItem('userGender');
     
     if (authToken && username && userRole) {
         // 如果已登录，更新界面
@@ -782,6 +803,198 @@ async function checkLoginStatus() {
         // 为已登录的参与者设置默认性别筛选
         if (userRole === 'participant') {
             await setDefaultGenderForUser();
+            await initFavorites();
         }
+    }
+}
+
+// 初始化收藏：获取收藏id集合
+async function initFavorites() {
+    const authToken = localStorage.getItem('authToken');
+    const userRole = localStorage.getItem('userRole');
+    if (!authToken || userRole !== 'participant') return;
+    try {
+        const resp = await fetch('/api/favorites/ids', { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (resp.ok) {
+            const data = await resp.json();
+            favoriteIds = new Set(data.data.favorite_ids || []);
+            // 重新渲染当前列表以显示收藏状态
+            const grid = document.getElementById('usersGrid');
+            grid.querySelectorAll('.user-card').forEach(card => {
+                const id = parseInt(card.dataset.id, 10);
+                const btn = card.querySelector('.favorite-toggle');
+                if (btn) {
+                    const fav = favoriteIds.has(id);
+                    btn.classList.toggle('favorited', fav);
+                    btn.textContent = fav ? '❤' : '♡';
+                }
+            });
+        }
+    } catch (e) {
+        console.log('加载收藏失败');
+    }
+}
+
+// 切换收藏
+async function toggleFavorite(participantId, btnEl) {
+    const authToken = localStorage.getItem('authToken');
+    const userRole = localStorage.getItem('userRole');
+    if (!authToken || userRole !== 'participant') {
+        alert('请先以参与者身份登录');
+        return;
+    }
+    
+    // 立即更新UI反馈
+    const currentlyFavorited = btnEl.classList.contains('favorited');
+    const newFavorited = !currentlyFavorited;
+    btnEl.classList.toggle('favorited', newFavorited);
+    btnEl.textContent = newFavorited ? '❤' : '♡';
+    
+    // 更新本地状态
+    const id = parseInt(participantId, 10);
+    if (newFavorited) {
+        favoriteIds.add(id);
+    } else {
+        favoriteIds.delete(id);
+    }
+    
+    try {
+        const resp = await fetch(`/api/favorites/${participantId}/toggle`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            const serverFavorited = data.data.favorited;
+            
+            // 如果服务器返回状态与本地不符，则纠正
+            if (serverFavorited !== newFavorited) {
+                btnEl.classList.toggle('favorited', serverFavorited);
+                btnEl.textContent = serverFavorited ? '❤' : '♡';
+                if (serverFavorited) {
+                    favoriteIds.add(id);
+                } else {
+                    favoriteIds.delete(id);
+                }
+            }
+            
+            // 如果抽屉已打开，刷新收藏列表
+            if (document.getElementById('favoritesDrawer').classList.contains('open')) {
+                await loadFavoritesList(true);
+            }
+        } else {
+            // 请求失败，回滚UI状态
+            btnEl.classList.toggle('favorited', currentlyFavorited);
+            btnEl.textContent = currentlyFavorited ? '❤' : '♡';
+            if (currentlyFavorited) {
+                favoriteIds.add(id);
+            } else {
+                favoriteIds.delete(id);
+            }
+            console.log('收藏操作失败');
+        }
+    } catch (e) {
+        // 网络错误，回滚UI状态
+        btnEl.classList.toggle('favorited', currentlyFavorited);
+        btnEl.textContent = currentlyFavorited ? '❤' : '♡';
+        if (currentlyFavorited) {
+            favoriteIds.add(id);
+        } else {
+            favoriteIds.delete(id);
+        }
+        console.error('收藏网络错误', e);
+    }
+}
+
+// 加载收藏列表详细数据
+async function loadFavoritesList(forceReload = false) {
+    const drawer = document.getElementById('favoritesDrawer');
+    const listEl = document.getElementById('favoritesList');
+    const emptyEl = document.getElementById('favoritesEmpty');
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) return;
+    if (!forceReload && favoritesLoaded) return; // 已加载且非强制
+    try {
+        const resp = await fetch('/api/favorites', { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (resp.ok) {
+            const data = await resp.json();
+            const arr = data.data.favorites || [];
+            favoritesLoaded = true;
+            
+            // 清除旧内容
+            listEl.querySelectorAll('.favorite-item').forEach(i => i.remove());
+            
+            if (arr.length === 0) {
+                emptyEl.style.display = 'block';
+                return;
+            } else {
+                emptyEl.style.display = 'none';
+            }
+            
+            const newItems = arr.map(p => {
+                const photo = (p.photos || []).find(ph => ph.is_primary) || (p.photos || [])[0];
+                const photoUrl = photo ? photo.photo_url : '/placeholder.jpg';
+                return `<div class="favorite-item" data-id="${p.id}" data-username="${p.username}" data-photos='${JSON.stringify(p.photos || [])}'>
+                    <img src="${photoUrl}" alt="${p.username}">
+                    <div class="favorite-item-info"><span>${p.username}</span><span>${p.baptismal_name || ''}</span></div>
+                </div>`;
+            }).join('');
+            
+            listEl.insertAdjacentHTML('beforeend', newItems);
+        }
+    } catch (e) {
+        console.error('加载收藏列表失败', e);
+    }
+}
+
+// 收藏抽屉开关
+function setupFavoritesDrawer() {
+    const btn = document.getElementById('favoritesBtn');
+    const drawer = document.getElementById('favoritesDrawer');
+    const closeBtn = document.getElementById('closeFavoritesBtn');
+    const listEl = document.getElementById('favoritesList');
+
+    btn.addEventListener('click', async () => {
+        const isOpen = drawer.classList.contains('open');
+        drawer.classList.toggle('open');
+        if (!isOpen) {
+            // 抽屉刚打开时强制刷新列表
+            favoritesLoaded = false;
+            await loadFavoritesList(true);
+        }
+    });
+    closeBtn.addEventListener('click', () => drawer.classList.remove('open'));
+    
+    // 点击抽屉外部关闭抽屉
+    document.addEventListener('click', function(e) {
+        if (drawer.classList.contains('open') && 
+            !drawer.contains(e.target) && 
+            !btn.contains(e.target)) {
+            drawer.classList.remove('open');
+        }
+    });
+    
+    // 点击收藏项打开大图
+    listEl.addEventListener('click', function(e) {
+        const item = e.target.closest('.favorite-item');
+        if (!item) return;
+        const username = item.dataset.username;
+        const photos = JSON.parse(item.dataset.photos || '[]');
+        const baptismal = item.querySelector('.favorite-item-info span:last-child').textContent;
+        openImageViewer(username, photos, baptismal);
+    });
+}
+
+// 显示“我的喜欢”按钮（参与者登录）
+function showFavoritesButtonIfParticipant(role) {
+    const btn = document.getElementById('favoritesBtn');
+    if (role === 'participant') {
+        btn.style.display = 'block';
+        if (!btn.dataset.inited) {
+            setupFavoritesDrawer();
+            btn.dataset.inited = '1';
+        }
+    } else {
+        btn.style.display = 'none';
     }
 }

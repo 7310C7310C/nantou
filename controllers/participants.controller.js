@@ -54,7 +54,7 @@ async function getParticipants(req, res) {
       `, params2);
     }
     
-    participants = rows;
+  participants = rows;
 
     // 获取每个参与者的主图
     const participantsWithPhotos = await Promise.all(participants.map(async (participant) => {
@@ -74,6 +74,22 @@ async function getParticipants(req, res) {
         ...participant,
         photos: photos
       };
+    }));
+
+    // 如果已认证且为参与者，附加收藏标记
+    let favoriteIds = [];
+    if (req.user && req.user.userType === 'participant') {
+      try {
+        const [favRows] = await pool.execute('SELECT favorited_participant_id FROM favorites WHERE user_id = ?', [req.user.id]);
+        favoriteIds = favRows.map(r => r.favorited_participant_id);
+      } catch (e) {
+        // 静默失败
+      }
+    }
+
+    const enriched = participantsWithPhotos.map(p => ({
+      ...p,
+      is_favorited: favoriteIds.includes(p.id)
     }));
 
     // 获取总数用于分页
@@ -99,7 +115,7 @@ async function getParticipants(req, res) {
     res.json({
       success: true,
       data: {
-        participants: participantsWithPhotos,
+  participants: enriched,
         pagination: {
           page: pageNum,
           limit: limitNumInt,

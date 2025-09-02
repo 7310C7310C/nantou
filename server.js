@@ -10,7 +10,8 @@ const authController = require('./controllers/auth.controller');
 const adminController = require('./controllers/admin.controller');
 const logController = require('./controllers/log.controller');
 const participantsController = require('./controllers/participants.controller');
-const { protect, restrictTo } = require('./middleware/auth.middleware');
+const favoriteController = require('./controllers/favorite.controller');
+const { protect, restrictTo, optionalAuth } = require('./middleware/auth.middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -113,7 +114,11 @@ app.get('/api/admin/logs', protect, restrictTo('admin'), logController.getRecent
 app.get('/api/admin/logs/search', protect, restrictTo('admin'), logController.searchLogs);
 
 // 公开API路由
-app.get('/api/participants', participantsController.getParticipants);
+app.get('/api/participants', optionalAuth, participantsController.getParticipants);
+// 收藏相关路由（参与者登录）
+app.post('/api/favorites/:participant_id/toggle', protect, favoriteController.toggle);
+app.get('/api/favorites', protect, favoriteController.list);
+app.get('/api/favorites/ids', protect, favoriteController.ids);
 
 // 管理后台页面路由 - 不需要服务器端认证，由客户端JavaScript处理
 app.get('/admin', (req, res) => {

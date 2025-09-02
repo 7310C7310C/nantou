@@ -21,6 +21,8 @@
                 <button class="logout-btn" id="logoutBtn">登出</button>
             </div>
         </div>
+    <!-- 我的喜欢按钮 -->
+    <button class="favorites-btn" id="favoritesBtn" style="display:none;">我的喜欢</button>
     </div>
 
     <!-- 管理后台按钮 - 固定在右上角 -->
@@ -62,6 +64,17 @@
                 <span class="image-counter" id="imageCounter">1 / 1</span>
                 <button class="control-btn next-btn" id="nextBtn">›</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 喜欢列表抽屉 -->
+    <div class="favorites-drawer" id="favoritesDrawer">
+        <div class="favorites-drawer-header">
+            <h3>我的喜欢</h3>
+            <button class="close-favorites" id="closeFavoritesBtn">×</button>
+        </div>
+        <div class="favorites-list" id="favoritesList">
+            <div class="favorites-empty" id="favoritesEmpty" style="display:none;">暂无收藏</div>
         </div>
     </div>
 
