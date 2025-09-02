@@ -863,38 +863,46 @@ async function toggleFavorite(participantId, btnEl) {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        if (resp.ok) {
-            const data = await resp.json();
-            const serverFavorited = data.data.favorited;
-            
-            // 如果服务器返回状态与本地不符，则纠正
-            if (serverFavorited !== newFavorited) {
-                btnEl.classList.toggle('favorited', serverFavorited);
-                btnEl.textContent = serverFavorited ? '❤' : '♡';
-                if (serverFavorited) {
-                    favoriteIds.add(id);
-                } else {
-                    favoriteIds.delete(id);
+        if (!resp.ok) {
+            throw new Error('请求失败');
+        }
+        const data = await resp.json();
+        const favorited = data.data.favorited;
+        if (favorited) {
+            favoriteIds.add(id);
+        } else {
+            favoriteIds.delete(id);
+        }
+        // 确保按钮状态与最终结果一致
+        btnEl.classList.toggle('favorited', favorited);
+        btnEl.textContent = favorited ? '❤' : '♡';
+
+        // 同步更新主列表对应按钮
+        const cardBtn = document.querySelector(`.user-card[data-id='${participantId}'] .favorite-toggle`);
+        if (cardBtn && cardBtn !== btnEl) {
+            cardBtn.classList.toggle('favorited', favorited);
+            cardBtn.textContent = favorited ? '❤' : '♡';
+        }
+
+        // 抽屉同步
+        if (document.getElementById('favoritesDrawer').classList.contains('open')) {
+            if (favorited) {
+                const exists = document.querySelector(`.favorite-item[data-id='${participantId}']`);
+                if (!exists) {
+                    favoritesLoaded = false;
+                    await loadFavoritesList(true);
+                }
+            } else {
+                const item = document.querySelector(`.favorite-item[data-id='${participantId}']`);
+                if (item) item.remove();
+                const listEl = document.getElementById('favoritesList');
+                if (!listEl.querySelector('.favorite-item')) {
+                    document.getElementById('favoritesEmpty').style.display = 'block';
                 }
             }
-            
-            // 如果抽屉已打开，刷新收藏列表
-            if (document.getElementById('favoritesDrawer').classList.contains('open')) {
-                await loadFavoritesList(true);
-            }
-        } else {
-            // 请求失败，回滚UI状态
-            btnEl.classList.toggle('favorited', currentlyFavorited);
-            btnEl.textContent = currentlyFavorited ? '❤' : '♡';
-            if (currentlyFavorited) {
-                favoriteIds.add(id);
-            } else {
-                favoriteIds.delete(id);
-            }
-            console.log('收藏操作失败');
         }
     } catch (e) {
-        // 网络错误，回滚UI状态
+        // 回滚
         btnEl.classList.toggle('favorited', currentlyFavorited);
         btnEl.textContent = currentlyFavorited ? '❤' : '♡';
         if (currentlyFavorited) {
@@ -934,7 +942,9 @@ async function loadFavoritesList(forceReload = false) {
             const newItems = arr.map(p => {
                 const photo = (p.photos || []).find(ph => ph.is_primary) || (p.photos || [])[0];
                 const photoUrl = photo ? photo.photo_url : '/placeholder.jpg';
+                const favorited = favoriteIds.has(p.id);
                 return `<div class="favorite-item" data-id="${p.id}" data-username="${p.username}" data-photos='${JSON.stringify(p.photos || [])}'>
+                    <button class="favorite-toggle ${favorited ? 'favorited' : ''}" data-id="${p.id}" title="取消喜欢">${favorited ? '❤' : '♡'}</button>
                     <img src="${photoUrl}" alt="${p.username}">
                     <div class="favorite-item-info"><span>${p.username}</span><span>${p.baptismal_name || ''}</span></div>
                 </div>`;
@@ -976,6 +986,12 @@ function setupFavoritesDrawer() {
     
     // 点击收藏项打开大图
     listEl.addEventListener('click', function(e) {
+        const favBtn = e.target.closest('.favorite-toggle');
+        if (favBtn) {
+            e.stopPropagation();
+            toggleFavorite(favBtn.dataset.id, favBtn);
+            return;
+        }
         const item = e.target.closest('.favorite-item');
         if (!item) return;
         const username = item.dataset.username;
@@ -998,3 +1014,6 @@ function showFavoritesButtonIfParticipant(role) {
         btn.style.display = 'none';
     }
 }
+
+// Toast 提示
+// 已移除 toast 功能
