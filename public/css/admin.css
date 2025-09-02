@@ -1620,12 +1620,12 @@ body {
 
 .checkin-content {
     background-color: #fefefe;
-    margin: 1% auto;
+    margin: 1% auto 1% auto;
     padding: 0;
     border-radius: 10px;
     width: 95%;
     max-width: 1200px;
-    height: 95vh;
+    height: 98vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -1780,6 +1780,9 @@ body {
     border: none;
     min-width: 60px;
     text-align: center;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
 }
 
 .gender-toggle input[type="radio"]:checked + .gender-btn {
@@ -1794,6 +1797,15 @@ body {
 
 .gender-toggle input[type="radio"]:checked + .gender-btn:hover {
     color: white;
+}
+
+.gender-btn:focus {
+    outline: none;
+}
+
+.gender-btn:active {
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* 居中复选框样式 */
@@ -1937,12 +1949,16 @@ body {
 
 .checkin-confirm-content {
     background-color: #fefefe;
-    margin: 15% auto;
+    margin: 0;
     padding: 30px;
     border-radius: 10px;
     width: 90%;
     max-width: 500px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .checkin-user-info {
@@ -1978,13 +1994,17 @@ body {
 
 .checkin-success-content {
     background-color: #fefefe;
-    margin: 15% auto;
+    margin: 0;
     padding: 30px;
     border-radius: 10px;
     width: 90%;
     max-width: 400px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     text-align: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .success-message {
@@ -2006,8 +2026,8 @@ body {
 /* 移动端适配 */
 @media (max-width: 768px) {
     .checkin-content {
-        margin: 0.5% auto;
-        height: 97vh;
+        margin: 0.5% auto 0.5% auto;
+        height: 99vh;
         width: 98%;
     }
     
