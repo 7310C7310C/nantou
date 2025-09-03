@@ -908,69 +908,7 @@ body {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-/* 配对界面模态框 */
-.matching-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 2000;
-    animation: fadeIn 0.3s ease;
-}
-
-.matching-modal-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 1000px;
-    height: 80%;
-    background: #fff;
-    border-radius: 20px;
-    padding: 30px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.matching-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
-}
-
-.matching-modal-header h2 {
-    color: #333;
-    font-size: 24px;
-}
-
-.matching-close {
-    background: none;
-    border: none;
-    font-size: 28px;
-    color: #666;
-    cursor: pointer;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-}
-
-.matching-close:hover {
-    background: #f5f5f5;
-    color: #333;
-}
-
+/* 配对搜索框样式 */
 .matching-search-container {
     margin-bottom: 20px;
 }
@@ -978,74 +916,29 @@ body {
 .matching-search {
     width: 100%;
     padding: 12px 20px;
-    border: 1px solid #ddd;
+    border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 25px;
     font-size: 16px;
     outline: none;
-    transition: border-color 0.3s ease;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    backdrop-filter: blur(5px);
+}
+
+.matching-search::placeholder {
+    color: rgba(255, 255, 255, 0.7);
 }
 
 .matching-search:focus {
-    border-color: #db909a;
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.15);
 }
 
-.matching-modal-body {
-    flex: 1;
-    overflow-y: auto;
-}
-
-.matching-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 20px;
-    padding: 10px 0;
-}
-
-.matching-card {
-    position: relative;
-    background: #fff;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    cursor: pointer;
-    aspect-ratio: 3/4;
-}
-
-.matching-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.matching-card.matched {
+/* 配对用户卡片特殊样式 */
+.user-card.matched {
     border: 3px solid #ff6b6b;
     box-shadow: 0 4px 20px rgba(255, 107, 107, 0.3);
-}
-
-.matching-card img {
-    width: 100%;
-    height: 70%;
-    object-fit: cover;
-}
-
-.matching-card-info {
-    padding: 10px;
-    height: 30%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.matching-card-name {
-    font-weight: bold;
-    font-size: 14px;
-    color: #333;
-    margin-bottom: 2px;
-}
-
-.matching-card-baptismal {
-    font-size: 12px;
-    color: #666;
 }
 
 /* 星级按钮 */

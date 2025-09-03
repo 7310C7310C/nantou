@@ -1242,21 +1242,19 @@ function openMatchingModal(participantId, participantName) {
     currentTargetParticipantName = participantName;
     
     document.getElementById('targetParticipantName').textContent = participantName;
-    document.getElementById('matchingModal').style.display = 'block';
+    const modal = document.getElementById('matchingModal');
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
     document.getElementById('matchingSearch').value = '';
-    
-    // 将配对列表滚动到顶部
-    const modalBody = document.querySelector('.matching-modal-body');
-    if (modalBody) {
-        modalBody.scrollTop = 0;
-    }
     
     loadMatchingParticipants();
 }
 
 // 关闭配对模态框
 function closeMatchingModal() {
-    document.getElementById('matchingModal').style.display = 'none';
+    const modal = document.getElementById('matchingModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
     currentTargetParticipantId = null;
     currentTargetParticipantName = '';
     matchingParticipants = [];
@@ -1305,37 +1303,71 @@ function renderMatchingParticipants() {
     grid.style.display = 'grid';
     empty.style.display = 'none';
     
+    // 使用标准的用户卡片样式，但需要特殊处理配对界面
     grid.innerHTML = matchingParticipants.map(participant => {
         const hasRecommendation = participant.recommendation_id;
         const stars = participant.stars || 0;
-        const primaryPhoto = participant.photos && participant.photos.length > 0 
-            ? participant.photos.find(p => p.is_primary) || participant.photos[0] 
-            : null;
         
-        return `
-            <div class="matching-card ${hasRecommendation ? 'matched' : ''}" 
-                 data-id="${participant.id}"
-                 onclick="openMatchingImageViewer(${participant.id})">
-                <img src="${primaryPhoto ? primaryPhoto.photo_url : '/images/default-avatar.png'}" 
-                     alt="${participant.name}" 
-                     loading="lazy">
-                <div class="matching-card-info">
-                    <div class="matching-card-name">${participant.username} - ${participant.name}</div>
-                    <div class="matching-card-baptismal">${participant.baptismal_name || ''}</div>
-                </div>
-                <button class="star-btn ${hasRecommendation ? 'filled' : 'empty'}" 
-                        onclick="event.stopPropagation(); openStarRating(${participant.id}, '${participant.name}', ${stars})"
-                        title="${hasRecommendation ? `已配对 ${stars} 星` : '点击配对'}">
-                    ${hasRecommendation ? '★'.repeat(stars) : '☆'}
-                </button>
-            </div>
-        `;
+        // 创建标准用户对象
+        const userObj = {
+            id: participant.id,
+            username: participant.username,
+            name: participant.name,
+            baptismal_name: participant.baptismal_name,
+            gender: participant.gender,
+            photos: participant.photos || []
+        };
+        
+        // 使用标准的createUserCard函数创建卡片
+        let cardHtml = createUserCard(userObj);
+        
+        // 移除收藏按钮和配对按钮，替换为星级按钮
+        cardHtml = cardHtml.replace(/<button class="favorite-toggle[^>]*>[\s\S]*?<\/button>/, '');
+        cardHtml = cardHtml.replace(/<button class="match-btn[^>]*>[\s\S]*?<\/button>/, '');
+        
+        // 添加星级按钮
+        const starBtn = `<button class="star-btn ${hasRecommendation ? 'filled' : 'empty'}" 
+                                data-participant-id="${participant.id}" 
+                                data-participant-name="${participant.name}"
+                                data-current-stars="${stars}"
+                                title="${hasRecommendation ? `已配对 ${stars} 星` : '点击评星'}">
+                            ${hasRecommendation ? '★'.repeat(stars) : '☆'}
+                        </button>`;
+        
+        // 在user-card div后添加星级按钮
+        cardHtml = cardHtml.replace('<div class="user-card"', `<div class="user-card ${hasRecommendation ? 'matched' : ''}"`);
+        cardHtml = cardHtml.replace('<img src=', starBtn + '<img src=');
+        
+        return cardHtml;
     }).join('');
     
-    // 确保列表滚动到顶部
-    const modalBody = document.querySelector('.matching-modal-body');
-    if (modalBody) {
-        modalBody.scrollTop = 0;
+    // 为配对列表添加点击事件委托
+    grid.removeEventListener('click', handleMatchingGridClick);
+    grid.addEventListener('click', handleMatchingGridClick);
+}
+
+// 处理配对网格点击事件
+function handleMatchingGridClick(e) {
+    // 如果点击的是星级按钮，处理评星
+    const starBtn = e.target.closest('.star-btn');
+    if (starBtn) {
+        e.stopPropagation();
+        const participantId = parseInt(starBtn.dataset.participantId);
+        const participantName = starBtn.dataset.participantName;
+        const currentStars = parseInt(starBtn.dataset.currentStars) || 0;
+        openStarRating(participantId, participantName, currentStars);
+        return;
+    }
+    
+    // 如果点击的是卡片其他部分，查看大图
+    const card = e.target.closest('.user-card');
+    if (card) {
+        const participantId = parseInt(card.dataset.id);
+        const participant = matchingParticipants.find(p => p.id === participantId);
+        if (participant && participant.photos && participant.photos.length > 0) {
+            // 使用现有的图片查看器函数
+            openImageViewer(participant.username, participant.photos, participant.baptismal_name);
+        }
     }
 }
 
@@ -1686,23 +1718,4 @@ async function removeMatchById(matchId, person1Name, person2Name) {
         console.error('删除配对失败:', error);
         alert('删除配对失败：' + error.message);
     }
-}
-
-// 配对界面图片查看器
-function openMatchingImageViewer(participantId) {
-    const participant = matchingParticipants.find(p => p.id === participantId);
-    if (!participant || !participant.photos || participant.photos.length === 0) return;
-    
-    // 复用现有的全屏查看器逻辑
-    currentViewerUser = {
-        id: participant.id,
-        username: participant.username,
-        name: participant.name,
-        baptismal_name: participant.baptismal_name,
-        photos: participant.photos
-    };
-    currentImageIndex = 0;
-    
-    document.getElementById('fullscreenViewer').style.display = 'flex';
-    updateViewerContent();
 }
