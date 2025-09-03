@@ -839,12 +839,52 @@ function setupUserDropdown() {
         localStorage.removeItem('userRole');
         localStorage.removeItem('username');
         localStorage.removeItem('userName');
+        localStorage.removeItem('userGender');
+        
         const loginBtn = document.getElementById('loginBtn');
         const userInfo = document.getElementById('userInfo');
         const adminPanelBtn = document.getElementById('adminPanelBtn');
+        const favoritesBtn = document.getElementById('favoritesBtn');
+        const favoritesDrawer = document.getElementById('favoritesDrawer');
+        
+        // 重置UI显示状态
         loginBtn.style.display = 'block';
         userInfo.style.display = 'none';
         adminPanelBtn.style.display = 'none';
+        favoritesBtn.style.display = 'none';
+        favoritesDrawer.classList.remove('open');
+        
+        // 清除收藏相关状态
+        favoriteIds.clear();
+        favoritesLoaded = false;
+        
+        // 重新加载用户列表以移除爱心图标
+        currentPage = 0;
+        hasMore = true;
+        allUsers = [];
+        preloadedImages.clear();
+        
+        // 清空缓存
+        genderCache = {
+            female: {
+                users: [],
+                page: 0,
+                hasMore: true,
+                searchTerm: '',
+                preloadedImages: new Map()
+            },
+            male: {
+                users: [],
+                page: 0,
+                hasMore: true,
+                searchTerm: '',
+                preloadedImages: new Map()
+            }
+        };
+        
+        // 重新加载当前性别的用户列表
+        loadUsers();
+        
         // 重新设置登录事件
         setupLoginEvents();
     });
