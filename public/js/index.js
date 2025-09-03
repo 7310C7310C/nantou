@@ -1245,6 +1245,12 @@ function openMatchingModal(participantId, participantName) {
     document.getElementById('matchingModal').style.display = 'block';
     document.getElementById('matchingSearch').value = '';
     
+    // 将配对列表滚动到顶部
+    const modalBody = document.querySelector('.matching-modal-body');
+    if (modalBody) {
+        modalBody.scrollTop = 0;
+    }
+    
     loadMatchingParticipants();
 }
 
@@ -1325,6 +1331,12 @@ function renderMatchingParticipants() {
             </div>
         `;
     }).join('');
+    
+    // 确保列表滚动到顶部
+    const modalBody = document.querySelector('.matching-modal-body');
+    if (modalBody) {
+        modalBody.scrollTop = 0;
+    }
 }
 
 // 配对搜索处理
