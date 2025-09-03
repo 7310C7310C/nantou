@@ -428,7 +428,6 @@ function closeManageModal() {
 // 加载参与者列表
 async function loadParticipants() {
     try {
-        showLoading('正在加载...', '请稍候，正在获取参与者列表');
         const token = getAuthToken();
         
         if (!token) {
@@ -466,8 +465,6 @@ async function loadParticipants() {
             return;
         }
         alert('网络错误，请重试');
-    } finally {
-        hideLoading();
     }
 }
 
@@ -1661,7 +1658,6 @@ function setupCheckinEventListeners() {
 // 加载参与者签到数据
 async function loadCheckinParticipants() {
     try {
-        showLoading();
         const token = getAuthToken();
         
         if (!token) {
@@ -1693,8 +1689,6 @@ async function loadCheckinParticipants() {
     } catch (error) {
         console.error('加载参与者数据失败:', error);
         alert('加载参与者数据失败，请重试');
-    } finally {
-        hideLoading();
     }
 }
 
