@@ -126,6 +126,9 @@ function switchGender(gender) {
     if (cache.users.length > 0 && cache.searchTerm === searchTerm) {
         // 有缓存数据且搜索条件相同，直接显示
         displayUsers(cache.users);
+    // 保险：刷新心形图标（尤其是刚登录后从另一性别切回）
+    const grid = document.getElementById('usersGrid');
+    if (grid) updateHeartIcons(grid);
     } else {
         // 没有缓存数据或搜索条件不同，重新加载
         loadUsers();
@@ -235,6 +238,12 @@ async function loadUsers() {
     isLoading = true;
     
     try {
+        // 如果是参与者且收藏尚未初始化，先等待初始化（保险：正常流程已在登录后调用 initFavorites，这里是兜底）
+        const userRole = localStorage.getItem('userRole');
+        if (userRole === 'participant' && favoriteIds.size === 0) {
+            // 仅当还没有初始化过 (用户刚登录) 时尝试一次
+            await initFavorites();
+        }
         const response = await fetch(`/api/participants?gender=${currentGender}&page=${currentPage}&limit=10&search=${encodeURIComponent(searchTerm)}`);
         
         if (response.ok) {
@@ -280,12 +289,8 @@ function displayUsers(users) {
     grid.innerHTML = users.map(user => createUserCard(user)).join('');
     allUsers = users;
     
-    // Draw hearts
-    grid.querySelectorAll('.favorite-toggle canvas.heart-icon').forEach(canvas => {
-        const btn = canvas.parentElement;
-        const isFavorited = btn.classList.contains('favorited');
-        drawHeartIcon(canvas, isFavorited);
-    });
+    // Draw hearts - 确保收藏状态正确
+    updateHeartIcons(grid);
     
     // 预加载所有用户的照片
     preloadUserPhotos(users);
@@ -302,15 +307,10 @@ function appendUsers(users) {
     grid.insertAdjacentHTML('beforeend', userCards);
     allUsers = allUsers.concat(users);
 
-    // Draw hearts on newly added cards
+    // Draw hearts on newly added cards - 确保收藏状态正确
     const cards = Array.from(grid.children);
     for (let i = beforeCount; i < cards.length; i++) {
-        const canvas = cards[i].querySelector('.favorite-toggle canvas.heart-icon');
-        if (canvas) {
-            const btn = canvas.parentElement;
-            const isFavorited = btn.classList.contains('favorited');
-            drawHeartIcon(canvas, isFavorited);
-        }
+        updateHeartIcons(cards[i]);
     }
     
     // 预加载新添加用户的照片
@@ -318,6 +318,19 @@ function appendUsers(users) {
     
     // 更新缓存
     saveCurrentGenderState();
+}
+
+// 更新爱心图标显示状态
+function updateHeartIcons(container) {
+    const elements = container.querySelectorAll ? container.querySelectorAll('.favorite-toggle canvas.heart-icon') : container.querySelector ? [container.querySelector('.favorite-toggle canvas.heart-icon')].filter(Boolean) : [];
+    elements.forEach(canvas => {
+        const btn = canvas.parentElement;
+        const participantId = parseInt(btn.dataset.id, 10);
+        const isFavorited = favoriteIds.has(participantId);
+        // 确保按钮的 CSS 类与实际收藏状态一致
+        btn.classList.toggle('favorited', isFavorited);
+        drawHeartIcon(canvas, isFavorited);
+    });
 }
 
 // 绘制爱心图标
@@ -744,6 +757,23 @@ function setupLoginEvents() {
                     // 参与者角色，关闭模态框并更新界面
                     closeLoginModal();
                     updateUserInterface(userUsername, userRole, userName);
+                    // ==== 修复：登录前已加载的第一页卡片没有爱心按钮的问题 ====
+                    // 场景：未登录状态已经加载了当前性别(默认 female)第一页数据；登录男性参与者后仍然停留在 female，
+                    // 此时旧卡片是未登录时渲染的，不包含收藏按钮；随后懒加载第二页才出现按钮，造成“第一页没有爱心”的错觉。
+                    // 解决：登录成功（并且角色为 participant）后，先清空当前列表和缓存，再初始化收藏，再重新根据性别规则加载第一页。
+                    // 这样第一页会重新以“已登录参与者身份”渲染，收藏按钮（心形）立即出现。
+                    genderCache = {
+                        female: { users: [], page: 0, hasMore: true, searchTerm: '', preloadedImages: new Map() },
+                        male:   { users: [], page: 0, hasMore: true, searchTerm: '', preloadedImages: new Map() }
+                    };
+                    allUsers = [];
+                    currentPage = 0;
+                    hasMore = true;
+                    preloadedImages.clear();
+                    const gridEl = document.getElementById('usersGrid');
+                    if (gridEl) gridEl.innerHTML = '';
+                    // 先加载收藏，再决定默认展示异性列表
+                    await initFavorites();
                     // 获取用户详细信息并设置默认性别筛选
                     await setDefaultGenderForUser();
                 }
@@ -902,8 +932,9 @@ async function checkLoginStatus() {
         updateUserInterface(username, userRole, userName);
         // 为已登录的参与者设置默认性别筛选
         if (userRole === 'participant') {
-            await setDefaultGenderForUser();
+            // 先初始化收藏状态，再加载用户列表
             await initFavorites();
+            await setDefaultGenderForUser();
             return true; // 表示已处理参与者的初始加载
         }
     }
@@ -922,18 +953,7 @@ async function initFavorites() {
             favoriteIds = new Set(data.data.favorite_ids || []);
             // 重新渲染当前列表以显示收藏状态
             const grid = document.getElementById('usersGrid');
-            grid.querySelectorAll('.user-card').forEach(card => {
-                const id = parseInt(card.dataset.id, 10);
-                const btn = card.querySelector('.favorite-toggle');
-                if (btn) {
-                    const fav = favoriteIds.has(id);
-                    btn.classList.toggle('favorited', fav);
-                    const canvas = btn.querySelector('canvas.heart-icon');
-                    if (canvas) {
-                        drawHeartIcon(canvas, fav);
-                    }
-                }
-            });
+            updateHeartIcons(grid);
         }
     } catch (e) {
         console.log('加载收藏失败');
