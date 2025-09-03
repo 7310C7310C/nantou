@@ -28,9 +28,9 @@ let genderCache = {
 };
 
 // 页面加载时初始化
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('femaleBtn').classList.add('active');
-    loadUsers();
+    
     document.addEventListener('contextmenu', function(e) {
         if (e.target.tagName === 'IMG') {
             e.preventDefault();
@@ -50,7 +50,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     setupLoginEvents();
-    checkLoginStatus();
+    // 检查登录状态，如果是参与者，则由 checkLoginStatus 内部处理加载
+    // 如果不是参与者，则加载默认用户列表
+    const isParticipant = await checkLoginStatus();
+    if (!isParticipant) {
+        loadUsers();
+    }
     // 管理后台按钮跳转
     document.getElementById('adminPanelBtn').addEventListener('click', function() {
         window.location.href = '/admin';
@@ -62,6 +67,7 @@ async function setDefaultGenderForUser() {
     try {
         const authToken = localStorage.getItem('authToken');
         if (!authToken) {
+            loadUsers(); // 如果没有token，按默认加载
             return;
         }
 
@@ -79,12 +85,23 @@ async function setDefaultGenderForUser() {
                 // 根据用户性别设置默认显示异性
                 const targetGender = userGender === 'male' ? 'female' : 'male';
                 
-                // 强制切换到异性，无论当前选择是什么
-                switchGender(targetGender);
+                // 如果需要切换性别，则切换；否则直接加载当前性别
+                if (currentGender !== targetGender) {
+                    switchGender(targetGender);
+                } else {
+                    loadUsers();
+                }
+            } else {
+                // 用户信息中没有性别，按默认加载
+                loadUsers();
             }
+        } else {
+            // 获取用户信息失败，按默认加载
+            loadUsers();
         }
     } catch (error) {
         console.log('获取用户信息失败，使用默认设置');
+        loadUsers(); // 网络错误等，按默认加载
     }
 }
 
@@ -795,7 +812,6 @@ async function checkLoginStatus() {
     const username = localStorage.getItem('username');
     const userRole = localStorage.getItem('userRole');
     const userName = localStorage.getItem('userName');
-    const userGender = localStorage.getItem('userGender');
     
     if (authToken && username && userRole) {
         // 如果已登录，更新界面
@@ -804,8 +820,10 @@ async function checkLoginStatus() {
         if (userRole === 'participant') {
             await setDefaultGenderForUser();
             await initFavorites();
+            return true; // 表示已处理参与者的初始加载
         }
     }
+    return false; // 表示未处理，需要调用者进行默认加载
 }
 
 // 初始化收藏：获取收藏id集合
