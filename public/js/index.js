@@ -874,15 +874,15 @@ function setupUserDropdown() {
         const loginBtn = document.getElementById('loginBtn');
         const userInfo = document.getElementById('userInfo');
         const adminPanelBtn = document.getElementById('adminPanelBtn');
-        const favoritesBtn = document.getElementById('favoritesBtn');
-        const favoritesDrawer = document.getElementById('favoritesDrawer');
+    const favoritesBtn = document.getElementById('favoritesBtn');
+    const favoritesModal = document.getElementById('favoritesModal');
         
         // 重置UI显示状态
         loginBtn.style.display = 'block';
         userInfo.style.display = 'none';
         adminPanelBtn.style.display = 'none';
-        favoritesBtn.style.display = 'none';
-        favoritesDrawer.classList.remove('open');
+    favoritesBtn.style.display = 'none';
+    if (favoritesModal) favoritesModal.classList.remove('active');
         
         // 清除收藏相关状态
         favoriteIds.clear();
@@ -1017,21 +1017,33 @@ async function toggleFavorite(participantId, btnEl) {
             }
         }
 
-        // 抽屉同步
-        if (document.getElementById('favoritesDrawer').classList.contains('open')) {
+        // 模态同步
+        const favModal = document.getElementById('favoritesModal');
+        if (favModal && favModal.classList.contains('active')) {
+            const grid = document.getElementById('favoritesGrid');
+            const emptyEl = document.getElementById('favoritesEmptyModal');
             if (favorited) {
-                const exists = document.querySelector(`.favorite-item[data-id='${participantId}']`);
+                // 如果不存在则追加
+                let exists = grid.querySelector(`.user-card[data-id='${participantId}']`);
                 if (!exists) {
-                    favoritesLoaded = false;
-                    await loadFavoritesList(true);
+                    // 创建卡片
+                    const p = { id: id, username: cardBtn?.closest('.user-card')?.dataset.username || btnEl.closest('.user-card')?.dataset.username || '', baptismal_name: cardBtn?.closest('.user-card')?.querySelector('.user-baptismal')?.textContent || '', photos: JSON.parse(cardBtn?.closest('.user-card')?.dataset.photos || btnEl.closest('.user-card')?.dataset.photos || '[]') };
+                    const photo = (p.photos || []).find(ph => ph.is_primary) || (p.photos || [])[0];
+                    const photoUrl = photo ? photo.photo_url : '/placeholder.jpg';
+                    const html = `<div class="user-card" data-id="${p.id}" data-username="${p.username}" data-photos='${JSON.stringify(p.photos || [])}'>
+                        <button class="favorite-toggle favorited" data-id="${p.id}" title="取消喜欢"><canvas class="heart-icon" width="24" height="24"></canvas></button>
+                        <img src="${photoUrl}" class="user-photo" alt="${p.username}" onerror="this.src='/placeholder.jpg'">
+                        <div class="user-info"><div class="user-username">${p.username}</div><div class="user-baptismal">${p.baptismal_name || ''}</div></div>
+                    </div>`;
+                    grid.insertAdjacentHTML('beforeend', html);
+                    const canvasNew = grid.querySelector(`.user-card[data-id='${p.id}'] canvas.heart-icon`);
+                    if (canvasNew) drawHeartIcon(canvasNew, true);
                 }
+                if (emptyEl) emptyEl.style.display = 'none';
             } else {
-                const item = document.querySelector(`.favorite-item[data-id='${participantId}']`);
-                if (item) item.remove();
-                const listEl = document.getElementById('favoritesList');
-                if (!listEl.querySelector('.favorite-item')) {
-                    document.getElementById('favoritesEmpty').style.display = 'block';
-                }
+                const card = grid.querySelector(`.user-card[data-id='${participantId}']`);
+                if (card) card.remove();
+                if (emptyEl && !grid.querySelector('.user-card')) emptyEl.style.display = 'block';
             }
         }
     } catch (e) {
@@ -1049,95 +1061,82 @@ async function toggleFavorite(participantId, btnEl) {
     }
 }
 
-// 加载收藏列表详细数据
-async function loadFavoritesList(forceReload = false) {
-    const drawer = document.getElementById('favoritesDrawer');
-    const listEl = document.getElementById('favoritesList');
-    const emptyEl = document.getElementById('favoritesEmpty');
+// 加载收藏列表（模态）
+async function loadFavoritesModal(forceReload = false) {
     const authToken = localStorage.getItem('authToken');
     if (!authToken) return;
-    if (!forceReload && favoritesLoaded) return; // 已加载且非强制
+    if (!forceReload && favoritesLoaded) return;
+    const grid = document.getElementById('favoritesGrid');
+    const emptyEl = document.getElementById('favoritesEmptyModal');
     try {
         const resp = await fetch('/api/favorites', { headers: { 'Authorization': `Bearer ${authToken}` } });
         if (resp.ok) {
             const data = await resp.json();
             const arr = data.data.favorites || [];
             favoritesLoaded = true;
-            
-            // 清除旧内容
-            listEl.querySelectorAll('.favorite-item').forEach(i => i.remove());
-            
+            grid.innerHTML = '';
             if (arr.length === 0) {
-                emptyEl.style.display = 'block';
+                if (emptyEl) emptyEl.style.display = 'block';
                 return;
-            } else {
-                emptyEl.style.display = 'none';
-            }
-            
-            const newItems = arr.map(p => {
+            } else if (emptyEl) emptyEl.style.display = 'none';
+            const cardsHtml = arr.map(p => {
                 const photo = (p.photos || []).find(ph => ph.is_primary) || (p.photos || [])[0];
                 const photoUrl = photo ? photo.photo_url : '/placeholder.jpg';
-                const favorited = favoriteIds.has(p.id);
-                return `<div class="favorite-item" data-id="${p.id}" data-username="${p.username}" data-photos='${JSON.stringify(p.photos || [])}'>
-                    <button class="favorite-toggle ${favorited ? 'favorited' : ''}" data-id="${p.id}" title="取消喜欢"><canvas class="heart-icon" width="24" height="24"></canvas></button>
-                    <img src="${photoUrl}" alt="${p.username}">
-                    <div class="favorite-item-info"><span>${p.username}</span><span>${p.baptismal_name || ''}</span></div>
+                return `<div class=\"user-card\" data-id=\"${p.id}\" data-username=\"${p.username}\" data-photos='${JSON.stringify(p.photos || [])}'>
+                    <button class=\"favorite-toggle favorited\" data-id=\"${p.id}\" title=\"取消喜欢\"><canvas class=\"heart-icon\" width=\"24\" height=\"24\"></canvas></button>
+                    <img src=\"${photoUrl}\" class=\"user-photo\" alt=\"${p.username}\" onerror=\"this.src='/placeholder.jpg'\">
+                    <div class=\"user-info\"><div class=\"user-username\">${p.username}</div><div class=\"user-baptismal\">${p.baptismal_name || ''}</div></div>
                 </div>`;
             }).join('');
-            
-            listEl.insertAdjacentHTML('beforeend', newItems);
-
-            listEl.querySelectorAll('.favorite-toggle canvas.heart-icon').forEach(canvas => {
-                const btn = canvas.parentElement;
-                const isFavorited = btn.classList.contains('favorited');
-                drawHeartIcon(canvas, isFavorited);
-            });
+            grid.insertAdjacentHTML('beforeend', cardsHtml);
+            updateHeartIcons(grid);
         }
     } catch (e) {
         console.error('加载收藏列表失败', e);
     }
 }
 
-// 收藏抽屉开关
-function setupFavoritesDrawer() {
-    const btn = document.getElementById('favoritesBtn');
-    const drawer = document.getElementById('favoritesDrawer');
-    const closeBtn = document.getElementById('closeFavoritesBtn');
-    const listEl = document.getElementById('favoritesList');
+function openFavoritesModal() {
+    const modal = document.getElementById('favoritesModal');
+    if (!modal) return;
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    favoritesLoaded = false; // 每次打开刷新
+    loadFavoritesModal(true);
+}
 
-    btn.addEventListener('click', async () => {
-        const isOpen = drawer.classList.contains('open');
-        drawer.classList.toggle('open');
-        if (!isOpen) {
-            // 抽屉刚打开时强制刷新列表
-            favoritesLoaded = false;
-            await loadFavoritesList(true);
-        }
+function closeFavoritesModal() {
+    const modal = document.getElementById('favoritesModal');
+    if (!modal) return;
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+function setupFavoritesModal() {
+    const btn = document.getElementById('favoritesBtn');
+    const modal = document.getElementById('favoritesModal');
+    const closeBtn = document.getElementById('closeFavoritesModal');
+    const grid = document.getElementById('favoritesGrid');
+    if (!btn || !modal) return;
+    btn.addEventListener('click', openFavoritesModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeFavoritesModal);
+    // 点击遮罩关闭
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeFavoritesModal();
     });
-    closeBtn.addEventListener('click', () => drawer.classList.remove('open'));
-    
-    // 点击抽屉外部关闭抽屉
-    document.addEventListener('click', function(e) {
-        if (drawer.classList.contains('open') && 
-            !drawer.contains(e.target) && 
-            !btn.contains(e.target)) {
-            drawer.classList.remove('open');
-        }
-    });
-    
-    // 点击收藏项打开大图
-    listEl.addEventListener('click', function(e) {
+    // 事件委托：心形 & 打开大图
+    grid.addEventListener('click', (e) => {
         const favBtn = e.target.closest('.favorite-toggle');
         if (favBtn) {
             e.stopPropagation();
             toggleFavorite(favBtn.dataset.id, favBtn);
             return;
         }
-        const item = e.target.closest('.favorite-item');
-        if (!item) return;
-        const username = item.dataset.username;
-        const photos = JSON.parse(item.dataset.photos || '[]');
-        const baptismal = item.querySelector('.favorite-item-info span:last-child').textContent;
+        const card = e.target.closest('.user-card');
+        if (!card) return;
+        const username = card.dataset.username;
+        const photos = JSON.parse(card.dataset.photos || '[]');
+        const baptismal = card.querySelector('.user-baptismal')?.textContent || '';
         openImageViewer(username, photos, baptismal);
     });
 }
@@ -1148,7 +1147,7 @@ function showFavoritesButtonIfParticipant(role) {
     if (role === 'participant') {
         btn.style.display = 'block';
         if (!btn.dataset.inited) {
-            setupFavoritesDrawer();
+            setupFavoritesModal();
             btn.dataset.inited = '1';
         }
     } else {

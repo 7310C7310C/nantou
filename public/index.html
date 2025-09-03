@@ -67,14 +67,17 @@
         </div>
     </div>
 
-    <!-- 喜欢列表抽屉 -->
-    <div class="favorites-drawer" id="favoritesDrawer">
-        <div class="favorites-drawer-header">
-            <h3>我的喜欢</h3>
-            <button class="close-favorites" id="closeFavoritesBtn">×</button>
-        </div>
-        <div class="favorites-list" id="favoritesList">
-            <div class="favorites-empty" id="favoritesEmpty" style="display:none;">暂无收藏</div>
+    <!-- 喜欢列表全屏模态 -->
+    <div class="favorites-modal" id="favoritesModal">
+        <div class="favorites-modal-content">
+            <div class="favorites-modal-header">
+                <h2>我的喜欢</h2>
+                <button class="favorites-close" id="closeFavoritesModal">×</button>
+            </div>
+            <div class="favorites-modal-body">
+                <div class="favorites-grid" id="favoritesGrid"></div>
+                <div class="favorites-empty" id="favoritesEmptyModal" style="display:none;">暂无收藏</div>
+            </div>
         </div>
     </div>
 
