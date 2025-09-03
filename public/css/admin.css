@@ -2253,3 +2253,309 @@ body {
         margin: 0;
     }
 }
+
+/* ===== 工作人员管理模态框样式 ===== */
+.staff-management-modal,
+.create-staff-modal,
+.create-staff-result-modal,
+.reset-staff-password-modal,
+.reset-staff-password-result-modal,
+.delete-staff-modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+}
+
+.staff-management-content,
+.create-staff-content,
+.create-staff-result-content,
+.reset-staff-password-content,
+.reset-staff-password-result-content,
+.delete-staff-content {
+    background-color: #fefefe;
+    margin: 2% auto;
+    padding: 0;
+    border: none;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.staff-management-header,
+.create-staff-header {
+    background: linear-gradient(135deg, #8b6f47 0%, #6d5a3a 100%);
+    color: white;
+    padding: 20px 25px;
+    margin: 0;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.staff-management-header h2,
+.create-staff-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.staff-management-actions {
+    padding: 20px 25px;
+    border-bottom: 1px solid #eee;
+    text-align: right;
+}
+
+.staff-list {
+    padding: 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.staff-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s ease;
+}
+
+.staff-item:hover {
+    background-color: #f8f9fa;
+}
+
+.staff-item:last-child {
+    border-bottom: none;
+}
+
+.staff-info {
+    flex: 1;
+}
+
+.staff-username {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.staff-role {
+    font-size: 14px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.role-badge.admin {
+    background-color: #dc3545;
+    color: white;
+}
+
+.role-badge.staff {
+    background-color: #007bff;
+    color: white;
+}
+
+.role-badge.matchmaker {
+    background-color: #28a745;
+    color: white;
+}
+
+.staff-created-at {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+}
+
+.staff-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.staff-actions .btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.create-staff-content,
+.create-staff-result-content,
+.reset-staff-password-content,
+.reset-staff-password-result-content,
+.delete-staff-content {
+    max-width: 500px;
+}
+
+.create-staff-form {
+    padding: 25px;
+}
+
+.staff-account-info,
+.new-staff-password-info {
+    padding: 20px 25px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin: 20px 25px;
+}
+
+.account-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.account-detail:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+.account-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.account-value {
+    color: #333;
+    font-family: 'Courier New', monospace;
+}
+
+.password-highlight {
+    background-color: #fff3cd;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ffeaa7;
+    font-weight: bold;
+}
+
+.reset-staff-password-user-info,
+.delete-staff-user-info {
+    padding: 20px 25px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin: 20px 25px;
+}
+
+.reset-staff-password-warning,
+.delete-staff-warning {
+    padding: 15px 25px;
+    color: #856404;
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    margin: 20px 25px;
+}
+
+.delete-staff-confirm {
+    padding: 15px 25px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 25px;
+    color: #666;
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state-text {
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.empty-state-subtext {
+    font-size: 14px;
+    color: #999;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .staff-management-content,
+    .create-staff-content,
+    .create-staff-result-content,
+    .reset-staff-password-content,
+    .reset-staff-password-result-content,
+    .delete-staff-content {
+        width: 95%;
+        margin: 5% auto;
+        max-height: 85vh;
+    }
+    
+    .staff-management-header,
+    .create-staff-header {
+        padding: 15px 20px;
+    }
+    
+    .staff-management-header h2,
+    .create-staff-header h2 {
+        font-size: 18px;
+    }
+    
+    .staff-management-actions {
+        padding: 15px 20px;
+        text-align: center;
+    }
+    
+    .staff-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 15px 20px;
+    }
+    
+    .staff-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .create-staff-form,
+    .staff-account-info,
+    .new-staff-password-info,
+    .reset-staff-password-user-info,
+    .delete-staff-user-info {
+        margin: 15px 20px;
+        padding: 15px 20px;
+    }
+    
+    .reset-staff-password-warning,
+    .delete-staff-warning {
+        margin: 15px 20px;
+        padding: 12px 15px;
+    }
+    
+    .delete-staff-confirm {
+        padding: 12px 20px;
+    }
+    
+    .account-detail {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+}

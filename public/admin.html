@@ -63,7 +63,7 @@
 
                 <div class="dashboard-card">
                     <h3>⚙️ 系统设置</h3>
-                    <p><strong>功能开发中...</strong></p>
+                    <button class="btn btn-primary" id="openStaffManagementBtn">工作人员管理</button>
                 </div>
             </div>
         </div>
@@ -389,6 +389,123 @@
             <div class="spinner"></div>
             <h3>正在处理...</h3>
             <p>请稍候</p>
+        </div>
+    </div>
+
+    <!-- 工作人员管理模态框 -->
+    <div class="staff-management-modal" id="staffManagementModal">
+        <div class="staff-management-content">
+            <div class="staff-management-header">
+                <h2>👥 工作人员管理</h2>
+                <button class="close-btn" id="closeStaffManagementBtn">&times;</button>
+            </div>
+            
+            <div class="staff-management-actions">
+                <button class="btn btn-success" id="createStaffBtn">新建工作人员</button>
+            </div>
+            
+            <div class="staff-list" id="staffList">
+                <!-- 工作人员列表将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建工作人员模态框 -->
+    <div class="create-staff-modal" id="createStaffModal">
+        <div class="create-staff-content">
+            <div class="create-staff-header">
+                <h2>➕ 新建工作人员</h2>
+                <button class="close-btn" id="closeCreateStaffBtn">&times;</button>
+            </div>
+            
+            <form id="createStaffForm">
+                <div class="form-group">
+                    <label for="staffRole">角色 *</label>
+                    <select id="staffRole" name="role" required>
+                        <option value="">请选择角色</option>
+                        <option value="admin">管理员 (admin)</option>
+                        <option value="staff">工作人员 (staff)</option>
+                        <option value="matchmaker">红娘 (matchmaker)</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelCreateStaffBtn">取消</button>
+                    <button type="submit" class="btn btn-success">创建账号</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 创建工作人员结果模态框 -->
+    <div class="create-staff-result-modal" id="createStaffResultModal">
+        <div class="create-staff-result-content">
+            <h3>✅ 工作人员账号创建成功</h3>
+            <div class="staff-account-info" id="staffAccountInfo">
+                <!-- 账号信息将在这里显示 -->
+            </div>
+            <button type="button" class="btn btn-primary" id="closeCreateStaffResultBtn">确定</button>
+        </div>
+    </div>
+
+    <!-- 重设工作人员密码确认弹窗 -->
+    <div class="reset-staff-password-modal" id="resetStaffPasswordModal">
+        <div class="reset-staff-password-content">
+            <h3>🔑 重设密码确认</h3>
+            
+            <!-- 工作人员信息显示区域 -->
+            <div class="reset-staff-password-user-info" id="resetStaffPasswordUserInfo">
+                <!-- 工作人员信息将在这里显示 -->
+            </div>
+            
+            <div class="reset-staff-password-warning">
+                <p><strong>注意：</strong>重设密码后，该工作人员需要使用新密码登录。</p>
+                <p>新密码将显示在结果页面，请及时告知该工作人员。</p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelResetStaffPasswordBtn">取消</button>
+                <button type="button" class="btn btn-warning" id="confirmResetStaffPasswordBtn">确认重设</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重设工作人员密码结果弹窗 -->
+    <div class="reset-staff-password-result-modal" id="resetStaffPasswordResultModal">
+        <div class="reset-staff-password-result-content">
+            <h3>✅ 密码重设成功</h3>
+            <div class="new-staff-password-info" id="newStaffPasswordInfo">
+                <!-- 新密码信息将在这里显示 -->
+            </div>
+            <button type="button" class="btn btn-primary" id="closeResetStaffPasswordResultBtn">确定</button>
+        </div>
+    </div>
+
+    <!-- 删除工作人员确认弹窗 -->
+    <div class="delete-staff-modal" id="deleteStaffModal">
+        <div class="delete-staff-content">
+            <h3>⚠️ 删除工作人员确认</h3>
+            
+            <!-- 工作人员信息显示区域 -->
+            <div class="delete-staff-user-info" id="deleteStaffUserInfo">
+                <!-- 工作人员信息将在这里显示 -->
+            </div>
+            
+            <div class="delete-staff-warning">
+                <p><strong>警告：</strong>此操作将永久删除该工作人员账号，包括：</p>
+                <ul>
+                    <li>账号基本信息</li>
+                    <li>相关操作记录</li>
+                </ul>
+                <p>此操作不可撤销！</p>
+            </div>
+            <div class="delete-staff-confirm">
+                <p>请输入"<strong>确定</strong>"二字以确认删除：</p>
+                <input type="text" id="deleteStaffConfirmInput" placeholder="请输入：确定" class="confirm-input">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelDeleteStaffBtn">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteStaffBtn" disabled>确认删除</button>
+            </div>
         </div>
     </div>
 

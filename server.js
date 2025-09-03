@@ -8,6 +8,7 @@ process.env.TZ = 'Asia/Shanghai';
 // 导入控制器和中间件
 const authController = require('./controllers/auth.controller');
 const adminController = require('./controllers/admin.controller');
+const staffController = require('./controllers/staff.controller');
 const logController = require('./controllers/log.controller');
 const participantsController = require('./controllers/participants.controller');
 const favoriteController = require('./controllers/favorite.controller');
@@ -113,6 +114,12 @@ app.delete('/api/admin/photos/:photo_id', protect, restrictTo('admin', 'staff'),
 // 日志管理API路由
 app.get('/api/admin/logs', protect, restrictTo('admin'), logController.getRecentLogs);
 app.get('/api/admin/logs/search', protect, restrictTo('admin'), logController.searchLogs);
+
+// 工作人员管理API路由（仅管理员可访问）
+app.get('/api/admin/staff', protect, restrictTo('admin'), staffController.getAllStaff);
+app.post('/api/admin/staff', protect, restrictTo('admin'), staffController.createStaff);
+app.post('/api/admin/staff/:staff_id/reset-password', protect, restrictTo('admin'), staffController.resetStaffPassword);
+app.delete('/api/admin/staff/:staff_id', protect, restrictTo('admin'), staffController.deleteStaff);
 
 // 红娘配对API路由
 app.get('/api/matchmaker/participants/:participant_id/matching', protect, restrictTo('matchmaker'), matchmakerController.getParticipantMatchingData);

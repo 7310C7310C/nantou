@@ -201,6 +201,13 @@ function setupEventListeners() {
     openLogsBtn.addEventListener('click', openLogsModal);
     closeLogsBtn.addEventListener('click', closeLogsModal);
 
+    // 工作人员管理功能
+    const openStaffManagementBtn = document.getElementById('openStaffManagementBtn');
+    if (openStaffManagementBtn) {
+        openStaffManagementBtn.addEventListener('click', openStaffManagementModal);
+    }
+    setupStaffManagementEventListeners();
+
     // 大图查看功能
     fullscreenImage.addEventListener('click', closeFullscreenImage);
 
@@ -2102,5 +2109,436 @@ async function handleStartMatchmaking() {
     } catch (error) {
         console.error('开始配对失败:', error);
         alert('开始配对失败：' + error.message);
+    }
+}
+
+// ==================== 工作人员管理功能 ====================
+
+// 工作人员管理相关元素
+let staffManagementModal, createStaffModal, createStaffResultModal;
+let resetStaffPasswordModal, resetStaffPasswordResultModal, deleteStaffModal;
+let currentStaffId = null;
+
+// 设置工作人员管理事件监听器
+function setupStaffManagementEventListeners() {
+    // 获取元素
+    staffManagementModal = document.getElementById('staffManagementModal');
+    createStaffModal = document.getElementById('createStaffModal');
+    createStaffResultModal = document.getElementById('createStaffResultModal');
+    resetStaffPasswordModal = document.getElementById('resetStaffPasswordModal');
+    resetStaffPasswordResultModal = document.getElementById('resetStaffPasswordResultModal');
+    deleteStaffModal = document.getElementById('deleteStaffModal');
+
+    // 关闭按钮
+    const closeStaffManagementBtn = document.getElementById('closeStaffManagementBtn');
+    const closeCreateStaffBtn = document.getElementById('closeCreateStaffBtn');
+    const cancelCreateStaffBtn = document.getElementById('cancelCreateStaffBtn');
+    const closeCreateStaffResultBtn = document.getElementById('closeCreateStaffResultBtn');
+    const cancelResetStaffPasswordBtn = document.getElementById('cancelResetStaffPasswordBtn');
+    const closeResetStaffPasswordResultBtn = document.getElementById('closeResetStaffPasswordResultBtn');
+    const cancelDeleteStaffBtn = document.getElementById('cancelDeleteStaffBtn');
+
+    // 绑定关闭事件
+    if (closeStaffManagementBtn) closeStaffManagementBtn.addEventListener('click', closeStaffManagementModal);
+    if (closeCreateStaffBtn) closeCreateStaffBtn.addEventListener('click', closeCreateStaffModal);
+    if (cancelCreateStaffBtn) cancelCreateStaffBtn.addEventListener('click', closeCreateStaffModal);
+    if (closeCreateStaffResultBtn) closeCreateStaffResultBtn.addEventListener('click', closeCreateStaffResultModal);
+    if (cancelResetStaffPasswordBtn) cancelResetStaffPasswordBtn.addEventListener('click', closeResetStaffPasswordModal);
+    if (closeResetStaffPasswordResultBtn) closeResetStaffPasswordResultBtn.addEventListener('click', closeResetStaffPasswordResultModal);
+    if (cancelDeleteStaffBtn) cancelDeleteStaffBtn.addEventListener('click', closeDeleteStaffModal);
+
+    // 创建工作人员按钮
+    const createStaffBtn = document.getElementById('createStaffBtn');
+    if (createStaffBtn) createStaffBtn.addEventListener('click', openCreateStaffModal);
+
+    // 创建工作人员表单
+    const createStaffForm = document.getElementById('createStaffForm');
+    if (createStaffForm) createStaffForm.addEventListener('submit', handleCreateStaff);
+
+    // 重设密码确认按钮
+    const confirmResetStaffPasswordBtn = document.getElementById('confirmResetStaffPasswordBtn');
+    if (confirmResetStaffPasswordBtn) confirmResetStaffPasswordBtn.addEventListener('click', handleResetStaffPassword);
+
+    // 删除工作人员确认输入框和按钮
+    const deleteStaffConfirmInput = document.getElementById('deleteStaffConfirmInput');
+    const confirmDeleteStaffBtn = document.getElementById('confirmDeleteStaffBtn');
+    if (deleteStaffConfirmInput) deleteStaffConfirmInput.addEventListener('input', validateDeleteStaffConfirm);
+    if (confirmDeleteStaffBtn) confirmDeleteStaffBtn.addEventListener('click', handleDeleteStaff);
+
+    // 点击模态框外部关闭
+    if (staffManagementModal) {
+        staffManagementModal.addEventListener('click', (e) => {
+            if (e.target === staffManagementModal) closeStaffManagementModal();
+        });
+    }
+    if (createStaffModal) {
+        createStaffModal.addEventListener('click', (e) => {
+            if (e.target === createStaffModal) closeCreateStaffModal();
+        });
+    }
+    if (createStaffResultModal) {
+        createStaffResultModal.addEventListener('click', (e) => {
+            if (e.target === createStaffResultModal) closeCreateStaffResultModal();
+        });
+    }
+    if (resetStaffPasswordModal) {
+        resetStaffPasswordModal.addEventListener('click', (e) => {
+            if (e.target === resetStaffPasswordModal) closeResetStaffPasswordModal();
+        });
+    }
+    if (resetStaffPasswordResultModal) {
+        resetStaffPasswordResultModal.addEventListener('click', (e) => {
+            if (e.target === resetStaffPasswordResultModal) closeResetStaffPasswordResultModal();
+        });
+    }
+    if (deleteStaffModal) {
+        deleteStaffModal.addEventListener('click', (e) => {
+            if (e.target === deleteStaffModal) closeDeleteStaffModal();
+        });
+    }
+}
+
+// 检查管理员权限
+function checkAdminPermission() {
+    if (!currentUser || currentUser.role !== 'admin') {
+        alert('权限不足，只有管理员可以管理工作人员');
+        return false;
+    }
+    return true;
+}
+
+// 打开工作人员管理模态框
+async function openStaffManagementModal() {
+    if (!checkAdminPermission()) return;
+    
+    try {
+        await loadStaffList();
+        staffManagementModal.style.display = 'block';
+    } catch (error) {
+        console.error('打开工作人员管理失败:', error);
+        alert('加载工作人员列表失败');
+    }
+}
+
+// 关闭工作人员管理模态框
+function closeStaffManagementModal() {
+    staffManagementModal.style.display = 'none';
+}
+
+// 加载工作人员列表
+async function loadStaffList() {
+    try {
+        showLoading();
+        
+        const response = await fetch('/api/admin/staff', {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        hideLoading();
+
+        if (data.success) {
+            displayStaffList(data.data);
+        } else {
+            throw new Error(data.message || '获取工作人员列表失败');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('加载工作人员列表错误:', error);
+        throw error;
+    }
+}
+
+// 显示工作人员列表
+function displayStaffList(staffList) {
+    const staffListElement = document.getElementById('staffList');
+    
+    if (staffList.length === 0) {
+        staffListElement.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">👥</div>
+                <div class="empty-state-text">暂无工作人员</div>
+                <div class="empty-state-subtext">点击"新建工作人员"按钮来创建第一个工作人员账号</div>
+            </div>
+        `;
+        return;
+    }
+
+    const staffListHTML = staffList.map(staff => {
+        const roleDisplayName = getRoleDisplayName(staff.role);
+        const createDate = new Date(staff.created_at).toLocaleDateString('zh-CN');
+        
+        return `
+            <div class="staff-item">
+                <div class="staff-info">
+                    <div class="staff-username">${staff.username}</div>
+                    <div class="staff-role">
+                        <span class="role-badge ${staff.role}">${roleDisplayName}</span>
+                    </div>
+                    <div class="staff-created-at">创建时间：${createDate}</div>
+                </div>
+                <div class="staff-actions">
+                    <button class="btn btn-warning" onclick="openResetStaffPasswordModal(${staff.id}, '${staff.username}', '${roleDisplayName}')">
+                        重设密码
+                    </button>
+                    <button class="btn btn-danger" onclick="openDeleteStaffModal(${staff.id}, '${staff.username}', '${roleDisplayName}')">
+                        删除账号
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    staffListElement.innerHTML = staffListHTML;
+}
+
+// 打开创建工作人员模态框
+function openCreateStaffModal() {
+    createStaffModal.style.display = 'block';
+    // 重置表单
+    document.getElementById('createStaffForm').reset();
+}
+
+// 关闭创建工作人员模态框
+function closeCreateStaffModal() {
+    createStaffModal.style.display = 'none';
+}
+
+// 处理创建工作人员
+async function handleCreateStaff(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const role = formData.get('role');
+    
+    if (!role) {
+        alert('请选择角色');
+        return;
+    }
+
+    try {
+        showLoading();
+        
+        const response = await fetch('/api/admin/staff', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ role })
+        });
+
+        const data = await response.json();
+        hideLoading();
+
+        if (data.success) {
+            closeCreateStaffModal();
+            showCreateStaffResult(data.data);
+            await loadStaffList(); // 刷新列表
+        } else {
+            throw new Error(data.message || '创建工作人员失败');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('创建工作人员错误:', error);
+        alert(error.message || '创建工作人员失败');
+    }
+}
+
+// 显示创建工作人员结果
+function showCreateStaffResult(staffData) {
+    const staffAccountInfo = document.getElementById('staffAccountInfo');
+    const roleDisplayName = getRoleDisplayName(staffData.role);
+    
+    staffAccountInfo.innerHTML = `
+        <div class="account-detail">
+            <span class="account-label">用户名：</span>
+            <span class="account-value">${staffData.username}</span>
+        </div>
+        <div class="account-detail">
+            <span class="account-label">密码：</span>
+            <span class="account-value password-highlight">${staffData.password}</span>
+        </div>
+        <div class="account-detail">
+            <span class="account-label">角色：</span>
+            <span class="account-value">${roleDisplayName}</span>
+        </div>
+        <p style="margin-top: 15px; color: #856404; font-size: 14px;">
+            <strong>重要提醒：</strong>请务必记录上述信息，密码只显示一次！
+        </p>
+    `;
+    
+    createStaffResultModal.style.display = 'block';
+}
+
+// 关闭创建工作人员结果模态框
+function closeCreateStaffResultModal() {
+    createStaffResultModal.style.display = 'none';
+}
+
+// 打开重设工作人员密码模态框
+function openResetStaffPasswordModal(staffId, username, roleDisplayName) {
+    currentStaffId = staffId;
+    
+    const resetStaffPasswordUserInfo = document.getElementById('resetStaffPasswordUserInfo');
+    resetStaffPasswordUserInfo.innerHTML = `
+        <div class="account-detail">
+            <span class="account-label">用户名：</span>
+            <span class="account-value">${username}</span>
+        </div>
+        <div class="account-detail">
+            <span class="account-label">角色：</span>
+            <span class="account-value">${roleDisplayName}</span>
+        </div>
+    `;
+    
+    resetStaffPasswordModal.style.display = 'block';
+}
+
+// 关闭重设工作人员密码模态框
+function closeResetStaffPasswordModal() {
+    resetStaffPasswordModal.style.display = 'none';
+    currentStaffId = null;
+}
+
+// 处理重设工作人员密码
+async function handleResetStaffPassword() {
+    if (!currentStaffId) return;
+    
+    try {
+        showLoading();
+        
+        const response = await fetch(`/api/admin/staff/${currentStaffId}/reset-password`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        hideLoading();
+
+        if (data.success) {
+            closeResetStaffPasswordModal();
+            showResetStaffPasswordResult(data.data);
+        } else {
+            throw new Error(data.message || '重设密码失败');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('重设工作人员密码错误:', error);
+        alert(error.message || '重设密码失败');
+    }
+}
+
+// 显示重设工作人员密码结果
+function showResetStaffPasswordResult(data) {
+    const newStaffPasswordInfo = document.getElementById('newStaffPasswordInfo');
+    
+    newStaffPasswordInfo.innerHTML = `
+        <div class="account-detail">
+            <span class="account-label">用户名：</span>
+            <span class="account-value">${data.username}</span>
+        </div>
+        <div class="account-detail">
+            <span class="account-label">新密码：</span>
+            <span class="account-value password-highlight">${data.new_password}</span>
+        </div>
+        <p style="margin-top: 15px; color: #856404; font-size: 14px;">
+            <strong>重要提醒：</strong>请务必记录新密码，密码只显示一次！
+        </p>
+    `;
+    
+    resetStaffPasswordResultModal.style.display = 'block';
+}
+
+// 关闭重设工作人员密码结果模态框
+function closeResetStaffPasswordResultModal() {
+    resetStaffPasswordResultModal.style.display = 'none';
+}
+
+// 打开删除工作人员模态框
+function openDeleteStaffModal(staffId, username, roleDisplayName) {
+    currentStaffId = staffId;
+    
+    const deleteStaffUserInfo = document.getElementById('deleteStaffUserInfo');
+    deleteStaffUserInfo.innerHTML = `
+        <div class="account-detail">
+            <span class="account-label">用户名：</span>
+            <span class="account-value">${username}</span>
+        </div>
+        <div class="account-detail">
+            <span class="account-label">角色：</span>
+            <span class="account-value">${roleDisplayName}</span>
+        </div>
+    `;
+    
+    // 重置确认输入框
+    const deleteStaffConfirmInput = document.getElementById('deleteStaffConfirmInput');
+    deleteStaffConfirmInput.value = '';
+    validateDeleteStaffConfirm();
+    
+    deleteStaffModal.style.display = 'block';
+}
+
+// 关闭删除工作人员模态框
+function closeDeleteStaffModal() {
+    deleteStaffModal.style.display = 'none';
+    currentStaffId = null;
+}
+
+// 验证删除工作人员确认输入
+function validateDeleteStaffConfirm() {
+    const input = document.getElementById('deleteStaffConfirmInput');
+    const confirmBtn = document.getElementById('confirmDeleteStaffBtn');
+    
+    if (input.value.trim() === '确定') {
+        confirmBtn.disabled = false;
+        confirmBtn.style.opacity = '1';
+    } else {
+        confirmBtn.disabled = true;
+        confirmBtn.style.opacity = '0.5';
+    }
+}
+
+// 处理删除工作人员
+async function handleDeleteStaff() {
+    if (!currentStaffId) return;
+    
+    const confirmInput = document.getElementById('deleteStaffConfirmInput');
+    if (confirmInput.value.trim() !== '确定') {
+        alert('请输入"确定"二字以确认删除');
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        const response = await fetch(`/api/admin/staff/${currentStaffId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        hideLoading();
+
+        if (data.success) {
+            closeDeleteStaffModal();
+            alert('工作人员删除成功');
+            await loadStaffList(); // 刷新列表
+        } else {
+            throw new Error(data.message || '删除工作人员失败');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('删除工作人员错误:', error);
+        alert(error.message || '删除工作人员失败');
     }
 }
