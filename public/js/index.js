@@ -338,7 +338,7 @@ function drawHeartIcon(canvas, isFavorited) {
         ctx.fillStyle = '#ff4d4f';
         ctx.fill(path);
     } else {
-        ctx.strokeStyle = '#888';
+        ctx.strokeStyle = '#fff';
         ctx.lineWidth = 1.5 / scale; // Keep stroke width constant
         ctx.stroke(path);
     }
@@ -358,7 +358,7 @@ function createUserCard(user) {
     const userGender = localStorage.getItem('userGender');
     // 仅在登录参与者浏览异性列表时显示收藏按钮
     const showFavBtn = userRole === 'participant' && userGender && userGender !== currentGender;
-    const favBtnHtml = showFavBtn ? `<button class="favorite-toggle ${isFavorited ? 'favorited' : ''}" data-id="${user.id}" title="收藏/取消收藏"><canvas class="heart-icon" width="20" height="20"></canvas></button>` : '';
+    const favBtnHtml = showFavBtn ? `<button class="favorite-toggle ${isFavorited ? 'favorited' : ''}" data-id="${user.id}" title="收藏/取消收藏"><canvas class="heart-icon" width="24" height="24"></canvas></button>` : '';
     return `
         <div class="user-card" data-id="${user.id}" data-username="${user.username}" data-photos='${JSON.stringify(user.photos || [])}'>
             ${favBtnHtml}
@@ -1059,7 +1059,7 @@ async function loadFavoritesList(forceReload = false) {
                 const photoUrl = photo ? photo.photo_url : '/placeholder.jpg';
                 const favorited = favoriteIds.has(p.id);
                 return `<div class="favorite-item" data-id="${p.id}" data-username="${p.username}" data-photos='${JSON.stringify(p.photos || [])}'>
-                    <button class="favorite-toggle ${favorited ? 'favorited' : ''}" data-id="${p.id}" title="取消喜欢"><canvas class="heart-icon" width="20" height="20"></canvas></button>
+                    <button class="favorite-toggle ${favorited ? 'favorited' : ''}" data-id="${p.id}" title="取消喜欢"><canvas class="heart-icon" width="24" height="24"></canvas></button>
                     <img src="${photoUrl}" alt="${p.username}">
                     <div class="favorite-item-info"><span>${p.username}</span><span>${p.baptismal_name || ''}</span></div>
                 </div>`;
