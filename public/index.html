@@ -23,6 +23,8 @@
         </div>
     <!-- 我的喜欢按钮 -->
     <button class="favorites-btn" id="favoritesBtn" style="display:none;">我的喜欢</button>
+    <!-- 红娘管理配对按钮 -->
+    <button class="manage-matches-btn" id="manageMatchesBtn" style="display:none;">管理配对</button>
     </div>
 
     <!-- 管理后台按钮 - 固定在右上角 -->
@@ -101,6 +103,65 @@
                 <div class="error-message" id="loginError"></div>
                 <button type="submit" class="submit-btn">登录</button>
             </form>
+        </div>
+    </div>
+
+    <!-- 配对界面模态框 -->
+    <div class="matching-modal" id="matchingModal">
+        <div class="matching-modal-content">
+            <div class="matching-modal-header">
+                <h2>为 <span id="targetParticipantName"></span> 配对</h2>
+                <button class="matching-close" id="closeMatchingModal">×</button>
+            </div>
+            <div class="matching-search-container">
+                <input type="text" class="matching-search" id="matchingSearch" placeholder="搜索ID或姓名...">
+            </div>
+            <div class="matching-modal-body">
+                <div class="matching-grid" id="matchingGrid"></div>
+                <div class="matching-empty" id="matchingEmpty" style="display:none;">暂无可配对的参与者</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理配对模态框 -->
+    <div class="manage-matches-modal" id="manageMatchesModal">
+        <div class="manage-matches-modal-content">
+            <div class="manage-matches-modal-header">
+                <h2>管理配对</h2>
+                <button class="manage-matches-close" id="closeManageMatchesModal">×</button>
+            </div>
+            <div class="manage-matches-modal-body">
+                <div class="manage-matches-grid" id="manageMatchesGrid"></div>
+                <div class="manage-matches-empty" id="manageMatchesEmpty" style="display:none;">暂无配对记录</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 星级评分模态框 -->
+    <div class="star-rating-modal" id="starRatingModal">
+        <div class="star-rating-content">
+            <div class="star-rating-header">
+                <h3>设置推荐星级</h3>
+                <button class="star-rating-close" id="closeStarRatingModal">×</button>
+            </div>
+            <div class="star-rating-body">
+                <div class="star-rating-participants">
+                    <div class="participant-info" id="starRatingParticipant1"></div>
+                    <div class="match-arrow">→</div>
+                    <div class="participant-info" id="starRatingParticipant2"></div>
+                </div>
+                <div class="star-rating-stars">
+                    <span class="star" data-rating="1">★</span>
+                    <span class="star" data-rating="2">★</span>
+                    <span class="star" data-rating="3">★</span>
+                    <span class="star" data-rating="4">★</span>
+                    <span class="star" data-rating="5">★</span>
+                </div>
+                <div class="star-rating-actions">
+                    <button class="btn-remove" id="removeMatchBtn">清除配对</button>
+                    <button class="btn-confirm" id="confirmRatingBtn">确认</button>
+                </div>
+            </div>
         </div>
     </div>
 

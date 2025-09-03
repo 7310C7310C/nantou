@@ -11,6 +11,7 @@ const adminController = require('./controllers/admin.controller');
 const logController = require('./controllers/log.controller');
 const participantsController = require('./controllers/participants.controller');
 const favoriteController = require('./controllers/favorite.controller');
+const matchmakerController = require('./controllers/matchmaker.controller');
 const { protect, restrictTo, optionalAuth } = require('./middleware/auth.middleware');
 
 const app = express();
@@ -112,6 +113,13 @@ app.delete('/api/admin/photos/:photo_id', protect, restrictTo('admin', 'staff'),
 // 日志管理API路由
 app.get('/api/admin/logs', protect, restrictTo('admin'), logController.getRecentLogs);
 app.get('/api/admin/logs/search', protect, restrictTo('admin'), logController.searchLogs);
+
+// 红娘配对API路由
+app.get('/api/matchmaker/participants/:participant_id/matching', protect, restrictTo('matchmaker'), matchmakerController.getParticipantMatchingData);
+app.post('/api/matchmaker/recommendations', protect, restrictTo('matchmaker'), matchmakerController.createOrUpdateRecommendation);
+app.delete('/api/matchmaker/recommendations', protect, restrictTo('matchmaker'), matchmakerController.deleteRecommendation);
+app.delete('/api/matchmaker/recommendations/:id', protect, restrictTo('matchmaker'), matchmakerController.deleteRecommendationById);
+app.get('/api/matchmaker/my-recommendations', protect, restrictTo('matchmaker'), matchmakerController.getMatchmakerRecommendations);
 
 // 公开API路由
 app.get('/api/participants', optionalAuth, participantsController.getParticipants);

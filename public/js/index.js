@@ -9,6 +9,14 @@ let preloadedImages = new Map(); // 存储预加载的图片
 let favoriteIds = new Set(); // 当前用户收藏的参与者ID集合
 let favoritesLoaded = false; // 是否已加载收藏列表
 
+// 红娘功能相关变量
+let isMatchmakerMode = false; // 是否为红娘模式
+let currentTargetParticipantId = null; // 当前配对的目标参与者ID
+let currentTargetParticipantName = ''; // 当前配对的目标参与者姓名
+let matchingParticipants = []; // 配对界面的参与者列表
+let currentStarRating = 0; // 当前星级评分
+let currentMatchPair = null; // 当前配对的两个人
+
 // 按性别缓存数据
 let genderCache = {
     female: {
@@ -372,9 +380,15 @@ function createUserCard(user) {
     // 仅在登录参与者浏览异性列表时显示收藏按钮
     const showFavBtn = userRole === 'participant' && userGender && userGender !== currentGender;
     const favBtnHtml = showFavBtn ? `<button class="favorite-toggle ${isFavorited ? 'favorited' : ''}" data-id="${user.id}" title="收藏/取消收藏"><canvas class="heart-icon" width="24" height="24"></canvas></button>` : '';
+    
+    // 红娘模式下显示配对按钮
+    const showMatchBtn = userRole === 'matchmaker';
+    const matchBtnHtml = showMatchBtn ? `<button class="match-btn" data-id="${user.id}" title="配对" onclick="event.stopPropagation(); openMatchingModal(${user.id}, '${user.name}')">配对</button>` : '';
+    
     return `
         <div class="user-card" data-id="${user.id}" data-username="${user.username}" data-photos='${JSON.stringify(user.photos || [])}'>
             ${favBtnHtml}
+            ${matchBtnHtml}
             <img src="${photoUrl}" alt="用户照片" class="user-photo" onerror="this.src='/placeholder.jpg'">
             <div class="user-info">
                 <div class="user-username">${highlightedUsername}</div>
@@ -834,6 +848,8 @@ function updateUserInterface(username, role, userName = '') {
     roleBtn.textContent = displayText;
     // 新增: 显示收藏按钮
     showFavoritesButtonIfParticipant(role);
+    // 新增: 显示红娘功能按钮
+    showMatchmakerButtonsIfMatchmaker(role);
     // 恢复下拉菜单事件绑定
     setupUserDropdown();
 }
@@ -1157,3 +1173,522 @@ function showFavoritesButtonIfParticipant(role) {
 
 // Toast 提示
 // 已移除 toast 功能
+
+// 显示红娘功能按钮
+function showMatchmakerButtonsIfMatchmaker(role) {
+    const manageMatchesBtn = document.getElementById('manageMatchesBtn');
+    if (role === 'matchmaker') {
+        isMatchmakerMode = true;
+        manageMatchesBtn.style.display = 'block';
+        if (!manageMatchesBtn.dataset.inited) {
+            setupMatchmakerEvents();
+            manageMatchesBtn.dataset.inited = '1';
+        }
+    } else {
+        isMatchmakerMode = false;
+        manageMatchesBtn.style.display = 'none';
+    }
+}
+
+// ==================== 红娘功能相关代码 ====================
+
+// 初始化红娘功能事件
+function setupMatchmakerEvents() {
+    // 管理配对按钮事件
+    document.getElementById('manageMatchesBtn').addEventListener('click', openManageMatchesModal);
+    
+    // 关闭模态框事件
+    document.getElementById('closeMatchingModal').addEventListener('click', closeMatchingModal);
+    document.getElementById('closeManageMatchesModal').addEventListener('click', closeManageMatchesModal);
+    document.getElementById('closeStarRatingModal').addEventListener('click', closeStarRatingModal);
+    
+    // 配对搜索事件
+    const matchingSearch = document.getElementById('matchingSearch');
+    matchingSearch.addEventListener('input', debounce(handleMatchingSearch, 300));
+    
+    // 星级评分事件
+    setupStarRating();
+    
+    // 模态框点击外部关闭
+    document.getElementById('matchingModal').addEventListener('click', function(e) {
+        if (e.target === this) closeMatchingModal();
+    });
+    document.getElementById('manageMatchesModal').addEventListener('click', function(e) {
+        if (e.target === this) closeManageMatchesModal();
+    });
+    document.getElementById('starRatingModal').addEventListener('click', function(e) {
+        if (e.target === this) closeStarRatingModal();
+    });
+}
+
+// 防抖函数
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// 配对按钮点击事件
+function openMatchingModal(participantId, participantName) {
+    currentTargetParticipantId = participantId;
+    currentTargetParticipantName = participantName;
+    
+    document.getElementById('targetParticipantName').textContent = participantName;
+    document.getElementById('matchingModal').style.display = 'block';
+    document.getElementById('matchingSearch').value = '';
+    
+    loadMatchingParticipants();
+}
+
+// 关闭配对模态框
+function closeMatchingModal() {
+    document.getElementById('matchingModal').style.display = 'none';
+    currentTargetParticipantId = null;
+    currentTargetParticipantName = '';
+    matchingParticipants = [];
+}
+
+// 加载配对参与者列表
+async function loadMatchingParticipants(searchQuery = '') {
+    try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            alert('请先登录');
+            return;
+        }
+
+        const url = `/api/matchmaker/participants/${currentTargetParticipantId}/matching${searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : ''}`;
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            matchingParticipants = data.data;
+            renderMatchingParticipants();
+        } else {
+            throw new Error('加载配对数据失败');
+        }
+    } catch (error) {
+        console.error('加载配对数据失败:', error);
+        alert('加载配对数据失败：' + error.message);
+    }
+}
+
+// 渲染配对参与者列表
+function renderMatchingParticipants() {
+    const grid = document.getElementById('matchingGrid');
+    const empty = document.getElementById('matchingEmpty');
+    
+    if (matchingParticipants.length === 0) {
+        grid.style.display = 'none';
+        empty.style.display = 'block';
+        return;
+    }
+    
+    grid.style.display = 'grid';
+    empty.style.display = 'none';
+    
+    grid.innerHTML = matchingParticipants.map(participant => {
+        const hasRecommendation = participant.recommendation_id;
+        const stars = participant.stars || 0;
+        const primaryPhoto = participant.photos && participant.photos.length > 0 
+            ? participant.photos.find(p => p.is_primary) || participant.photos[0] 
+            : null;
+        
+        return `
+            <div class="matching-card ${hasRecommendation ? 'matched' : ''}" 
+                 data-id="${participant.id}"
+                 onclick="openMatchingImageViewer(${participant.id})">
+                <img src="${primaryPhoto ? primaryPhoto.photo_url : '/images/default-avatar.png'}" 
+                     alt="${participant.name}" 
+                     loading="lazy">
+                <div class="matching-card-info">
+                    <div class="matching-card-name">${participant.username} - ${participant.name}</div>
+                    <div class="matching-card-baptismal">${participant.baptismal_name || ''}</div>
+                </div>
+                <button class="star-btn ${hasRecommendation ? 'filled' : 'empty'}" 
+                        onclick="event.stopPropagation(); openStarRating(${participant.id}, '${participant.name}', ${stars})"
+                        title="${hasRecommendation ? `已配对 ${stars} 星` : '点击配对'}">
+                    ${hasRecommendation ? '★'.repeat(stars) : '☆'}
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+// 配对搜索处理
+function handleMatchingSearch(event) {
+    const searchQuery = event.target.value.trim();
+    loadMatchingParticipants(searchQuery);
+}
+
+// 打开星级评分模态框
+function openStarRating(participantId, participantName, currentStars = 0) {
+    const targetParticipant = matchingParticipants.find(p => p.id === participantId);
+    if (!targetParticipant) return;
+    
+    currentMatchPair = {
+        person1_id: currentTargetParticipantId,
+        person1_name: currentTargetParticipantName,
+        person2_id: participantId,
+        person2_name: participantName
+    };
+    
+    currentStarRating = currentStars;
+    
+    // 设置参与者信息
+    const participant1Div = document.getElementById('starRatingParticipant1');
+    const participant2Div = document.getElementById('starRatingParticipant2');
+    
+    // 获取目标参与者的照片
+    const targetParticipantData = allUsers.find(u => u.id == currentTargetParticipantId);
+    const targetPhoto = targetParticipantData && targetParticipantData.photos && targetParticipantData.photos.length > 0
+        ? targetParticipantData.photos.find(p => p.is_primary)?.photo_url || targetParticipantData.photos[0].photo_url
+        : '/images/default-avatar.png';
+    
+    const participantPhoto = targetParticipant.photos && targetParticipant.photos.length > 0
+        ? targetParticipant.photos.find(p => p.is_primary)?.photo_url || targetParticipant.photos[0].photo_url
+        : '/images/default-avatar.png';
+    
+    participant1Div.innerHTML = `
+        <img src="${targetPhoto}" alt="${currentTargetParticipantName}">
+        <div class="name">${currentTargetParticipantName}</div>
+    `;
+    
+    participant2Div.innerHTML = `
+        <img src="${participantPhoto}" alt="${participantName}">
+        <div class="name">${participantName}</div>
+    `;
+    
+    // 设置星级
+    updateStarDisplay(currentStars);
+    
+    document.getElementById('starRatingModal').style.display = 'block';
+}
+
+// 关闭星级评分模态框
+function closeStarRatingModal() {
+    document.getElementById('starRatingModal').style.display = 'none';
+    currentMatchPair = null;
+    currentStarRating = 0;
+}
+
+// 设置星级评分事件
+function setupStarRating() {
+    const stars = document.querySelectorAll('.star');
+    stars.forEach((star, index) => {
+        star.addEventListener('click', () => {
+            currentStarRating = index + 1;
+            updateStarDisplay(currentStarRating);
+        });
+        
+        star.addEventListener('mouseenter', () => {
+            updateStarDisplay(index + 1, true);
+        });
+    });
+    
+    document.querySelector('.star-rating-stars').addEventListener('mouseleave', () => {
+        updateStarDisplay(currentStarRating);
+    });
+    
+    // 确认按钮
+    document.getElementById('confirmRatingBtn').addEventListener('click', confirmRating);
+    
+    // 清除配对按钮
+    document.getElementById('removeMatchBtn').addEventListener('click', removeMatch);
+}
+
+// 更新星级显示
+function updateStarDisplay(rating, isHover = false) {
+    const stars = document.querySelectorAll('.star');
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('active');
+        } else {
+            star.classList.remove('active');
+        }
+    });
+}
+
+// 确认评分
+async function confirmRating() {
+    if (!currentMatchPair || currentStarRating === 0) {
+        alert('请选择星级');
+        return;
+    }
+    
+    try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            alert('请先登录');
+            return;
+        }
+        
+        const response = await fetch('/api/matchmaker/recommendations', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                person1_id: currentMatchPair.person1_id,
+                person2_id: currentMatchPair.person2_id,
+                stars: currentStarRating
+            })
+        });
+        
+        if (response.ok) {
+            alert('配对成功！');
+            closeStarRatingModal();
+            loadMatchingParticipants(); // 重新加载配对列表
+        } else {
+            const error = await response.json();
+            throw new Error(error.message || '配对失败');
+        }
+    } catch (error) {
+        console.error('配对失败:', error);
+        alert('配对失败：' + error.message);
+    }
+}
+
+// 清除配对
+async function removeMatch() {
+    if (!currentMatchPair) return;
+    
+    if (!confirm(`确定要清除 ${currentMatchPair.person1_name} 和 ${currentMatchPair.person2_name} 的配对吗？`)) {
+        return;
+    }
+    
+    try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            alert('请先登录');
+            return;
+        }
+        
+        const response = await fetch('/api/matchmaker/recommendations', {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                person1_id: currentMatchPair.person1_id,
+                person2_id: currentMatchPair.person2_id
+            })
+        });
+        
+        if (response.ok) {
+            alert('配对已清除');
+            closeStarRatingModal();
+            loadMatchingParticipants(); // 重新加载配对列表
+        } else {
+            const error = await response.json();
+            throw new Error(error.message || '清除配对失败');
+        }
+    } catch (error) {
+        console.error('清除配对失败:', error);
+        alert('清除配对失败：' + error.message);
+    }
+}
+
+// 打开管理配对模态框
+async function openManageMatchesModal() {
+    document.getElementById('manageMatchesModal').style.display = 'block';
+    await loadManageMatches();
+}
+
+// 关闭管理配对模态框
+function closeManageMatchesModal() {
+    document.getElementById('manageMatchesModal').style.display = 'none';
+}
+
+// 加载管理配对数据
+async function loadManageMatches() {
+    try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            alert('请先登录');
+            return;
+        }
+        
+        const response = await fetch('/api/matchmaker/my-recommendations', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            renderManageMatches(data.data);
+        } else {
+            throw new Error('加载配对管理数据失败');
+        }
+    } catch (error) {
+        console.error('加载配对管理数据失败:', error);
+        alert('加载配对管理数据失败：' + error.message);
+    }
+}
+
+// 渲染管理配对列表
+function renderManageMatches(matches) {
+    const grid = document.getElementById('manageMatchesGrid');
+    const empty = document.getElementById('manageMatchesEmpty');
+    
+    if (matches.length === 0) {
+        grid.style.display = 'none';
+        empty.style.display = 'block';
+        return;
+    }
+    
+    grid.style.display = 'flex';
+    empty.style.display = 'none';
+    
+    grid.innerHTML = matches.map(match => {
+        const person1Photo = match.person1_photos && match.person1_photos.length > 0
+            ? match.person1_photos.find(p => p.is_primary)?.photo_url || match.person1_photos[0].photo_url
+            : '/images/default-avatar.png';
+        
+        const person2Photo = match.person2_photos && match.person2_photos.length > 0
+            ? match.person2_photos.find(p => p.is_primary)?.photo_url || match.person2_photos[0].photo_url
+            : '/images/default-avatar.png';
+        
+        return `
+            <div class="match-pair" data-id="${match.id}">
+                <div class="match-pair-person">
+                    <img src="${person1Photo}" alt="${match.person1_name}">
+                    <div class="match-pair-info">
+                        <div class="match-pair-name">${match.person1_username} - ${match.person1_name}</div>
+                        <div class="match-pair-baptismal">${match.person1_baptismal_name || ''}</div>
+                    </div>
+                </div>
+                <div class="match-pair-stars">
+                    <div class="match-pair-rating">
+                        ${'★'.repeat(match.stars)}${'☆'.repeat(5 - match.stars)}
+                    </div>
+                </div>
+                <div class="match-pair-person">
+                    <img src="${person2Photo}" alt="${match.person2_name}">
+                    <div class="match-pair-info">
+                        <div class="match-pair-name">${match.person2_username} - ${match.person2_name}</div>
+                        <div class="match-pair-baptismal">${match.person2_baptismal_name || ''}</div>
+                    </div>
+                </div>
+                <div class="match-pair-actions">
+                    <button class="btn-edit-rating" 
+                            onclick="editMatchRating(${match.person1_id}, ${match.person2_id}, '${match.person1_name}', '${match.person2_name}', ${match.stars})">
+                        编辑
+                    </button>
+                    <button class="btn-remove-match" 
+                            onclick="removeMatchById(${match.id}, '${match.person1_name}', '${match.person2_name}')">
+                        删除
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 编辑配对星级
+function editMatchRating(person1Id, person2Id, person1Name, person2Name, currentStars) {
+    currentMatchPair = {
+        person1_id: person1Id,
+        person1_name: person1Name,
+        person2_id: person2Id,
+        person2_name: person2Name
+    };
+    
+    currentStarRating = currentStars;
+    
+    // 设置参与者信息
+    const participant1Div = document.getElementById('starRatingParticipant1');
+    const participant2Div = document.getElementById('starRatingParticipant2');
+    
+    // 从allUsers中找到参与者照片
+    const person1Data = allUsers.find(u => u.id == person1Id);
+    const person2Data = allUsers.find(u => u.id == person2Id);
+    
+    const person1Photo = person1Data && person1Data.photos && person1Data.photos.length > 0
+        ? person1Data.photos.find(p => p.is_primary)?.photo_url || person1Data.photos[0].photo_url
+        : '/images/default-avatar.png';
+    
+    const person2Photo = person2Data && person2Data.photos && person2Data.photos.length > 0
+        ? person2Data.photos.find(p => p.is_primary)?.photo_url || person2Data.photos[0].photo_url
+        : '/images/default-avatar.png';
+    
+    participant1Div.innerHTML = `
+        <img src="${person1Photo}" alt="${person1Name}">
+        <div class="name">${person1Name}</div>
+    `;
+    
+    participant2Div.innerHTML = `
+        <img src="${person2Photo}" alt="${person2Name}">
+        <div class="name">${person2Name}</div>
+    `;
+    
+    // 设置星级
+    updateStarDisplay(currentStars);
+    
+    document.getElementById('starRatingModal').style.display = 'block';
+}
+
+// 根据ID删除配对
+async function removeMatchById(matchId, person1Name, person2Name) {
+    if (!confirm(`确定要删除 ${person1Name} 和 ${person2Name} 的配对吗？`)) {
+        return;
+    }
+    
+    try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            alert('请先登录');
+            return;
+        }
+        
+        const response = await fetch(`/api/matchmaker/recommendations/${matchId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            alert('配对已删除');
+            loadManageMatches(); // 重新加载配对列表
+        } else {
+            const error = await response.json();
+            throw new Error(error.message || '删除配对失败');
+        }
+    } catch (error) {
+        console.error('删除配对失败:', error);
+        alert('删除配对失败：' + error.message);
+    }
+}
+
+// 配对界面图片查看器
+function openMatchingImageViewer(participantId) {
+    const participant = matchingParticipants.find(p => p.id === participantId);
+    if (!participant || !participant.photos || participant.photos.length === 0) return;
+    
+    // 复用现有的全屏查看器逻辑
+    currentViewerUser = {
+        id: participant.id,
+        username: participant.username,
+        name: participant.name,
+        baptismal_name: participant.baptismal_name,
+        photos: participant.photos
+    };
+    currentImageIndex = 0;
+    
+    document.getElementById('fullscreenViewer').style.display = 'flex';
+    updateViewerContent();
+}

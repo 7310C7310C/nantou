@@ -151,6 +151,12 @@ function setupEventListeners() {
         closeCheckinBtn.addEventListener('click', closeCheckinModal);
     }
 
+    // 红娘功能
+    const startMatchmakingBtn = document.getElementById('startMatchmakingBtn');
+    if (startMatchmakingBtn) {
+        startMatchmakingBtn.addEventListener('click', handleStartMatchmaking);
+    }
+
     // 删除功能
     cancelDeleteBtn.addEventListener('click', closeDeleteModal);
     confirmDeleteBtn.addEventListener('click', handleDeleteParticipant);
@@ -2060,3 +2066,41 @@ async function handleClearAllCheckins() {
         hideLoading();
     }
 } 
+
+// ==================== 红娘功能 ====================
+
+/**
+ * 处理开始配对按钮点击
+ */
+async function handleStartMatchmaking() {
+    try {
+        const authToken = getAuthToken();
+        if (!authToken) {
+            alert('请先登录');
+            return;
+        }
+
+        // 检查当前用户权限
+        const response = await fetch('/api/auth/me', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.data.user.role !== 'matchmaker') {
+                alert('权限不足，只有红娘可以访问配对功能');
+                return;
+            }
+            
+            // 跳转到首页开始配对
+            window.location.href = '/';
+        } else {
+            throw new Error('验证用户权限失败');
+        }
+    } catch (error) {
+        console.error('开始配对失败:', error);
+        alert('开始配对失败：' + error.message);
+    }
+}

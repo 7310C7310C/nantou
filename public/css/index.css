@@ -859,3 +859,561 @@ body {
         aspect-ratio: 3/4;
     }
 }
+
+/* 红娘功能样式 */
+.manage-matches-btn {
+    padding: 12px 24px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.manage-matches-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* 配对按钮 */
+.match-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #666;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.match-btn:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* 配对界面模态框 */
+.matching-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 2000;
+    animation: fadeIn 0.3s ease;
+}
+
+.matching-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 1000px;
+    height: 80%;
+    background: #fff;
+    border-radius: 20px;
+    padding: 30px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.matching-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.matching-modal-header h2 {
+    color: #333;
+    font-size: 24px;
+}
+
+.matching-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #666;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.matching-close:hover {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.matching-search-container {
+    margin-bottom: 20px;
+}
+
+.matching-search {
+    width: 100%;
+    padding: 12px 20px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.matching-search:focus {
+    border-color: #db909a;
+}
+
+.matching-modal-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.matching-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    padding: 10px 0;
+}
+
+.matching-card {
+    position: relative;
+    background: #fff;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    aspect-ratio: 3/4;
+}
+
+.matching-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.matching-card.matched {
+    border: 3px solid #ff6b6b;
+    box-shadow: 0 4px 20px rgba(255, 107, 107, 0.3);
+}
+
+.matching-card img {
+    width: 100%;
+    height: 70%;
+    object-fit: cover;
+}
+
+.matching-card-info {
+    padding: 10px;
+    height: 30%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.matching-card-name {
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.matching-card-baptismal {
+    font-size: 12px;
+    color: #666;
+}
+
+/* 星级按钮 */
+.star-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #ffd700;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.star-btn:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+
+.star-btn.empty {
+    color: #ccc;
+}
+
+.star-btn.filled {
+    color: #ffd700;
+}
+
+/* 星级评分模态框 */
+.star-rating-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 3000;
+}
+
+.star-rating-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 30px;
+}
+
+.star-rating-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.star-rating-header h3 {
+    color: #333;
+    font-size: 20px;
+}
+
+.star-rating-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.star-rating-close:hover {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.star-rating-participants {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.participant-info {
+    text-align: center;
+}
+
+.participant-info img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 5px;
+}
+
+.participant-info .name {
+    font-size: 14px;
+    color: #333;
+    font-weight: bold;
+}
+
+.match-arrow {
+    font-size: 20px;
+    color: #666;
+}
+
+.star-rating-stars {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.star {
+    font-size: 32px;
+    color: #ddd;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.star:hover,
+.star.active {
+    color: #ffd700;
+    transform: scale(1.1);
+}
+
+.star-rating-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.btn-remove {
+    padding: 10px 20px;
+    background: #ff6b6b;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.btn-remove:hover {
+    background: #ff5252;
+    transform: translateY(-2px);
+}
+
+.btn-confirm {
+    padding: 10px 20px;
+    background: #4caf50;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.btn-confirm:hover {
+    background: #43a047;
+    transform: translateY(-2px);
+}
+
+/* 管理配对模态框 */
+.manage-matches-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 2000;
+}
+
+.manage-matches-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 800px;
+    height: 80%;
+    background: #fff;
+    border-radius: 20px;
+    padding: 30px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.manage-matches-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.manage-matches-modal-header h2 {
+    color: #333;
+    font-size: 24px;
+}
+
+.manage-matches-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #666;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.manage-matches-close:hover {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.manage-matches-modal-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.manage-matches-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.match-pair {
+    display: flex;
+    align-items: center;
+    background: #f9f9f9;
+    border-radius: 15px;
+    padding: 15px;
+    gap: 15px;
+}
+
+.match-pair-person {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.match-pair-person img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.match-pair-info {
+    flex: 1;
+}
+
+.match-pair-name {
+    font-weight: bold;
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.match-pair-baptismal {
+    font-size: 14px;
+    color: #666;
+}
+
+.match-pair-stars {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 15px;
+}
+
+.match-pair-rating {
+    display: flex;
+    gap: 2px;
+}
+
+.match-pair-rating .star {
+    font-size: 20px;
+    color: #ffd700;
+}
+
+.match-pair-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-edit-rating {
+    padding: 8px 16px;
+    background: #2196f3;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+.btn-edit-rating:hover {
+    background: #1976d2;
+}
+
+.btn-remove-match {
+    padding: 8px 16px;
+    background: #ff6b6b;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+.btn-remove-match:hover {
+    background: #ff5252;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .matching-modal-content,
+    .manage-matches-modal-content {
+        width: 95%;
+        height: 90%;
+        padding: 20px;
+    }
+    
+    .matching-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+    }
+    
+    .star-rating-content {
+        width: 90%;
+        padding: 20px;
+    }
+    
+    .match-pair {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .match-pair-person {
+        justify-content: center;
+    }
+}
