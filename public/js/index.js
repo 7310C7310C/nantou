@@ -280,6 +280,13 @@ function displayUsers(users) {
     grid.innerHTML = users.map(user => createUserCard(user)).join('');
     allUsers = users;
     
+    // Draw hearts
+    grid.querySelectorAll('.favorite-toggle canvas.heart-icon').forEach(canvas => {
+        const btn = canvas.parentElement;
+        const isFavorited = btn.classList.contains('favorited');
+        drawHeartIcon(canvas, isFavorited);
+    });
+    
     // 预加载所有用户的照片
     preloadUserPhotos(users);
     
@@ -290,15 +297,52 @@ function displayUsers(users) {
 // 追加用户
 function appendUsers(users) {
     const grid = document.getElementById('usersGrid');
+    const beforeCount = grid.children.length;
     const userCards = users.map(user => createUserCard(user)).join('');
     grid.insertAdjacentHTML('beforeend', userCards);
     allUsers = allUsers.concat(users);
+
+    // Draw hearts on newly added cards
+    const cards = Array.from(grid.children);
+    for (let i = beforeCount; i < cards.length; i++) {
+        const canvas = cards[i].querySelector('.favorite-toggle canvas.heart-icon');
+        if (canvas) {
+            const btn = canvas.parentElement;
+            const isFavorited = btn.classList.contains('favorited');
+            drawHeartIcon(canvas, isFavorited);
+        }
+    }
     
     // 预加载新添加用户的照片
     preloadUserPhotos(users);
     
     // 更新缓存
     saveCurrentGenderState();
+}
+
+// 绘制爱心图标
+function drawHeartIcon(canvas, isFavorited) {
+    if (!canvas || typeof canvas.getContext !== 'function') {
+        return;
+    }
+    const ctx = canvas.getContext('2d');
+    const size = canvas.width;
+    const scale = size / 24;
+    ctx.clearRect(0, 0, size, size);
+    ctx.save();
+    ctx.scale(scale, scale);
+
+    const path = new Path2D('M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z');
+    
+    if (isFavorited) {
+        ctx.fillStyle = '#ff4d4f';
+        ctx.fill(path);
+    } else {
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth = 1.5 / scale; // Keep stroke width constant
+        ctx.stroke(path);
+    }
+    ctx.restore();
 }
 
 // 创建用户卡片
@@ -314,7 +358,7 @@ function createUserCard(user) {
     const userGender = localStorage.getItem('userGender');
     // 仅在登录参与者浏览异性列表时显示收藏按钮
     const showFavBtn = userRole === 'participant' && userGender && userGender !== currentGender;
-    const favBtnHtml = showFavBtn ? `<button class="favorite-toggle ${isFavorited ? 'favorited' : ''}" data-id="${user.id}" title="收藏/取消收藏">${isFavorited ? '❤' : '♡'}</button>` : '';
+    const favBtnHtml = showFavBtn ? `<button class="favorite-toggle ${isFavorited ? 'favorited' : ''}" data-id="${user.id}" title="收藏/取消收藏"><canvas class="heart-icon" width="20" height="20"></canvas></button>` : '';
     return `
         <div class="user-card" data-id="${user.id}" data-username="${user.username}" data-photos='${JSON.stringify(user.photos || [])}'>
             ${favBtnHtml}
@@ -844,7 +888,10 @@ async function initFavorites() {
                 if (btn) {
                     const fav = favoriteIds.has(id);
                     btn.classList.toggle('favorited', fav);
-                    btn.textContent = fav ? '❤' : '♡';
+                    const canvas = btn.querySelector('canvas.heart-icon');
+                    if (canvas) {
+                        drawHeartIcon(canvas, fav);
+                    }
                 }
             });
         }
@@ -866,7 +913,10 @@ async function toggleFavorite(participantId, btnEl) {
     const currentlyFavorited = btnEl.classList.contains('favorited');
     const newFavorited = !currentlyFavorited;
     btnEl.classList.toggle('favorited', newFavorited);
-    btnEl.textContent = newFavorited ? '❤' : '♡';
+    const canvas = btnEl.querySelector('canvas.heart-icon');
+    if (canvas) {
+        drawHeartIcon(canvas, newFavorited);
+    }
     
     // 更新本地状态
     const id = parseInt(participantId, 10);
@@ -893,13 +943,18 @@ async function toggleFavorite(participantId, btnEl) {
         }
         // 确保按钮状态与最终结果一致
         btnEl.classList.toggle('favorited', favorited);
-        btnEl.textContent = favorited ? '❤' : '♡';
+        if (canvas) {
+            drawHeartIcon(canvas, favorited);
+        }
 
         // 同步更新主列表对应按钮
         const cardBtn = document.querySelector(`.user-card[data-id='${participantId}'] .favorite-toggle`);
         if (cardBtn && cardBtn !== btnEl) {
             cardBtn.classList.toggle('favorited', favorited);
-            cardBtn.textContent = favorited ? '❤' : '♡';
+            const cardCanvas = cardBtn.querySelector('canvas.heart-icon');
+            if (cardCanvas) {
+                drawHeartIcon(cardCanvas, favorited);
+            }
         }
 
         // 抽屉同步
@@ -922,7 +977,9 @@ async function toggleFavorite(participantId, btnEl) {
     } catch (e) {
         // 回滚
         btnEl.classList.toggle('favorited', currentlyFavorited);
-        btnEl.textContent = currentlyFavorited ? '❤' : '♡';
+        if (canvas) {
+            drawHeartIcon(canvas, currentlyFavorited);
+        }
         if (currentlyFavorited) {
             favoriteIds.add(id);
         } else {
@@ -962,13 +1019,19 @@ async function loadFavoritesList(forceReload = false) {
                 const photoUrl = photo ? photo.photo_url : '/placeholder.jpg';
                 const favorited = favoriteIds.has(p.id);
                 return `<div class="favorite-item" data-id="${p.id}" data-username="${p.username}" data-photos='${JSON.stringify(p.photos || [])}'>
-                    <button class="favorite-toggle ${favorited ? 'favorited' : ''}" data-id="${p.id}" title="取消喜欢">${favorited ? '❤' : '♡'}</button>
+                    <button class="favorite-toggle ${favorited ? 'favorited' : ''}" data-id="${p.id}" title="取消喜欢"><canvas class="heart-icon" width="20" height="20"></canvas></button>
                     <img src="${photoUrl}" alt="${p.username}">
                     <div class="favorite-item-info"><span>${p.username}</span><span>${p.baptismal_name || ''}</span></div>
                 </div>`;
             }).join('');
             
             listEl.insertAdjacentHTML('beforeend', newItems);
+
+            listEl.querySelectorAll('.favorite-toggle canvas.heart-icon').forEach(canvas => {
+                const btn = canvas.parentElement;
+                const isFavorited = btn.classList.contains('favorited');
+                drawHeartIcon(canvas, isFavorited);
+            });
         }
     } catch (e) {
         console.error('加载收藏列表失败', e);

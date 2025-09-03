@@ -167,37 +167,28 @@ body {
 /* 收藏心形按钮 */
 .favorite-toggle {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+    top: 15px;
+    right: 15px;
+    width: 24px;
+    height: 24px;
     border: none;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(6px);
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s ease;
-    color: #fff;
-    font-size: 22px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s ease;
     z-index: 5;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    padding: 0;
 }
 .favorite-toggle:hover { 
-    background: rgba(0, 0, 0, 0.8); 
-    transform: scale(1.05);
-    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.15);
 }
 .favorite-toggle.favorited { 
-    color: #ff4d6d; 
-    border-color: #ff4d6d;
+    /* The canvas now handles the color, so no specific style is needed here. */
 }
 .favorite-toggle.favorited:hover { 
-    background: rgba(0, 0, 0, 0.8);
-    transform: scale(1.1);
+    transform: scale(1.15);
 }
 
 /* 我的喜欢按钮 */
@@ -247,7 +238,7 @@ body {
 .close-favorites { background:none; border:none; color:#fff; font-size:26px; cursor:pointer; line-height:1; }
 .favorites-list { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:12px; }
 .favorite-item { position:relative; border-radius:15px; overflow:hidden; background:rgba(255,255,255,0.15); backdrop-filter:blur(8px); box-shadow:0 4px 12px rgba(0,0,0,0.15); cursor:pointer; }
-.favorite-item .favorite-toggle { position:absolute; top:8px; right:8px; width:34px; height:34px; font-size:18px; }
+.favorite-item .favorite-toggle { position:absolute; top:10px; right:10px; width:24px; height:24px; }
 .favorite-item img { width:100%; height:160px; object-fit:cover; display:block; }
 .favorite-item-info { position:absolute; left:0; right:0; bottom:0; padding:10px 12px; background:linear-gradient(transparent, rgba(0,0,0,0.7)); color:#fff; font-size:14px; display:flex; justify-content:space-between; }
 .favorites-empty { color:#fff; text-align:center; margin-top:40px; }
