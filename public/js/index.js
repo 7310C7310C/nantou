@@ -385,6 +385,8 @@ function createUserCard(user) {
     const showMatchBtn = userRole === 'matchmaker';
     const matchBtnHtml = showMatchBtn ? `<button class="match-btn" data-id="${user.id}" title="配对" onclick="event.stopPropagation(); openMatchingModal(${user.id}, '${user.name}')">配对</button>` : '';
     
+    const displayName = userRole === 'matchmaker' ? user.name : (user.baptismal_name || '');
+
     return `
         <div class="user-card" data-id="${user.id}" data-username="${user.username}" data-photos='${JSON.stringify(user.photos || [])}'>
             ${favBtnHtml}
@@ -392,7 +394,7 @@ function createUserCard(user) {
             <img src="${photoUrl}" alt="用户照片" class="user-photo" onerror="this.src='/placeholder.jpg'">
             <div class="user-info">
                 <div class="user-username">${highlightedUsername}</div>
-                <div class="user-baptismal">${user.baptismal_name || ''}</div>
+                <div class="user-baptismal">${displayName}</div>
             </div>
         </div>
     `;
