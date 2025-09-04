@@ -902,6 +902,14 @@ body {
     backdrop-filter: blur(5px);
 }
 
+.match-btn.matched-exists {
+    background: rgba(255, 77, 79, 0.85); /* 更红 */
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.25), 0 6px 18px rgba(255,77,79,0.4);
+}
+.match-btn.matched-exists:hover {
+    background: rgba(255, 48, 52, 0.95);
+}
+
 .match-btn:hover {
     background: rgba(255, 182, 193, 0.9);
     transform: scale(1.05);

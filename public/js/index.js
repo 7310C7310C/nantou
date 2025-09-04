@@ -16,6 +16,8 @@ let currentTargetParticipantName = ''; // 当前配对的目标参与者姓名
 let matchingParticipants = []; // 配对界面的参与者列表
 let currentStarRating = 0; // 当前星级评分
 let currentMatchPair = null; // 当前配对的两个人
+// 红娘: 已存在配对的参与者ID集合（任意作为 person1 / person2 出现都算）
+const matchedParticipantIdSet = new Set();
 
 // 按性别缓存数据
 let genderCache = {
@@ -246,8 +248,12 @@ async function loadUsers() {
     isLoading = true;
     
     try {
-        // 如果是参与者且收藏尚未初始化，先等待初始化（保险：正常流程已在登录后调用 initFavorites，这里是兜底）
+        // 红娘首次加载：预取配对集合用于高亮
         const userRole = localStorage.getItem('userRole');
+        if (userRole === 'matchmaker' && matchedParticipantIdSet.size === 0) {
+            try { await loadMatchPairsForMatchmaker(); } catch (e) { console.warn('预取配对集合失败(忽略)', e); }
+        }
+        // 如果是参与者且收藏尚未初始化，先等待初始化（保险：正常流程已在登录后调用 initFavorites，这里是兜底）
         if (userRole === 'participant' && favoriteIds.size === 0) {
             // 仅当还没有初始化过 (用户刚登录) 时尝试一次
             await initFavorites();
@@ -449,7 +455,8 @@ function createUserCard(user) {
     
     // 红娘模式下显示配对按钮
     const showMatchBtn = userRole === 'matchmaker';
-    const matchBtnHtml = showMatchBtn ? `<button class="match-btn" data-id="${user.id}" title="配对" onclick="event.stopPropagation(); openMatchingModal(${user.id}, '${user.name}')">配对</button>` : '';
+    const isMatchedAlready = showMatchBtn && matchedParticipantIdSet.has(user.id);
+    const matchBtnHtml = showMatchBtn ? `<button class="match-btn ${isMatchedAlready ? 'matched-exists' : ''}" data-id="${user.id}" title="配对" onclick="event.stopPropagation(); openMatchingModal(${user.id}, '${user.name}')">配对</button>` : '';
     
     const displayName = userRole === 'matchmaker' ? user.name : (user.baptismal_name || '');
 
@@ -464,6 +471,22 @@ function createUserCard(user) {
             </div>
         </div>
     `;
+}
+
+// 红娘加载所有已有配对，用于首页高亮按钮
+async function loadMatchPairsForMatchmaker() {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) return;
+    const resp = await fetch('/api/matchmaker/my-recommendations', {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (!data.success) return;
+    (data.data || []).forEach(rec => {
+        if (rec.person1_internal_id) matchedParticipantIdSet.add(rec.person1_internal_id);
+        if (rec.person2_internal_id) matchedParticipantIdSet.add(rec.person2_internal_id);
+    });
 }
 
 // 高亮搜索内容
