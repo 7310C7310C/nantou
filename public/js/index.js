@@ -126,6 +126,22 @@ function switchGender(gender) {
     
     currentGender = gender;
     
+    // 清除搜索框内容和状态
+    const searchInput = document.getElementById('searchInput');
+    const clearBtn = document.getElementById('clearBtn');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    if (clearBtn) {
+        clearBtn.style.display = 'none';
+    }
+    searchTerm = '';
+    
+    // 清除所有性别缓存中的搜索状态，确保切换性别后搜索框保持空白
+    Object.keys(genderCache).forEach(key => {
+        genderCache[key].searchTerm = '';
+    });
+    
     // 从缓存加载目标性别的状态
     loadGenderState(gender);
     
@@ -133,18 +149,14 @@ function switchGender(gender) {
     document.getElementById('femaleBtn').classList.toggle('active', gender === 'female');
     document.getElementById('maleBtn').classList.toggle('active', gender === 'male');
     
-    // 检查是否有缓存数据
-    const cache = genderCache[gender];
-    if (cache.users.length > 0 && cache.searchTerm === searchTerm) {
-        // 有缓存数据且搜索条件相同，直接显示
-        displayUsers(cache.users);
-    // 保险：刷新心形图标（尤其是刚登录后从另一性别切回）
-    const grid = document.getElementById('usersGrid');
-    if (grid) updateHeartIcons(grid);
-    } else {
-        // 没有缓存数据或搜索条件不同，重新加载
-        loadUsers();
-    }
+    // 由于我们清空了搜索状态，需要重新加载该性别的全部用户数据
+    // 重置分页状态
+    currentPage = 0;
+    hasMore = true;
+    allUsers = [];
+    
+    // 重新加载全部数据
+    loadUsers();
 }
 
 // (移除旧版带“加载中...”的搜索处理函数，避免主页搜索出现 loading 文案)
@@ -178,8 +190,12 @@ function loadGenderState(gender) {
 
 // 处理搜索输入
 function handleSearchInput(input) {
-    // 只允许输入数字
-    input.value = input.value.replace(/[^0-9]/g, '');
+    const role = localStorage.getItem('userRole');
+    const allowName = ['admin','staff','matchmaker'].includes(role || '');
+    if (!allowName) {
+        // 参与者或未登录：只允许数字
+        input.value = input.value.replace(/[^0-9]/g, '');
+    }
     
     // 显示或隐藏清除按钮
     const clearBtn = document.getElementById('clearBtn');
@@ -236,7 +252,7 @@ function searchUsers() {
     
     searchTerm = newSearchTerm;
     currentPage = 0;
-    hasMore = true;
+    hasMore = true; // 重置分页状态
     allUsers = [];
     
     // 清空预加载的图片缓存
@@ -262,22 +278,49 @@ async function loadUsers() {
             // 仅当还没有初始化过 (用户刚登录) 时尝试一次
             await initFavorites();
         }
-        const response = await fetch(`/api/participants?gender=${currentGender}&page=${currentPage}&limit=10&search=${encodeURIComponent(searchTerm)}`);
+        
+        // 检查是否为管理员角色的姓名搜索
+        const isAdminRole = ['admin', 'staff', 'matchmaker'].includes(userRole);
+        const isNameSearch = isAdminRole && searchTerm && isNaN(searchTerm);
+        
+        // 如果是姓名搜索，则不传递search参数给后端，让后端返回所有数据，前端来过滤
+        // 同时需要获取更多数据以确保能找到所有匹配的姓名
+        const searchParam = isNameSearch ? '' : searchTerm;
+        const limitParam = isNameSearch ? 100 : 10; // 姓名搜索时获取更多数据
+        const response = await fetch(`/api/participants?gender=${currentGender}&page=${currentPage}&limit=${limitParam}&search=${encodeURIComponent(searchParam)}`);
         
         if (response.ok) {
             const data = await response.json();
-            const users = data.data.participants || [];
+            let users = data.data.participants || [];
             
-            if (currentPage === 0) {
-                // 第一页，清空现有内容
-                displayUsers(users);
+            // 如果是姓名搜索，在前端进行过滤
+            if (isNameSearch) {
+                const searchLower = searchTerm.toLowerCase();
+                users = users.filter(user => {
+                    return user.name && user.name.toLowerCase().includes(searchLower);
+                });
+                
+                // 对于姓名搜索，我们需要模拟分页逻辑
+                if (currentPage === 0) {
+                    // 第一页，清空现有内容
+                    displayUsers(users);
+                }
+                // 姓名搜索时，假设没有更多数据（因为我们已经过滤了所有结果）
+                hasMore = false;
             } else {
-                // 追加内容
-                appendUsers(users);
+                // 普通的编号搜索或无搜索
+                if (currentPage === 0) {
+                    // 第一页，清空现有内容
+                    displayUsers(users);
+                } else {
+                    // 追加内容
+                    appendUsers(users);
+                }
+                
+                // 使用后端返回的分页信息
+                hasMore = data.data.pagination.hasMore;
             }
             
-            // 使用后端返回的分页信息
-            hasMore = data.data.pagination.hasMore;
             currentPage++;
         } else {
             console.error('加载用户失败');
@@ -462,7 +505,11 @@ function createUserCard(user) {
     const isMatchedAlready = showMatchBtn && matchedParticipantIdSet.has(user.id);
     const matchBtnHtml = showMatchBtn ? `<button class="match-btn ${isMatchedAlready ? 'matched-exists' : ''}" data-id="${user.id}" title="配对" onclick="event.stopPropagation(); openMatchingModal(${user.id}, '${user.name}')">配对</button>` : '';
     
-    const displayName = userRole === 'matchmaker' ? user.name : (user.baptismal_name || '');
+    // 对 admin / staff / matchmaker 显示真实姓名，其余显示圣名
+    const roleShowRealName = ['matchmaker','admin','staff'].includes(userRole || '');
+    const rawDisplayName = roleShowRealName ? (user.name || '') : (user.baptismal_name || '');
+    // 搜索高亮：仅当搜索词存在时在显示名称上一起高亮（允许编号或姓名）
+    const highlightedDisplayName = searchTerm ? highlightSearchTerm(rawDisplayName, searchTerm) : rawDisplayName;
 
     return `
         <div class="user-card" data-id="${user.id}" data-username="${user.username}" data-photos='${JSON.stringify(user.photos || [])}'>
@@ -471,7 +518,7 @@ function createUserCard(user) {
             <img src="${photoUrl}" alt="用户照片" class="user-photo" onerror="this.src='/placeholder.jpg'">
             <div class="user-info">
                 <div class="user-username">${highlightedUsername}</div>
-                <div class="user-baptismal">${displayName}</div>
+                <div class="user-baptismal">${highlightedDisplayName}</div>
             </div>
         </div>
     `;
@@ -917,6 +964,7 @@ function updateUserInterface(username, role, userName = '') {
     const userInfo = document.getElementById('userInfo');
     const roleBtn = document.getElementById('roleBtn');
     const adminPanelBtn = document.getElementById('adminPanelBtn');
+    const searchInputEl = document.getElementById('searchInput');
     
     // 隐藏登录按钮，显示用户信息
     loginBtn.style.display = 'none';
@@ -947,6 +995,15 @@ function updateUserInterface(username, role, userName = '') {
     showMatchmakerButtonsIfMatchmaker(role);
     // 恢复下拉菜单事件绑定
     setupUserDropdown();
+
+    // 根据角色调整首页搜索框 placeholder 与输入限制提示
+    if (searchInputEl) {
+        if (['admin','staff','matchmaker'].includes(role)) {
+            searchInputEl.placeholder = '输入编号或姓名…';
+        } else {
+            searchInputEl.placeholder = '输入编号…';
+        }
+    }
 }
 
 // 设置用户下拉菜单
@@ -981,6 +1038,8 @@ function setupUserDropdown() {
         localStorage.removeItem('username');
         localStorage.removeItem('userName');
         localStorage.removeItem('userGender');
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.placeholder = '输入编号…';
         
         const loginBtn = document.getElementById('loginBtn');
         const userInfo = document.getElementById('userInfo');
@@ -1289,7 +1348,7 @@ function showMatchmakerButtonsIfMatchmaker(role) {
 
 // 初始化红娘功能事件
 function setupMatchmakerEvents() {
-    // 管理配对按钮事件
+    // 配对管理按钮事件
     document.getElementById('manageMatchesBtn').addEventListener('click', openManageMatchesModal);
     
     // 关闭模态框事件
@@ -1670,7 +1729,7 @@ async function confirmRating() {
             if (matchingModalActive) {
                 loadMatchingParticipants(); // 仅在配对界面时刷新
             } else {
-                // 管理配对界面，刷新配对管理数据
+                // 配对管理界面，刷新配对管理数据
                 if (typeof loadManageMatches === 'function') {
                     loadManageMatches();
                 }
@@ -1726,7 +1785,7 @@ async function removeMatch() {
     }
 }
 
-// 打开管理配对模态框
+// 打开配对管理模态框
 async function openManageMatchesModal() {
     document.getElementById('manageMatchesModal').classList.add('active');
     // 初始化加载状态
@@ -1740,7 +1799,7 @@ async function openManageMatchesModal() {
     await loadManageMatches();
 }
 
-// 关闭管理配对模态框
+// 关闭配对管理模态框
 function closeManageMatchesModal() {
     document.getElementById('manageMatchesModal').classList.remove('active');
     // 清空搜索框和隐藏清除按钮
@@ -1750,7 +1809,7 @@ function closeManageMatchesModal() {
     if (clearBtn) clearBtn.style.display = 'none';
 }
 
-// 加载管理配对数据
+// 加载配对管理数据
 async function loadManageMatches() {
     try {
         const authToken = localStorage.getItem('authToken');
@@ -1777,7 +1836,7 @@ async function loadManageMatches() {
     }
 }
 
-// 渲染管理配对列表
+// 渲染配对管理列表
 function renderManageMatches(matches) {
     const grid = document.getElementById('manageMatchesGrid');
     const empty = document.getElementById('manageMatchesEmpty');
@@ -1863,7 +1922,7 @@ function renderManageMatches(matches) {
     initInlineManageRating();
 }
 
-// 管理配对本地过滤（ID或姓名 / 用户名模糊）
+// 配对管理本地过滤（ID或姓名 / 用户名模糊）
 const filterManageMatches = debounce(function() {
     const input = document.getElementById('manageMatchesSearch');
     if (!input) return;
@@ -1906,7 +1965,7 @@ const filterManageMatches = debounce(function() {
     if (empty) empty.style.display = visibleCount === 0 ? 'block' : 'none';
 }, 250);
 
-// 初始化管理配对搜索事件（只需绑定一次）
+// 初始化配对管理搜索事件（只需绑定一次）
 document.addEventListener('DOMContentLoaded', () => {
     const manageSearchInput = document.getElementById('manageMatchesSearch');
     if (manageSearchInput && !manageSearchInput.dataset.bound) {
@@ -1973,7 +2032,7 @@ function escapeRegex(string) {
 
 // 编辑配对星级
 function editMatchRating(person1Id, person2Id, person1Name, person2Name, currentStars, person1PhotoFromList = null, person2PhotoFromList = null) {
-    // 兼容性：如果传入的ID为空，尝试从最近一次管理配对记录中获取 internal id
+    // 兼容性：如果传入的ID为空，尝试从最近一次配对管理记录中获取 internal id
     if (!person1Id || !person2Id) {
         console.warn('editMatchRating 缺少ID参数，尝试回退');
         try {
@@ -1999,7 +2058,7 @@ function editMatchRating(person1Id, person2Id, person1Name, person2Name, current
     const participant1Div = document.getElementById('starRatingParticipant1');
     const participant2Div = document.getElementById('starRatingParticipant2');
     
-    // 优先使用传入的照片（来自管理配对列表），否则回退到 allUsers
+    // 优先使用传入的照片（来自配对管理列表），否则回退到 allUsers
     let person1Photo = person1PhotoFromList;
     let person2Photo = person2PhotoFromList;
 
@@ -2034,7 +2093,7 @@ function editMatchRating(person1Id, person2Id, person1Name, person2Name, current
     document.getElementById('starRatingModal').style.display = 'block';
 }
 
-// 内联管理配对星级评分初始化
+// 内联配对管理星级评分初始化
 function initInlineManageRating() {
     const containers = document.querySelectorAll('.match-pair-rating');
     containers.forEach(container => {

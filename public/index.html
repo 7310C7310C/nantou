@@ -23,8 +23,6 @@
         </div>
     <!-- 我的喜欢按钮 -->
     <button class="favorites-btn" id="favoritesBtn" style="display:none;">我的喜欢</button>
-    <!-- 红娘管理配对按钮 -->
-    <button class="manage-matches-btn" id="manageMatchesBtn" style="display:none;">管理配对</button>
     </div>
 
     <!-- 管理后台按钮 - 固定在右上角 -->
@@ -40,6 +38,11 @@
     <div class="gender-toggle">
         <button class="gender-btn" id="femaleBtn" onclick="switchGender('female')">女</button>
         <button class="gender-btn" id="maleBtn" onclick="switchGender('male')">男</button>
+    </div>
+
+    <!-- 红娘配对管理按钮 - 放在性别选择下方居中 -->
+    <div class="manage-matches-container">
+        <button class="manage-matches-btn" id="manageMatchesBtn" style="display:none;">配对管理</button>
     </div>
 
     <div class="users-grid" id="usersGrid">
@@ -125,11 +128,11 @@
         </div>
     </div>
 
-    <!-- 管理配对模态框 -->
+    <!-- 配对管理模态框 -->
     <div class="favorites-modal" id="manageMatchesModal">
         <div class="favorites-modal-content">
             <div class="favorites-modal-header">
-                <h2>管理配对</h2>
+                <h2>配对管理</h2>
                 <button class="favorites-close" id="closeManageMatchesModal">×</button>
             </div>
             <div class="matching-search-container" style="padding:0 20px;">

@@ -888,6 +888,12 @@ body {
 }
 
 /* 红娘功能样式 */
+.manage-matches-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
 .manage-matches-btn {
     padding: 12px 24px;
     background: rgba(255, 255, 255, 0.2);
@@ -998,7 +1004,7 @@ body {
     transform: translateY(-50%) scale(1.1);
 }
 
-/* 管理配对界面的搜索容器有额外内边距，需要调整清除按钮位置 */
+/* 配对管理界面的搜索容器有额外内边距，需要调整清除按钮位置 */
 #manageMatchesModal .search-clear-btn {
     right: 35px; /* 15px + 20px 容器内边距 */
 }
@@ -1263,7 +1269,7 @@ body {
     box-shadow: 0 6px 26px rgba(67,160,71,0.55);
 }
 
-/* 管理配对网格布局 */
+/* 配对管理网格布局 */
 .manage-matches-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
