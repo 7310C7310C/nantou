@@ -336,6 +336,33 @@ body {
     margin-right: 10px;
 }
 
+/* 配对列表专用加载，要求居中 */
+#matchingLoading,
+#manageMatchesLoading {
+    display: none;
+    text-align: center;
+    width: 100%;
+    padding: 40px 0;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 1px;
+}
+
+#matchingLoading::before,
+#manageMatchesLoading::before {
+    content: '';
+    display: inline-block;
+    width: 26px;
+    height: 26px;
+    margin-right: 12px;
+    border: 3px solid rgba(255,255,255,0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    vertical-align: -6px;
+}
+
 @keyframes spin {
     to { transform: rotate(360deg); }
 }

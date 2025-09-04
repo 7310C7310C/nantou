@@ -117,6 +117,7 @@
                 <input type="text" class="matching-search" id="matchingSearch" placeholder="搜索ID或姓名...">
             </div>
             <div class="favorites-modal-body">
+                <div class="favorites-loading" id="matchingLoading" style="display:none;">加载中...</div>
                 <div class="favorites-grid" id="matchingGrid"></div>
                 <div class="favorites-empty" id="matchingEmpty" style="display:none;">暂无可配对的参与者</div>
             </div>
@@ -131,6 +132,7 @@
                 <button class="favorites-close" id="closeManageMatchesModal">×</button>
             </div>
             <div class="favorites-modal-body">
+                <div class="favorites-loading" id="manageMatchesLoading" style="display:none;">加载中...</div>
                 <div class="manage-matches-grid" id="manageMatchesGrid"></div>
                 <div class="favorites-empty" id="manageMatchesEmpty" style="display:none;">暂无配对记录</div>
             </div>

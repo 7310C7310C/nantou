@@ -18,6 +18,8 @@ let currentStarRating = 0; // 当前星级评分
 let currentMatchPair = null; // 当前配对的两个人
 // 红娘: 已存在配对的参与者ID集合（任意作为 person1 / person2 出现都算）
 const matchedParticipantIdSet = new Set();
+// 配对列表加载请求令牌（用于避免竞态造成的旧数据闪现）
+let matchingRequestToken = 0; // 每次发起 loadMatchingParticipants 时自增
 
 // 按性别缓存数据
 let genderCache = {
@@ -143,6 +145,28 @@ function switchGender(gender) {
         // 没有缓存数据或搜索条件不同，重新加载
         loadUsers();
     }
+}
+
+// 首页搜索输入处理：原 handleSearchInput 已存在，此处确保显示统一 loading 居中
+function handleSearchInput(inputEl) {
+    const val = inputEl.value.trim();
+    const clearBtn = document.getElementById('clearBtn');
+    if (clearBtn) clearBtn.style.display = val ? 'block' : 'none';
+    // 显示居中 loading
+    const usersGrid = document.getElementById('usersGrid');
+    usersGrid.innerHTML = `
+        <div class="loading" style="width:100%;text-align:center;">
+            <div class="loading-spinner"></div>加载中...
+        </div>`;
+    // 使用原逻辑：只允许数字过滤
+    if (/^\d*$/.test(val)) {
+        searchTerm = val;
+    }
+    // 重新加载用户列表（重置分页）
+    genderCache[currentGender].users = [];
+    genderCache[currentGender].page = 0;
+    genderCache[currentGender].hasMore = true;
+    loadUsers(true);
 }
 
 // 保存当前性别状态到缓存
@@ -1335,7 +1359,15 @@ function openMatchingModal(participantId, participantName) {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
     document.getElementById('matchingSearch').value = '';
-    
+    // 打开时立即清空旧数据，显示 loading，避免上一位对象数据闪现
+    const grid = document.getElementById('matchingGrid');
+    const empty = document.getElementById('matchingEmpty');
+    const loading = document.getElementById('matchingLoading');
+    matchingParticipants = [];
+    grid.innerHTML = '';
+    grid.style.display = 'none';
+    empty.style.display = 'none';
+    if (loading) loading.style.display = 'block';
     loadMatchingParticipants();
 }
 
@@ -1351,34 +1383,39 @@ function closeMatchingModal() {
 
 // 加载配对参与者列表
 async function loadMatchingParticipants(searchQuery = '') {
-    if (currentTargetParticipantId == null) {
-        // 不在配对上下文，直接返回
-        return;
-    }
+    if (currentTargetParticipantId == null) return; // 目标已被清空，放弃
+    const myToken = ++matchingRequestToken; // 为本次请求生成唯一令牌
     try {
         const authToken = localStorage.getItem('authToken');
         if (!authToken) {
             showToast('请先登录', 'error');
             return;
         }
-
         const url = `/api/matchmaker/participants/${currentTargetParticipantId}/matching${searchQuery ? `?search=${encodeURIComponent(searchQuery)}` : ''}`;
         const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
+            headers: { 'Authorization': `Bearer ${authToken}` }
         });
-
-    if (response.ok) {
+        if (myToken !== matchingRequestToken) return; // 已有更新请求在途，丢弃本次结果
+        if (response.ok) {
             const data = await response.json();
+            // 再次检查竞态
+            if (myToken !== matchingRequestToken) return;
             matchingParticipants = data.data;
             renderMatchingParticipants();
         } else {
             throw new Error('加载配对数据失败');
         }
     } catch (error) {
+        if (myToken !== matchingRequestToken) return; // 旧请求错误忽略
         console.error('加载配对数据失败:', error);
-    showToast('加载配对数据失败：' + error.message, 'error');
+        showToast('加载配对数据失败：' + error.message, 'error');
+        // 失败时也隐藏 loading 并显示空状态
+        const loading = document.getElementById('matchingLoading');
+        const grid = document.getElementById('matchingGrid');
+        const empty = document.getElementById('matchingEmpty');
+        if (loading) loading.style.display = 'none';
+        grid.style.display = 'none';
+        empty.style.display = 'block';
     }
 }
 
@@ -1386,6 +1423,8 @@ async function loadMatchingParticipants(searchQuery = '') {
 function renderMatchingParticipants() {
     const grid = document.getElementById('matchingGrid');
     const empty = document.getElementById('matchingEmpty');
+    const loading = document.getElementById('matchingLoading');
+    if (loading) loading.style.display = 'none';
     
     if (matchingParticipants.length === 0) {
         grid.style.display = 'none';
@@ -1488,6 +1527,14 @@ function handleMatchingGridClick(e) {
 // 配对搜索处理
 function handleMatchingSearch(event) {
     const searchQuery = event.target.value.trim();
+    // 搜索时同样显示 loading，清空旧内容防止闪烁
+    const grid = document.getElementById('matchingGrid');
+    const empty = document.getElementById('matchingEmpty');
+    const loading = document.getElementById('matchingLoading');
+    grid.innerHTML = '';
+    grid.style.display = 'none';
+    empty.style.display = 'none';
+    if (loading) loading.style.display = 'block';
     loadMatchingParticipants(searchQuery);
 }
 
@@ -1672,6 +1719,14 @@ async function removeMatch() {
 // 打开管理配对模态框
 async function openManageMatchesModal() {
     document.getElementById('manageMatchesModal').classList.add('active');
+    // 初始化加载状态
+    const grid = document.getElementById('manageMatchesGrid');
+    const empty = document.getElementById('manageMatchesEmpty');
+    const loading = document.getElementById('manageMatchesLoading');
+    grid.innerHTML = '';
+    grid.style.display = 'none';
+    empty.style.display = 'none';
+    if (loading) loading.style.display = 'block';
     await loadManageMatches();
 }
 
@@ -1711,6 +1766,8 @@ async function loadManageMatches() {
 function renderManageMatches(matches) {
     const grid = document.getElementById('manageMatchesGrid');
     const empty = document.getElementById('manageMatchesEmpty');
+    const loading = document.getElementById('manageMatchesLoading');
+    if (loading) loading.style.display = 'none';
     
     if (matches.length === 0) {
         grid.style.display = 'none';
