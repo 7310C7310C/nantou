@@ -363,7 +363,9 @@ function drawStarIcon(canvas, filled = true) {
     const size = canvas.width;
     const centerX = size / 2;
     const centerY = size / 2;
-    const outerRadius = size * 0.4;
+    
+    // 实心星稍微大一些，让视觉效果与空心星一致
+    const outerRadius = filled ? size * 0.45 : size * 0.4;
     const innerRadius = outerRadius * 0.4;
     
     ctx.clearRect(0, 0, size, size);
@@ -392,6 +394,10 @@ function drawStarIcon(canvas, filled = true) {
     if (filled) {
         ctx.fillStyle = '#ffd700';
         ctx.fill();
+        // 给实心星也添加外框线，让视觉大小与空心星一致
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
     } else {
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 1.5;
@@ -1322,6 +1328,10 @@ function closeMatchingModal() {
 
 // 加载配对参与者列表
 async function loadMatchingParticipants(searchQuery = '') {
+    if (currentTargetParticipantId == null) {
+        // 不在配对上下文，直接返回
+        return;
+    }
     try {
         const authToken = localStorage.getItem('authToken');
         if (!authToken) {
@@ -1336,7 +1346,7 @@ async function loadMatchingParticipants(searchQuery = '') {
             }
         });
 
-        if (response.ok) {
+    if (response.ok) {
             const data = await response.json();
             matchingParticipants = data.data;
             renderMatchingParticipants();
@@ -1387,11 +1397,16 @@ function renderMatchingParticipants() {
         
         // 创建星级按钮，使用canvas绘制五角星
         let starsHtml = '';
-        const maxStars = Math.min(stars, 5); // 最多显示5颗星
-        for (let i = 0; i < maxStars; i++) {
-            starsHtml += `<canvas class="star-canvas" width="16" height="16" data-filled="true"></canvas>`;
-        }
-        if (!hasRecommendation || stars === 0) {
+        if (hasRecommendation && stars > 0) {
+            // 显示对应数量的实心星和剩余的空心星
+            for (let i = 0; i < stars; i++) {
+                starsHtml += `<canvas class="star-canvas" width="16" height="16" data-filled="true"></canvas>`;
+            }
+            for (let i = stars; i < 5; i++) {
+                starsHtml += `<canvas class="star-canvas" width="16" height="16" data-filled="false"></canvas>`;
+            }
+        } else {
+            // 未配对时显示一颗空心星
             starsHtml = `<canvas class="star-canvas" width="16" height="16" data-filled="false"></canvas>`;
         }
         
@@ -1571,7 +1586,15 @@ async function confirmRating() {
         if (response.ok) {
             alert('配对成功！');
             closeStarRatingModal();
-            loadMatchingParticipants(); // 重新加载配对列表
+            const matchingModalActive = document.getElementById('matchingModal') && document.getElementById('matchingModal').classList.contains('active');
+            if (matchingModalActive) {
+                loadMatchingParticipants(); // 仅在配对界面时刷新
+            } else {
+                // 管理配对界面，刷新配对管理数据
+                if (typeof loadManageMatches === 'function') {
+                    loadManageMatches();
+                }
+            }
         } else {
             const error = await response.json();
             throw new Error(error.message || '配对失败');
@@ -1625,13 +1648,13 @@ async function removeMatch() {
 
 // 打开管理配对模态框
 async function openManageMatchesModal() {
-    document.getElementById('manageMatchesModal').style.display = 'block';
+    document.getElementById('manageMatchesModal').classList.add('active');
     await loadManageMatches();
 }
 
 // 关闭管理配对模态框
 function closeManageMatchesModal() {
-    document.getElementById('manageMatchesModal').style.display = 'none';
+    document.getElementById('manageMatchesModal').classList.remove('active');
 }
 
 // 加载管理配对数据
@@ -1672,7 +1695,7 @@ function renderManageMatches(matches) {
         return;
     }
     
-    grid.style.display = 'flex';
+    grid.style.display = 'grid';
     empty.style.display = 'none';
     
     grid.innerHTML = matches.map(match => {
@@ -1694,34 +1717,39 @@ function renderManageMatches(matches) {
         }
         
         return `
-            <div class="match-pair" data-id="${match.id}">
-                <div class="match-pair-person">
-                    <img src="${person1Photo}" alt="${match.person1_name}">
-                    <div class="match-pair-info">
-                        <div class="match-pair-name">${match.person1_username} - ${match.person1_name}</div>
-                        <div class="match-pair-baptismal">${match.person1_baptismal_name || ''}</div>
+            <div class="match-pair-container" data-id="${match.id}">
+                <!-- 第一行：左男右女的卡片 -->
+                <div class="match-pair-cards">
+                    <div class="match-pair-card">
+                        <img class="match-pair-card-image" src="${person1Photo}" alt="${match.person1_name}">
+                        <div class="match-pair-card-info">
+                            <div class="match-pair-card-name">${match.person1_name}</div>
+                            <div class="match-pair-card-username">${match.person1_username}</div>
+                        </div>
+                    </div>
+                    <div class="match-pair-card">
+                        <img class="match-pair-card-image" src="${person2Photo}" alt="${match.person2_name}">
+                        <div class="match-pair-card-info">
+                            <div class="match-pair-card-name">${match.person2_name}</div>
+                            <div class="match-pair-card-username">${match.person2_username}</div>
+                        </div>
                     </div>
                 </div>
-                <div class="match-pair-stars">
-                    <div class="match-pair-rating">
+                
+                <!-- 第二行：圆角矩形的五星评级 -->
+                <div class="match-pair-rating-container">
+                <div class="match-pair-rating" 
+                    onclick="editMatchRating(${match.person1_internal_id}, ${match.person2_internal_id}, '${match.person1_name}', '${match.person2_name}', ${match.stars}, '${person1Photo}', '${person2Photo}')"
+                    title="点击编辑星级">
                         ${starsHtml}
                     </div>
                 </div>
-                <div class="match-pair-person">
-                    <img src="${person2Photo}" alt="${match.person2_name}">
-                    <div class="match-pair-info">
-                        <div class="match-pair-name">${match.person2_username} - ${match.person2_name}</div>
-                        <div class="match-pair-baptismal">${match.person2_baptismal_name || ''}</div>
-                    </div>
-                </div>
+                
+                <!-- 第三行：删除键 -->
                 <div class="match-pair-actions">
-                    <button class="btn-edit-rating" 
-                            onclick="editMatchRating(${match.person1_id}, ${match.person2_id}, '${match.person1_name}', '${match.person2_name}', ${match.stars})">
-                        编辑
-                    </button>
                     <button class="btn-remove-match" 
                             onclick="removeMatchById(${match.id}, '${match.person1_name}', '${match.person2_name}')">
-                        删除
+                        删除配对
                     </button>
                 </div>
             </div>
@@ -1737,7 +1765,20 @@ function renderManageMatches(matches) {
 }
 
 // 编辑配对星级
-function editMatchRating(person1Id, person2Id, person1Name, person2Name, currentStars) {
+function editMatchRating(person1Id, person2Id, person1Name, person2Name, currentStars, person1PhotoFromList = null, person2PhotoFromList = null) {
+    // 兼容性：如果传入的ID为空，尝试从最近一次管理配对记录中获取 internal id
+    if (!person1Id || !person2Id) {
+        console.warn('editMatchRating 缺少ID参数，尝试回退');
+        try {
+            const lastPairEl = document.querySelector('.match-pair-container');
+            if (lastPairEl && lastPairEl.__matchData) {
+                person1Id = person1Id || lastPairEl.__matchData.person1_internal_id;
+                person2Id = person2Id || lastPairEl.__matchData.person2_internal_id;
+            }
+        } catch (e) {
+            console.warn('回退获取 internal id 失败');
+        }
+    }
     currentMatchPair = {
         person1_id: person1Id,
         person1_name: person1Name,
@@ -1751,17 +1792,20 @@ function editMatchRating(person1Id, person2Id, person1Name, person2Name, current
     const participant1Div = document.getElementById('starRatingParticipant1');
     const participant2Div = document.getElementById('starRatingParticipant2');
     
-    // 从allUsers中找到参与者照片
-    const person1Data = allUsers.find(u => u.id == person1Id);
-    const person2Data = allUsers.find(u => u.id == person2Id);
-    
-    const person1Photo = person1Data && person1Data.photos && person1Data.photos.length > 0
-        ? person1Data.photos.find(p => p.is_primary)?.photo_url || person1Data.photos[0].photo_url
-        : '/images/default-avatar.png';
-    
-    const person2Photo = person2Data && person2Data.photos && person2Data.photos.length > 0
-        ? person2Data.photos.find(p => p.is_primary)?.photo_url || person2Data.photos[0].photo_url
-        : '/images/default-avatar.png';
+    // 优先使用传入的照片（来自管理配对列表），否则回退到 allUsers
+    let person1Photo = person1PhotoFromList;
+    let person2Photo = person2PhotoFromList;
+
+    if (!person1Photo || !person2Photo) {
+        const person1Data = (typeof allUsers !== 'undefined') ? allUsers.find(u => u.id == person1Id) : null;
+        const person2Data = (typeof allUsers !== 'undefined') ? allUsers.find(u => u.id == person2Id) : null;
+        person1Photo = person1Photo || (person1Data && person1Data.photos && person1Data.photos.length > 0
+            ? person1Data.photos.find(p => p.is_primary)?.photo_url || person1Data.photos[0].photo_url
+            : '/images/default-avatar.png');
+        person2Photo = person2Photo || (person2Data && person2Data.photos && person2Data.photos.length > 0
+            ? person2Data.photos.find(p => p.is_primary)?.photo_url || person2Data.photos[0].photo_url
+            : '/images/default-avatar.png');
+    }
     
     participant1Div.innerHTML = `
         <img src="${person1Photo}" alt="${person1Name}">

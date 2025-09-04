@@ -1140,129 +1140,112 @@ body {
     transform: translateY(-2px);
 }
 
-/* 管理配对模态框 */
-.manage-matches-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 2000;
-}
-
-.manage-matches-modal-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 800px;
-    height: 80%;
-    background: #fff;
-    border-radius: 20px;
-    padding: 30px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.manage-matches-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
-}
-
-.manage-matches-modal-header h2 {
-    color: #333;
-    font-size: 24px;
-}
-
-.manage-matches-close {
-    background: none;
-    border: none;
-    font-size: 28px;
-    color: #666;
-    cursor: pointer;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-}
-
-.manage-matches-close:hover {
-    background: #f5f5f5;
-    color: #333;
-}
-
-.manage-matches-modal-body {
-    flex: 1;
-    overflow-y: auto;
-}
-
+/* 管理配对网格布局 */
 .manage-matches-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+    gap: 30px;
+    width: 100%;
+}
+
+/* 配对容器 - 带红色边框 */
+.match-pair-container {
+    border: 3px solid #ff6b6b;
+    border-radius: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(255, 107, 107, 0.3);
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
 
-.match-pair {
+/* 配对卡片行 */
+.match-pair-cards {
     display: flex;
-    align-items: center;
-    background: #f9f9f9;
-    border-radius: 15px;
-    padding: 15px;
     gap: 15px;
+    justify-content: center;
 }
 
-.match-pair-person {
-    flex: 1;
+/* 单个配对卡片 */
+.match-pair-card {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 20px rgba(168, 85, 247, 0.2);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+    width: 140px;
+    aspect-ratio: 3/4;
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
 }
 
-.match-pair-person img {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
+.match-pair-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(168, 85, 247, 0.4);
+}
+
+.match-pair-card-image {
+    width: 100%;
+    height: 70%;
     object-fit: cover;
 }
 
-.match-pair-info {
+.match-pair-card-info {
+    padding: 8px;
     flex: 1;
-}
-
-.match-pair-name {
-    font-weight: bold;
-    font-size: 16px;
-    color: #333;
-    margin-bottom: 2px;
-}
-
-.match-pair-baptismal {
-    font-size: 14px;
-    color: #666;
-}
-
-.match-pair-stars {
     display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+}
+
+.match-pair-card-name {
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.match-pair-card-username {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 10px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 星级评分容器 */
+.match-pair-rating-container {
+    display: flex;
+    justify-content: center;
     align-items: center;
-    gap: 10px;
-    margin: 0 15px;
 }
 
 .match-pair-rating {
     display: flex;
-    gap: 2px;
+    gap: 5px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 8px 12px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    transition: all 0.3s ease;
     align-items: center;
+}
+
+.match-pair-rating:hover {
+    background: rgba(0, 0, 0, 0.4);
+    transform: scale(1.05);
 }
 
 .match-pair-rating .star-canvas {
@@ -1271,54 +1254,79 @@ body {
 }
 
 .match-pair-rating .star {
-    font-size: 20px;
+    font-size: 18px;
     color: #ffd700;
-}
-
-.match-pair-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.btn-edit-rating {
-    padding: 8px 16px;
-    background: #2196f3;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 12px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
     transition: all 0.3s ease;
 }
 
-.btn-edit-rating:hover {
-    background: #1976d2;
+.match-pair-rating .star.empty {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* 删除按钮容器 */
+.match-pair-actions {
+    display: flex;
+    justify-content: center;
 }
 
 .btn-remove-match {
-    padding: 8px 16px;
-    background: #ff6b6b;
+    padding: 10px 20px;
+    background: rgba(255, 107, 107, 0.8);
     color: #fff;
     border: none;
-    border-radius: 6px;
+    border-radius: 15px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 14px;
+    font-weight: bold;
     transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
 }
 
 .btn-remove-match:hover {
-    background: #ff5252;
+    background: rgba(255, 107, 107, 1);
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+    .manage-matches-grid {
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 25px;
+    }
+    
+    .match-pair-card {
+        width: 120px;
+    }
+}
+
+@media (max-width: 768px) {
+    .manage-matches-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .match-pair-cards {
+        gap: 10px;
+    }
+    
+    .match-pair-card {
+        width: 110px;
+    }
+    
+    .match-pair-card-name {
+        font-size: 11px;
+    }
+    
+    .match-pair-card-username {
+        font-size: 9px;
+    }
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-    .matching-modal-content,
-    .manage-matches-modal-content {
-        width: 95%;
-        height: 90%;
-        padding: 20px;
-    }
-    
     .matching-grid {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         gap: 15px;
