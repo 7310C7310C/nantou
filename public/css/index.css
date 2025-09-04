@@ -1074,8 +1074,12 @@ body {
 }
 
 .match-arrow {
-    font-size: 20px;
+    font-size: 24px;
     color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 60px; /* 与头像高度保持一致 */
 }
 
 .star-rating-stars {
