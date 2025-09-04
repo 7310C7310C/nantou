@@ -147,27 +147,7 @@ function switchGender(gender) {
     }
 }
 
-// 首页搜索输入处理：原 handleSearchInput 已存在，此处确保显示统一 loading 居中
-function handleSearchInput(inputEl) {
-    const val = inputEl.value.trim();
-    const clearBtn = document.getElementById('clearBtn');
-    if (clearBtn) clearBtn.style.display = val ? 'block' : 'none';
-    // 显示居中 loading
-    const usersGrid = document.getElementById('usersGrid');
-    usersGrid.innerHTML = `
-        <div class="loading" style="width:100%;text-align:center;">
-            <div class="loading-spinner"></div>加载中...
-        </div>`;
-    // 使用原逻辑：只允许数字过滤
-    if (/^\d*$/.test(val)) {
-        searchTerm = val;
-    }
-    // 重新加载用户列表（重置分页）
-    genderCache[currentGender].users = [];
-    genderCache[currentGender].page = 0;
-    genderCache[currentGender].hasMore = true;
-    loadUsers(true);
-}
+// (移除旧版带“加载中...”的搜索处理函数，避免主页搜索出现 loading 文案)
 
 // 保存当前性别状态到缓存
 function saveCurrentGenderState() {
@@ -1379,6 +1359,11 @@ function closeMatchingModal() {
     currentTargetParticipantId = null;
     currentTargetParticipantName = '';
     matchingParticipants = [];
+    // 清空搜索框和隐藏清除按钮
+    const searchInput = document.getElementById('matchingSearch');
+    const clearBtn = document.getElementById('matchingSearchClear');
+    if (searchInput) searchInput.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
 }
 
 // 加载配对参与者列表
@@ -1434,6 +1419,10 @@ function renderMatchingParticipants() {
     
     grid.style.display = 'grid';
     empty.style.display = 'none';
+    
+    // 获取当前搜索关键词
+    const searchInput = document.getElementById('matchingSearch');
+    const searchKeyword = searchInput ? searchInput.value.trim().toLowerCase() : '';
     
     // 使用标准的用户卡片样式，但需要特殊处理配对界面
     grid.innerHTML = matchingParticipants.map(participant => {
@@ -1494,6 +1483,15 @@ function renderMatchingParticipants() {
         drawStarIcon(canvas, filled);
     });
     
+    // 如果有搜索关键词，高亮显示
+    if (searchKeyword) {
+        const cards = grid.querySelectorAll('.user-card');
+        cards.forEach(card => {
+            const textEls = card.querySelectorAll('.user-username, .user-baptismal');
+            highlightSearchInElements(Array.from(textEls), searchKeyword);
+        });
+    }
+    
     // 为配对列表添加点击事件委托
     grid.removeEventListener('click', handleMatchingGridClick);
     grid.addEventListener('click', handleMatchingGridClick);
@@ -1527,6 +1525,11 @@ function handleMatchingGridClick(e) {
 // 配对搜索处理
 function handleMatchingSearch(event) {
     const searchQuery = event.target.value.trim();
+    // 显示/隐藏清除按钮
+    const clearBtn = document.getElementById('matchingSearchClear');
+    if (clearBtn) {
+        clearBtn.style.display = searchQuery ? 'flex' : 'none';
+    }
     // 搜索时同样显示 loading，清空旧内容防止闪烁
     const grid = document.getElementById('matchingGrid');
     const empty = document.getElementById('matchingEmpty');
@@ -1578,7 +1581,14 @@ function openStarRating(participantId, participantName, currentStars = 0) {
     
     // 设置星级
     updateStarDisplay(currentStars);
-    
+
+    // 没有配对记录（currentStars == 0 && 无 recommendation_id）时隐藏“清除配对”按钮
+    const removeBtn = document.getElementById('removeMatchBtn');
+    if (removeBtn) {
+        const hasRecommendation = !!targetParticipant.recommendation_id || currentStars > 0;
+        removeBtn.style.display = hasRecommendation ? 'inline-block' : 'none';
+    }
+
     document.getElementById('starRatingModal').style.display = 'block';
 }
 
@@ -1733,6 +1743,11 @@ async function openManageMatchesModal() {
 // 关闭管理配对模态框
 function closeManageMatchesModal() {
     document.getElementById('manageMatchesModal').classList.remove('active');
+    // 清空搜索框和隐藏清除按钮
+    const searchInput = document.getElementById('manageMatchesSearch');
+    const clearBtn = document.getElementById('manageMatchesSearchClear');
+    if (searchInput) searchInput.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
 }
 
 // 加载管理配对数据
@@ -1848,6 +1863,114 @@ function renderManageMatches(matches) {
     initInlineManageRating();
 }
 
+// 管理配对本地过滤（ID或姓名 / 用户名模糊）
+const filterManageMatches = debounce(function() {
+    const input = document.getElementById('manageMatchesSearch');
+    if (!input) return;
+    const keyword = input.value.trim().toLowerCase();
+    // 显示/隐藏清除按钮
+    const clearBtn = document.getElementById('manageMatchesSearchClear');
+    if (clearBtn) {
+        clearBtn.style.display = keyword ? 'flex' : 'none';
+    }
+    // 若还未加载数据，直接触发加载
+    const grid = document.getElementById('manageMatchesGrid');
+    if (!grid || !grid.children.length) {
+        return; // 等第一次加载完成后再过滤（首次打开已自动加载）
+    }
+    // 遍历 match-pair-container
+    const containers = Array.from(grid.querySelectorAll('.match-pair-container'));
+    let visibleCount = 0;
+    containers.forEach(c => {
+        if (!keyword) {
+            c.style.display = '';
+            // 清除高亮
+            clearSearchHighlight(c);
+            visibleCount++;
+            return;
+        }
+        const nameEls = Array.from(c.querySelectorAll('.match-pair-card-name,.match-pair-card-username'));
+        const names = nameEls.map(el => el.textContent.toLowerCase());
+        const idAttr = c.getAttribute('data-id') || '';
+        const hit = names.some(t => t.includes(keyword)) || idAttr.includes(keyword);
+        c.style.display = hit ? '' : 'none';
+        if (hit) {
+            visibleCount++;
+            // 高亮匹配内容
+            highlightSearchInElements(nameEls, keyword);
+        } else {
+            clearSearchHighlight(c);
+        }
+    });
+    const empty = document.getElementById('manageMatchesEmpty');
+    if (empty) empty.style.display = visibleCount === 0 ? 'block' : 'none';
+}, 250);
+
+// 初始化管理配对搜索事件（只需绑定一次）
+document.addEventListener('DOMContentLoaded', () => {
+    const manageSearchInput = document.getElementById('manageMatchesSearch');
+    if (manageSearchInput && !manageSearchInput.dataset.bound) {
+        manageSearchInput.addEventListener('input', filterManageMatches);
+        manageSearchInput.dataset.bound = '1';
+    }
+    // 绑定清除按钮事件
+    const matchingClearBtn = document.getElementById('matchingSearchClear');
+    const manageClearBtn = document.getElementById('manageMatchesSearchClear');
+    
+    if (matchingClearBtn && !matchingClearBtn.dataset.bound) {
+        matchingClearBtn.addEventListener('click', () => {
+            const input = document.getElementById('matchingSearch');
+            if (input) {
+                input.value = '';
+                matchingClearBtn.style.display = 'none';
+                // 触发搜索以重新加载所有数据
+                handleMatchingSearch({ target: input });
+            }
+        });
+        matchingClearBtn.dataset.bound = '1';
+    }
+    
+    if (manageClearBtn && !manageClearBtn.dataset.bound) {
+        manageClearBtn.addEventListener('click', () => {
+            const input = document.getElementById('manageMatchesSearch');
+            if (input) {
+                input.value = '';
+                manageClearBtn.style.display = 'none';
+                // 触发过滤以显示所有数据
+                filterManageMatches();
+            }
+        });
+        manageClearBtn.dataset.bound = '1';
+    }
+});
+
+// 搜索高亮辅助函数
+function highlightSearchInElements(elements, keyword) {
+    if (!keyword) return;
+    elements.forEach(el => {
+        const originalText = el.dataset.originalText || el.textContent;
+        if (!el.dataset.originalText) {
+            el.dataset.originalText = originalText;
+        }
+        const regex = new RegExp(`(${escapeRegex(keyword)})`, 'gi');
+        const highlightedText = originalText.replace(regex, '<span class="search-highlight">$1</span>');
+        el.innerHTML = highlightedText;
+    });
+}
+
+function clearSearchHighlight(container) {
+    const highlightedEls = container.querySelectorAll('[data-original-text]');
+    highlightedEls.forEach(el => {
+        if (el.dataset.originalText) {
+            el.textContent = el.dataset.originalText;
+        }
+    });
+}
+
+function escapeRegex(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // 编辑配对星级
 function editMatchRating(person1Id, person2Id, person1Name, person2Name, currentStars, person1PhotoFromList = null, person2PhotoFromList = null) {
     // 兼容性：如果传入的ID为空，尝试从最近一次管理配对记录中获取 internal id
@@ -1903,7 +2026,11 @@ function editMatchRating(person1Id, person2Id, person1Name, person2Name, current
     
     // 设置星级
     updateStarDisplay(currentStars);
-    
+
+    // 管理配对编辑时一定存在配对，显示“清除配对”按钮
+    const removeBtn = document.getElementById('removeMatchBtn');
+    if (removeBtn) removeBtn.style.display = 'inline-block';
+
     document.getElementById('starRatingModal').style.display = 'block';
 }
 

@@ -114,7 +114,8 @@
                 <button class="favorites-close" id="closeMatchingModal">×</button>
             </div>
             <div class="matching-search-container">
-                <input type="text" class="matching-search" id="matchingSearch" placeholder="搜索ID或姓名...">
+                <input type="text" class="matching-search" id="matchingSearch" placeholder="搜索ID或姓名..." autocomplete="off">
+                <button class="search-clear-btn" id="matchingSearchClear" style="display:none;" title="清除搜索">×</button>
             </div>
             <div class="favorites-modal-body">
                 <div class="favorites-loading" id="matchingLoading" style="display:none;">加载中...</div>
@@ -130,6 +131,10 @@
             <div class="favorites-modal-header">
                 <h2>管理配对</h2>
                 <button class="favorites-close" id="closeManageMatchesModal">×</button>
+            </div>
+            <div class="matching-search-container" style="padding:0 20px;">
+                <input type="text" class="matching-search" id="manageMatchesSearch" placeholder="搜索ID或姓名..." autocomplete="off">
+                <button class="search-clear-btn" id="manageMatchesSearchClear" style="display:none;" title="清除搜索">×</button>
             </div>
             <div class="favorites-modal-body">
                 <div class="favorites-loading" id="manageMatchesLoading" style="display:none;">加载中...</div>
