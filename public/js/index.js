@@ -300,6 +300,13 @@ function displayUsers(users) {
     // Draw hearts - 确保收藏状态正确
     updateHeartIcons(grid);
     
+    // Draw stars for cards that have star buttons (from matching interface)
+    const starCanvases = grid.querySelectorAll('.star-canvas');
+    starCanvases.forEach(canvas => {
+        const filled = canvas.dataset.filled === 'true';
+        drawStarIcon(canvas, filled);
+    });
+    
     // 预加载所有用户的照片
     preloadUserPhotos(users);
     
@@ -319,6 +326,12 @@ function appendUsers(users) {
     const cards = Array.from(grid.children);
     for (let i = beforeCount; i < cards.length; i++) {
         updateHeartIcons(cards[i]);
+        // Draw stars for cards that have star buttons
+        const starCanvases = cards[i].querySelectorAll('.star-canvas');
+        starCanvases.forEach(canvas => {
+            const filled = canvas.dataset.filled === 'true';
+            drawStarIcon(canvas, filled);
+        });
     }
     
     // 预加载新添加用户的照片
@@ -339,6 +352,53 @@ function updateHeartIcons(container) {
         btn.classList.toggle('favorited', isFavorited);
         drawHeartIcon(canvas, isFavorited);
     });
+}
+
+// 绘制五角星图标
+function drawStarIcon(canvas, filled = true) {
+    if (!canvas || typeof canvas.getContext !== 'function') {
+        return;
+    }
+    const ctx = canvas.getContext('2d');
+    const size = canvas.width;
+    const centerX = size / 2;
+    const centerY = size / 2;
+    const outerRadius = size * 0.4;
+    const innerRadius = outerRadius * 0.4;
+    
+    ctx.clearRect(0, 0, size, size);
+    ctx.save();
+    
+    // 创建五角星路径
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+        const outerAngle = (i * Math.PI * 2) / 5 - Math.PI / 2;
+        const innerAngle = ((i + 0.5) * Math.PI * 2) / 5 - Math.PI / 2;
+        
+        const outerX = centerX + Math.cos(outerAngle) * outerRadius;
+        const outerY = centerY + Math.sin(outerAngle) * outerRadius;
+        const innerX = centerX + Math.cos(innerAngle) * innerRadius;
+        const innerY = centerY + Math.sin(innerAngle) * innerRadius;
+        
+        if (i === 0) {
+            ctx.moveTo(outerX, outerY);
+        } else {
+            ctx.lineTo(outerX, outerY);
+        }
+        ctx.lineTo(innerX, innerY);
+    }
+    ctx.closePath();
+    
+    if (filled) {
+        ctx.fillStyle = '#ffd700';
+        ctx.fill();
+    } else {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    }
+    
+    ctx.restore();
 }
 
 // 绘制爱心图标
@@ -1325,13 +1385,22 @@ function renderMatchingParticipants() {
         cardHtml = cardHtml.replace(/<button class="favorite-toggle[^>]*>[\s\S]*?<\/button>/, '');
         cardHtml = cardHtml.replace(/<button class="match-btn[^>]*>[\s\S]*?<\/button>/, '');
         
-        // 添加星级按钮
+        // 创建星级按钮，使用canvas绘制五角星
+        let starsHtml = '';
+        const maxStars = Math.min(stars, 5); // 最多显示5颗星
+        for (let i = 0; i < maxStars; i++) {
+            starsHtml += `<canvas class="star-canvas" width="16" height="16" data-filled="true"></canvas>`;
+        }
+        if (!hasRecommendation || stars === 0) {
+            starsHtml = `<canvas class="star-canvas" width="16" height="16" data-filled="false"></canvas>`;
+        }
+        
         const starBtn = `<button class="star-btn ${hasRecommendation ? 'filled' : 'empty'}" 
                                 data-participant-id="${participant.id}" 
                                 data-participant-name="${participant.name}"
                                 data-current-stars="${stars}"
                                 title="${hasRecommendation ? `已配对 ${stars} 星` : '点击评星'}">
-                            ${hasRecommendation ? '★'.repeat(stars) : '☆'}
+                            ${starsHtml}
                         </button>`;
         
         // 在user-card div后添加星级按钮
@@ -1340,6 +1409,13 @@ function renderMatchingParticipants() {
         
         return cardHtml;
     }).join('');
+    
+    // 绘制所有星星
+    const starCanvases = grid.querySelectorAll('.star-canvas');
+    starCanvases.forEach(canvas => {
+        const filled = canvas.dataset.filled === 'true';
+        drawStarIcon(canvas, filled);
+    });
     
     // 为配对列表添加点击事件委托
     grid.removeEventListener('click', handleMatchingGridClick);
@@ -1608,6 +1684,15 @@ function renderManageMatches(matches) {
             ? match.person2_photos.find(p => p.is_primary)?.photo_url || match.person2_photos[0].photo_url
             : '/images/default-avatar.png';
         
+        // 创建星级canvas
+        let starsHtml = '';
+        for (let i = 0; i < match.stars; i++) {
+            starsHtml += `<canvas class="star-canvas" width="20" height="20" data-filled="true"></canvas>`;
+        }
+        for (let i = match.stars; i < 5; i++) {
+            starsHtml += `<canvas class="star-canvas" width="20" height="20" data-filled="false"></canvas>`;
+        }
+        
         return `
             <div class="match-pair" data-id="${match.id}">
                 <div class="match-pair-person">
@@ -1619,7 +1704,7 @@ function renderManageMatches(matches) {
                 </div>
                 <div class="match-pair-stars">
                     <div class="match-pair-rating">
-                        ${'★'.repeat(match.stars)}${'☆'.repeat(5 - match.stars)}
+                        ${starsHtml}
                     </div>
                 </div>
                 <div class="match-pair-person">
@@ -1642,6 +1727,13 @@ function renderManageMatches(matches) {
             </div>
         `;
     }).join('');
+    
+    // 绘制所有星星
+    const starCanvases = grid.querySelectorAll('.star-canvas');
+    starCanvases.forEach(canvas => {
+        const filled = canvas.dataset.filled === 'true';
+        drawStarIcon(canvas, filled);
+    });
 }
 
 // 编辑配对星级
