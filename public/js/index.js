@@ -574,7 +574,7 @@ let currentBaptismalName = '';
 // 打开图片查看器
 function openImageViewer(username, photos, baptismalName) {
     if (!photos || photos.length === 0) {
-        alert('该用户暂无照片');
+    showToast('该用户暂无照片', 'info');
         return;
     }
 
@@ -1072,7 +1072,7 @@ async function toggleFavorite(participantId, btnEl) {
     const authToken = localStorage.getItem('authToken');
     const userRole = localStorage.getItem('userRole');
     if (!authToken || userRole !== 'participant') {
-        alert('请先以参与者身份登录');
+            showToast('请先以参与者身份登录', 'error');
         return;
     }
     
@@ -1358,7 +1358,7 @@ async function loadMatchingParticipants(searchQuery = '') {
     try {
         const authToken = localStorage.getItem('authToken');
         if (!authToken) {
-            alert('请先登录');
+            showToast('请先登录', 'error');
             return;
         }
 
@@ -1378,7 +1378,7 @@ async function loadMatchingParticipants(searchQuery = '') {
         }
     } catch (error) {
         console.error('加载配对数据失败:', error);
-        alert('加载配对数据失败：' + error.message);
+    showToast('加载配对数据失败：' + error.message, 'error');
     }
 }
 
@@ -1582,14 +1582,14 @@ function updateStarDisplay(rating, isHover = false) {
 // 确认评分
 async function confirmRating() {
     if (!currentMatchPair || currentStarRating === 0) {
-        alert('请选择星级');
+    showToast('请选择星级', 'info');
         return;
     }
     
     try {
         const authToken = localStorage.getItem('authToken');
         if (!authToken) {
-            alert('请先登录');
+            showToast('请先登录', 'error');
             return;
         }
         
@@ -1607,7 +1607,7 @@ async function confirmRating() {
         });
         
         if (response.ok) {
-            alert('配对成功！');
+            showToast('配对成功！', 'success');
             closeStarRatingModal();
             const matchingModalActive = document.getElementById('matchingModal') && document.getElementById('matchingModal').classList.contains('active');
             if (matchingModalActive) {
@@ -1624,7 +1624,7 @@ async function confirmRating() {
         }
     } catch (error) {
         console.error('配对失败:', error);
-        alert('配对失败：' + error.message);
+    showToast('配对失败：' + error.message, 'error');
     }
 }
 
@@ -1639,7 +1639,7 @@ async function removeMatch() {
     try {
         const authToken = localStorage.getItem('authToken');
         if (!authToken) {
-            alert('请先登录');
+            showToast('请先登录', 'error');
             return;
         }
         
@@ -1656,7 +1656,7 @@ async function removeMatch() {
         });
         
         if (response.ok) {
-            alert('配对已清除');
+            showToast('配对已清除', 'success');
             closeStarRatingModal();
             loadMatchingParticipants(); // 重新加载配对列表
         } else {
@@ -1665,7 +1665,7 @@ async function removeMatch() {
         }
     } catch (error) {
         console.error('清除配对失败:', error);
-        alert('清除配对失败：' + error.message);
+    showToast('清除配对失败：' + error.message, 'error');
     }
 }
 
@@ -1685,7 +1685,7 @@ async function loadManageMatches() {
     try {
         const authToken = localStorage.getItem('authToken');
         if (!authToken) {
-            alert('请先登录');
+            showToast('请先登录', 'error');
             return;
         }
         
@@ -1703,7 +1703,7 @@ async function loadManageMatches() {
         }
     } catch (error) {
         console.error('加载配对管理数据失败:', error);
-        alert('加载配对管理数据失败：' + error.message);
+    showToast('加载配对管理数据失败：' + error.message, 'error');
     }
 }
 
@@ -1761,9 +1761,11 @@ function renderManageMatches(matches) {
                 
                 <!-- 第二行：圆角矩形的五星评级 -->
                 <div class="match-pair-rating-container">
-                <div class="match-pair-rating" 
-                    onclick="editMatchRating(${match.person1_internal_id}, ${match.person2_internal_id}, '${match.person1_name}', '${match.person2_name}', ${match.stars}, '${person1Photo}', '${person2Photo}')"
-                    title="点击编辑星级">
+                    <div class="match-pair-rating" 
+                         data-person1-id="${match.person1_internal_id}" 
+                         data-person2-id="${match.person2_internal_id}" 
+                         data-current-stars="${match.stars}" 
+                         title="点击星星直接评分">
                         ${starsHtml}
                     </div>
                 </div>
@@ -1785,6 +1787,8 @@ function renderManageMatches(matches) {
         const filled = canvas.dataset.filled === 'true';
         drawStarIcon(canvas, filled);
     });
+
+    initInlineManageRating();
 }
 
 // 编辑配对星级
@@ -1846,6 +1850,87 @@ function editMatchRating(person1Id, person2Id, person1Name, person2Name, current
     document.getElementById('starRatingModal').style.display = 'block';
 }
 
+// 内联管理配对星级评分初始化
+function initInlineManageRating() {
+    const containers = document.querySelectorAll('.match-pair-rating');
+    containers.forEach(container => {
+        // 避免重复绑定
+        if (container.dataset.inlineBound) return;
+        container.dataset.inlineBound = '1';
+        const canvases = Array.from(container.querySelectorAll('.star-canvas'));
+        canvases.forEach((cv, idx) => {
+            cv.style.cursor = 'pointer';
+            cv.addEventListener('mouseenter', () => {
+                highlightInlineStars(canvases, idx + 1);
+            });
+            cv.addEventListener('click', async () => {
+                const stars = idx + 1;
+                const p1 = parseInt(container.dataset.person1Id, 10);
+                const p2 = parseInt(container.dataset.person2Id, 10);
+                await submitInlineRating(container, p1, p2, stars);
+            });
+        });
+        container.addEventListener('mouseleave', () => {
+            const current = parseInt(container.dataset.currentStars || '0', 10);
+            highlightInlineStars(canvases, current);
+        });
+    });
+}
+
+function highlightInlineStars(canvases, count) {
+    canvases.forEach((cv, i) => {
+        cv.dataset.filled = i < count ? 'true' : 'false';
+        drawStarIcon(cv, i < count);
+    });
+}
+
+async function submitInlineRating(container, person1Id, person2Id, stars) {
+    try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            showToast('请先登录', 'error');
+            return;
+        }
+        const resp = await fetch('/api/matchmaker/recommendations', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ person1_id: person1Id, person2_id: person2Id, stars })
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(()=>({message:'提交失败'}));
+            throw new Error(err.message || '提交失败');
+        }
+        container.dataset.currentStars = stars;
+        highlightInlineStars(Array.from(container.querySelectorAll('.star-canvas')), stars);
+        showToast(`已更新为 ${stars} 星`, 'success');
+    } catch (e) {
+        console.error('内联评分失败', e);
+        showToast('评分失败：' + e.message, 'error');
+    }
+}
+
+// Toast 显示函数
+function showToast(message, type='info', duration=4000) {
+    const container = document.getElementById('toastContainer');
+    if (!container) { console.warn('Toast container missing'); return; }
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.setAttribute('role','status');
+    el.innerHTML = `<span style="flex:1;">${message}</span><button class="close" aria-label="关闭" onclick="(function(btn){ const parent=btn.parentElement; parent.classList.add('persist-leave'); setTimeout(()=>parent.remove(),420);})(this)">×</button>`;
+    container.appendChild(el);
+    let removed = false;
+    let hideTimer = setTimeout(startHide, duration);
+    function startHide(){
+        if (removed) return; removed = true; el.classList.add('persist-leave'); setTimeout(()=> el.remove(), 420);
+    }
+    // 鼠标悬停暂停
+    el.addEventListener('mouseenter', () => { clearTimeout(hideTimer); });
+    el.addEventListener('mouseleave', () => { if (!removed) hideTimer = setTimeout(startHide, 1600); });
+}
+
 // 根据ID删除配对
 async function removeMatchById(matchId, person1Name, person2Name) {
     if (!confirm(`确定要删除 ${person1Name} 和 ${person2Name} 的配对吗？`)) {
@@ -1855,7 +1940,7 @@ async function removeMatchById(matchId, person1Name, person2Name) {
     try {
         const authToken = localStorage.getItem('authToken');
         if (!authToken) {
-            alert('请先登录');
+            showToast('请先登录', 'error');
             return;
         }
         
@@ -1867,7 +1952,7 @@ async function removeMatchById(matchId, person1Name, person2Name) {
         });
         
         if (response.ok) {
-            alert('配对已删除');
+            showToast('配对已删除', 'success');
             loadManageMatches(); // 重新加载配对列表
         } else {
             const error = await response.json();
@@ -1875,6 +1960,6 @@ async function removeMatchById(matchId, person1Name, person2Name) {
         }
     } catch (error) {
         console.error('删除配对失败:', error);
-        alert('删除配对失败：' + error.message);
+    showToast('删除配对失败：' + error.message, 'error');
     }
 }
