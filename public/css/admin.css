@@ -2291,6 +2291,26 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
+/* 工作人员管理相关结果模态 单按钮“确定”居中 */
+.create-staff-result-content > #closeCreateStaffResultBtn,
+.reset-staff-password-result-content > #closeResetStaffPasswordResultBtn {
+    display: block;
+    margin: 28px auto 10px auto;
+    min-width: 160px;
+    text-align: center;
+}
+
+.create-staff-result-content,
+.reset-staff-password-result-content {
+    padding: 30px 32px 46px 32px;
+    text-align: center;
+}
+
+.create-staff-result-content h3,
+.reset-staff-password-result-content h3 {
+    text-align: center;
+}
+
 /* 全屏化工作人员管理模态 */
 .staff-management-content {
     position: fixed;
