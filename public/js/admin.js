@@ -2214,6 +2214,25 @@ async function openStaffManagementModal() {
     try {
         await loadStaffList();
         staffManagementModal.style.display = 'block';
+        // 绑定角色筛选事件（只绑定一次）
+        const roleFilterSelect = document.getElementById('staffRoleFilter');
+        if (roleFilterSelect && !roleFilterSelect._bound) {
+            roleFilterSelect.addEventListener('change', () => {
+                // 使用缓存的全部列表（如果存在）
+                if (window._allStaffList) {
+                    displayStaffList(window._allStaffList);
+                }
+            });
+            roleFilterSelect._bound = true;
+        }
+        // 确保默认值为空（所有角色）
+        if (roleFilterSelect && roleFilterSelect.value !== '') {
+            roleFilterSelect.value = '';
+        }
+        // 初次显示按照默认筛选刷新一次（保证排序应用）
+        if (window._allStaffList) {
+            displayStaffList(window._allStaffList);
+        }
     } catch (error) {
         console.error('打开工作人员管理失败:', error);
         alert('加载工作人员列表失败');
@@ -2241,7 +2260,8 @@ async function loadStaffList() {
         hideLoading();
 
         if (data.success) {
-            displayStaffList(data.data);
+            window._allStaffList = data.data.slice();
+            displayStaffList(window._allStaffList);
         } else {
             throw new Error(data.message || '获取工作人员列表失败');
         }
@@ -2254,20 +2274,57 @@ async function loadStaffList() {
 
 // 显示工作人员列表
 function displayStaffList(staffList) {
+    // 缓存原始列表供筛选复用
+    if (!window._allStaffList) {
+        window._allStaffList = staffList.slice();
+    }
+
+    const roleFilterSelect = document.getElementById('staffRoleFilter');
+    const selectedRole = roleFilterSelect ? roleFilterSelect.value : '';
+
+    // 过滤
+    let filtered = staffList;
+    if (selectedRole) {
+        filtered = staffList.filter(s => s.role === selectedRole);
+    }
+
+    // 按角色优先级 + 用户名自然排序 (admin01 admin02 staff01 ...)
+    const rolePriority = { admin: 1, staff: 2, matchmaker: 3 };
+    function parseUser(u) {
+        const m = u.match(/^(.*?)(\d+)$/); // 捕获前缀+数字后缀
+        if (m) {
+            return { base: m[1], num: parseInt(m[2], 10) };
+        }
+        return { base: u, num: Number.POSITIVE_INFINITY };
+    }
+    filtered.sort((a, b) => {
+        // 1) 角色优先级
+        const rp = (rolePriority[a.role] || 99) - (rolePriority[b.role] || 99);
+        if (rp !== 0) return rp;
+        // 2) 用户名自然排序：先按前缀，再按数字
+        const pa = parseUser(a.username);
+        const pb = parseUser(b.username);
+        const baseCmp = pa.base.localeCompare(pb.base, 'zh-CN');
+        if (baseCmp !== 0) return baseCmp;
+        if (pa.num !== pb.num) return pa.num - pb.num;
+        // 3) 完全一致时保持稳定；可再按原始 username 兜底
+        return a.username.localeCompare(b.username, 'zh-CN');
+    });
+
     const staffListElement = document.getElementById('staffList');
     
-    if (staffList.length === 0) {
+    if (filtered.length === 0) {
         staffListElement.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon">👥</div>
-                <div class="empty-state-text">暂无工作人员</div>
-                <div class="empty-state-subtext">点击"新建工作人员"按钮来创建第一个工作人员账号</div>
+                <div class="empty-state-text">暂无符合条件的工作人员</div>
+                <div class="empty-state-subtext">可尝试切换筛选或点击"新建工作人员"创建新账号</div>
             </div>
         `;
         return;
     }
 
-    const staffListHTML = staffList.map(staff => {
+    const staffListHTML = filtered.map(staff => {
         const roleDisplayName = getRoleDisplayName(staff.role);
         const createDate = new Date(staff.created_at).toLocaleDateString('zh-CN');
         
