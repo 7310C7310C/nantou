@@ -1487,3 +1487,163 @@ body {
 .toast .close:hover { opacity:1; }
 @keyframes toast-in { from { transform:translateY(-10px); opacity:0;} to { transform:translateY(0); opacity:1;} }
 @keyframes fade-out { to { opacity:0; transform:translateY(-8px);} }
+
+/* 通用消息模态框样式 */
+.message-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    z-index: 3500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    animation: modal-fade-in 0.3s ease;
+}
+
+.message-modal.active {
+    display: flex;
+}
+
+.message-modal-content {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 0;
+    width: 90%;
+    max-width: 440px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    transform: scale(0.9);
+    animation: modal-scale-in 0.3s ease forwards;
+}
+
+.message-modal-header {
+    padding: 25px 30px 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
+    color: white;
+}
+
+.message-modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.message-modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 24px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.message-modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.message-modal-body {
+    padding: 30px;
+    text-align: center;
+    color: #333;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.message-modal-actions {
+    padding: 20px 30px 30px;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.message-modal-actions button {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.btn-cancel {
+    background: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+    border: 2px solid rgba(108, 117, 125, 0.2);
+}
+
+.btn-cancel:hover {
+    background: rgba(108, 117, 125, 0.15);
+    border-color: rgba(108, 117, 125, 0.3);
+    transform: translateY(-2px);
+}
+
+.btn-confirm {
+    background: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
+    color: white;
+    border: 2px solid transparent;
+}
+
+.btn-confirm:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4);
+}
+
+@keyframes modal-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modal-scale-in {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .message-modal-content {
+        width: 95%;
+        max-width: none;
+        margin: 20px;
+    }
+    
+    .message-modal-header {
+        padding: 20px 25px 15px;
+    }
+    
+    .message-modal-header h3 {
+        font-size: 18px;
+    }
+    
+    .message-modal-body {
+        padding: 25px 20px;
+        font-size: 15px;
+    }
+    
+    .message-modal-actions {
+        padding: 15px 20px 25px;
+        flex-direction: column;
+    }
+    
+    .message-modal-actions button {
+        width: 100%;
+        padding: 14px 20px;
+    }
+}

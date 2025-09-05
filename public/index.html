@@ -175,6 +175,23 @@
         </div>
     </div>
 
+    <!-- 通用模态框 -->
+    <div class="message-modal" id="messageModal">
+        <div class="message-modal-content">
+            <div class="message-modal-header">
+                <h3 id="messageModalTitle">提示</h3>
+                <button class="message-modal-close" id="closeMessageModal">×</button>
+            </div>
+            <div class="message-modal-body">
+                <p id="messageModalText"></p>
+            </div>
+            <div class="message-modal-actions">
+                <button class="btn-cancel" id="messageModalCancel" style="display: none;">取消</button>
+                <button class="btn-confirm" id="messageModalConfirm">确定</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toastContainer" class="toast-container"></div>
     <script src="js/index.js"></script>
 </body>

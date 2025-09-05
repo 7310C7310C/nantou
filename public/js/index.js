@@ -21,6 +21,64 @@ const matchedParticipantIdSet = new Set();
 // 配对列表加载请求令牌（用于避免竞态造成的旧数据闪现）
 let matchingRequestToken = 0; // 每次发起 loadMatchingParticipants 时自增
 
+// 通用模态框功能
+function showMessageModal(message, title = '提示', showCancel = false) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('messageModal');
+        const titleEl = document.getElementById('messageModalTitle');
+        const textEl = document.getElementById('messageModalText');
+        const confirmBtn = document.getElementById('messageModalConfirm');
+        const cancelBtn = document.getElementById('messageModalCancel');
+        const closeBtn = document.getElementById('closeMessageModal');
+        
+        titleEl.textContent = title;
+        textEl.textContent = message;
+        cancelBtn.style.display = showCancel ? 'block' : 'none';
+        
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        const handleConfirm = () => {
+            cleanup();
+            resolve(true);
+        };
+        
+        const handleCancel = () => {
+            cleanup();
+            resolve(false);
+        };
+        
+        const cleanup = () => {
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            confirmBtn.removeEventListener('click', handleConfirm);
+            cancelBtn.removeEventListener('click', handleCancel);
+            closeBtn.removeEventListener('click', handleCancel);
+        };
+        
+        confirmBtn.addEventListener('click', handleConfirm);
+        cancelBtn.addEventListener('click', handleCancel);
+        closeBtn.addEventListener('click', handleCancel);
+        
+        // 点击遮罩关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                handleCancel();
+            }
+        });
+    });
+}
+
+// 简化的 alert 替代函数
+function showAlert(message, title = '提示') {
+    return showMessageModal(message, title, false);
+}
+
+// 简化的 confirm 替代函数
+function showConfirm(message, title = '确认') {
+    return showMessageModal(message, title, true);
+}
+
 // 按性别缓存数据
 let genderCache = {
     female: {
@@ -625,7 +683,7 @@ let currentBaptismalName = '';
 // 打开图片查看器
 function openImageViewer(username, photos, baptismalName) {
     if (!photos || photos.length === 0) {
-    showToast('该用户暂无照片', 'info');
+    showAlert('该用户暂无照片');
         return;
     }
 
@@ -1698,7 +1756,7 @@ function updateStarDisplay(rating, isHover = false) {
 // 确认评分
 async function confirmRating() {
     if (!currentMatchPair || currentStarRating === 0) {
-    showToast('请选择星级', 'info');
+    await showAlert('请选择星级');
         return;
     }
     
@@ -1748,7 +1806,8 @@ async function confirmRating() {
 async function removeMatch() {
     if (!currentMatchPair) return;
     
-    if (!confirm(`确定要清除 ${currentMatchPair.person1_name} 和 ${currentMatchPair.person2_name} 的配对吗？`)) {
+    const confirmed = await showConfirm(`确定要清除 ${currentMatchPair.person1_name} 和 ${currentMatchPair.person2_name} 的配对吗？`);
+    if (!confirmed) {
         return;
     }
     
@@ -2176,7 +2235,8 @@ function showToast(message, type='info', duration=4000) {
 
 // 根据ID删除配对
 async function removeMatchById(matchId, person1Name, person2Name) {
-    if (!confirm(`确定要删除 ${person1Name} 和 ${person2Name} 的配对吗？`)) {
+    const confirmed = await showConfirm(`确定要删除 ${person1Name} 和 ${person2Name} 的配对吗？`);
+    if (!confirmed) {
         return;
     }
     
