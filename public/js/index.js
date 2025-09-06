@@ -2283,3 +2283,77 @@ async function removeMatchById(matchId, person1Name, person2Name) {
     showToast('删除配对失败：' + error.message, 'error');
     }
 }
+
+// ==================== 功能开关管理 ====================
+
+/**
+ * 检查功能开关状态并显示/隐藏对应按钮
+ */
+async function checkFeatureFlags() {
+    try {
+        const response = await fetch('/api/feature-flags', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const featureFlags = data.featureFlags;
+            
+            // 获取按钮元素
+            const groupMatchingBtn = document.getElementById('groupMatchingBtn');
+            const chatMatchingBtn = document.getElementById('chatMatchingBtn');
+            
+            // 根据功能开关显示/隐藏按钮
+            if (featureFlags.grouping_enabled) {
+                groupMatchingBtn.style.display = 'block';
+            } else {
+                groupMatchingBtn.style.display = 'none';
+            }
+            
+            if (featureFlags.chat_enabled) {
+                chatMatchingBtn.style.display = 'block';
+            } else {
+                chatMatchingBtn.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.log('获取功能开关状态失败:', error);
+        // 如果获取失败，默认隐藏所有功能按钮
+        document.getElementById('groupMatchingBtn').style.display = 'none';
+        document.getElementById('chatMatchingBtn').style.display = 'none';
+    }
+}
+
+/**
+ * 分组匹配按钮点击事件
+ */
+function handleGroupMatching() {
+    showToast('分组匹配功能开发中...', 'info');
+}
+
+/**
+ * 聊天匹配按钮点击事件
+ */
+function handleChatMatching() {
+    showToast('聊天匹配功能开发中...', 'info');
+}
+
+// 为功能匹配按钮添加事件监听器
+document.addEventListener('DOMContentLoaded', () => {
+    const groupMatchingBtn = document.getElementById('groupMatchingBtn');
+    const chatMatchingBtn = document.getElementById('chatMatchingBtn');
+    
+    if (groupMatchingBtn) {
+        groupMatchingBtn.addEventListener('click', handleGroupMatching);
+    }
+    
+    if (chatMatchingBtn) {
+        chatMatchingBtn.addEventListener('click', handleChatMatching);
+    }
+    
+    // 页面加载时检查功能开关
+    checkFeatureFlags();
+});

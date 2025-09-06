@@ -134,6 +134,8 @@ app.get('/api/matchmaker/my-recommendations', protect, restrictTo('matchmaker'),
 
 // 公开API路由
 app.get('/api/participants', optionalAuth, participantsController.getParticipants);
+// 功能开关状态查询（公开访问）
+app.get('/api/feature-flags', adminController.getFeatureFlags);
 // 收藏相关路由（参与者登录）
 app.post('/api/favorites/:participant_id/toggle', protect, favoriteController.toggle);
 app.get('/api/favorites', protect, favoriteController.list);

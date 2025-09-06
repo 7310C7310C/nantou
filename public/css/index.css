@@ -913,6 +913,62 @@ body {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
+/* 功能匹配按钮样式 */
+.feature-matching-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 15px 0;
+}
+
+.feature-matching-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 12px rgba(255, 107, 107, 0.3);
+    min-width: 80px;
+}
+
+.feature-matching-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 16px rgba(255, 107, 107, 0.4);
+    background: linear-gradient(135deg, #ff5252, #ff7979);
+}
+
+.feature-matching-btn:active {
+    transform: translateY(0);
+}
+
+#groupMatchingBtn {
+    background: linear-gradient(135deg, #4ecdc4, #44a08d);
+    box-shadow: 0 3px 12px rgba(78, 205, 196, 0.3);
+    border: 2px solid #26d0ce;
+}
+
+#groupMatchingBtn:hover {
+    background: linear-gradient(135deg, #26d0ce, #38968a);
+    box-shadow: 0 5px 16px rgba(78, 205, 196, 0.4);
+    border-color: #1db5b3;
+}
+
+#chatMatchingBtn {
+    background: linear-gradient(135deg, #e879f9, #d946ef);
+    box-shadow: 0 5px 16px rgba(240, 171, 252, 0.4);
+    border: 2px solid #d946ef;
+}
+
+#chatMatchingBtn:hover {
+    background: linear-gradient(135deg, #d946ef, #c026d3);
+    box-shadow: 0 6px 20px rgba(232, 121, 249, 0.5);
+    border-color: #c026d3;
+}
+
 /* 配对按钮 */
 .match-btn {
     position: absolute;
@@ -1645,5 +1701,32 @@ body {
     .message-modal-actions button {
         width: 100%;
         padding: 14px 20px;
+    }
+}
+
+/* 功能匹配按钮移动端适配 */
+@media (max-width: 768px) {
+    .feature-matching-container {
+        gap: 12px;
+        margin: 12px 0;
+    }
+    
+    .feature-matching-btn {
+        padding: 12px 18px;
+        font-size: 15px;
+        min-width: 90px;
+    }
+}
+
+@media (max-width: 480px) {
+    .feature-matching-container {
+        gap: 10px;
+        margin: 10px 0;
+    }
+    
+    .feature-matching-btn {
+        padding: 10px 16px;
+        font-size: 14px;
+        min-width: 80px;
     }
 }
