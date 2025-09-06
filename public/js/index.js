@@ -149,7 +149,7 @@ async function setDefaultGenderForUser() {
 
         if (response.ok) {
             const data = await response.json();
-            const userGender = data.data?.user?.gender;
+            const userGender = data.data && data.data.user && data.data.user.gender;
             
             if (userGender) {
                 // 根据用户性别设置默认显示异性
@@ -328,11 +328,12 @@ async function loadUsers() {
     try {
         // 红娘首次加载：预取配对集合用于高亮
         const userRole = localStorage.getItem('userRole');
+        const authToken = localStorage.getItem('authToken');
         if (userRole === 'matchmaker' && matchedParticipantIdSet.size === 0) {
             try { await loadMatchPairsForMatchmaker(); } catch (e) { console.warn('预取配对集合失败(忽略)', e); }
         }
-        // 如果是参与者且收藏尚未初始化，先等待初始化（保险：正常流程已在登录后调用 initFavorites，这里是兜底）
-        if (userRole === 'participant' && favoriteIds.size === 0) {
+        // 如果是登录的参与者且收藏尚未初始化，先等待初始化（保险：正常流程已在登录后调用 initFavorites，这里是兜底）
+        if (authToken && userRole === 'participant' && favoriteIds.size === 0) {
             // 仅当还没有初始化过 (用户刚登录) 时尝试一次
             await initFavorites();
         }
@@ -545,7 +546,7 @@ function drawHeartIcon(canvas, isFavorited) {
 
 // 创建用户卡片
 function createUserCard(user) {
-    const primaryPhoto = user.photos && user.photos.find(photo => photo.is_primary) || user.photos?.[0];
+    const primaryPhoto = user.photos && user.photos.find(photo => photo.is_primary) || (user.photos && user.photos[0]);
     const photoUrl = primaryPhoto ? primaryPhoto.photo_url : '/placeholder.jpg';
     
     // 高亮搜索内容
@@ -554,8 +555,9 @@ function createUserCard(user) {
     const isFavorited = user.is_favorited || favoriteIds.has(user.id);
     const userRole = localStorage.getItem('userRole');
     const userGender = localStorage.getItem('userGender');
+    const authToken = localStorage.getItem('authToken');
     // 仅在登录参与者浏览异性列表时显示收藏按钮
-    const showFavBtn = userRole === 'participant' && userGender && userGender !== currentGender;
+    const showFavBtn = authToken && userRole === 'participant' && userGender && userGender !== currentGender;
     const favBtnHtml = showFavBtn ? `<button class="favorite-toggle ${isFavorited ? 'favorited' : ''}" data-id="${user.id}" title="收藏/取消收藏"><canvas class="heart-icon" width="24" height="24"></canvas></button>` : '';
     
     // 红娘模式下显示配对按钮
@@ -952,14 +954,14 @@ function setupLoginEvents() {
                 localStorage.setItem('authToken', data.data.token);
                 
                 // 安全地获取用户信息
-                const userRole = data.data?.user?.role || 'participant';
-                const userUsername = data.data?.user?.username || username;
-                const userName = data.data?.user?.name || '';
+                const userRole = (data.data && data.data.user && data.data.user.role) || 'participant';
+                const userUsername = (data.data && data.data.user && data.data.user.username) || username;
+                const userName = (data.data && data.data.user && data.data.user.name) || '';
                 
                 localStorage.setItem('userRole', userRole);
                 localStorage.setItem('username', userUsername);
                 localStorage.setItem('userName', userName);
-                if (data.data?.user?.gender) {
+                if (data.data && data.data.user && data.data.user.gender) {
                     localStorage.setItem('userGender', data.data.user.gender);
                 }
                 
@@ -1255,7 +1257,13 @@ async function toggleFavorite(participantId, btnEl) {
                 let exists = grid.querySelector(`.user-card[data-id='${participantId}']`);
                 if (!exists) {
                     // 创建卡片
-                    const p = { id: id, username: cardBtn?.closest('.user-card')?.dataset.username || btnEl.closest('.user-card')?.dataset.username || '', baptismal_name: cardBtn?.closest('.user-card')?.querySelector('.user-baptismal')?.textContent || '', photos: JSON.parse(cardBtn?.closest('.user-card')?.dataset.photos || btnEl.closest('.user-card')?.dataset.photos || '[]') };
+                    const cardBtnParent = cardBtn && cardBtn.closest('.user-card');
+                    const btnElParent = btnEl && btnEl.closest('.user-card');
+                    const username = (cardBtnParent && cardBtnParent.dataset.username) || (btnElParent && btnElParent.dataset.username) || '';
+                    const baptismalEl = cardBtnParent && cardBtnParent.querySelector('.user-baptismal');
+                    const baptismal_name = (baptismalEl && baptismalEl.textContent) || '';
+                    const photosData = (cardBtnParent && cardBtnParent.dataset.photos) || (btnElParent && btnElParent.dataset.photos) || '[]';
+                    const p = { id: id, username: username, baptismal_name: baptismal_name, photos: JSON.parse(photosData) };
                     const photo = (p.photos || []).find(ph => ph.is_primary) || (p.photos || [])[0];
                     const photoUrl = photo ? photo.photo_url : '/placeholder.jpg';
                     const html = `<div class="user-card" data-id="${p.id}" data-username="${p.username}" data-photos='${JSON.stringify(p.photos || [])}'>
@@ -1364,7 +1372,8 @@ function setupFavoritesModal() {
         if (!card) return;
         const username = card.dataset.username;
         const photos = JSON.parse(card.dataset.photos || '[]');
-        const baptismal = card.querySelector('.user-baptismal')?.textContent || '';
+        const baptismalEl = card.querySelector('.user-baptismal');
+        const baptismal = (baptismalEl && baptismalEl.textContent) || '';
         openImageViewer(username, photos, baptismal);
     });
 }
@@ -1678,12 +1687,14 @@ function openStarRating(participantId, participantName, currentStars = 0) {
     
     // 获取目标参与者的照片
     const targetParticipantData = allUsers.find(u => u.id == currentTargetParticipantId);
+    const primaryTargetPhoto = targetParticipantData && targetParticipantData.photos && targetParticipantData.photos.find(p => p.is_primary);
     const targetPhoto = targetParticipantData && targetParticipantData.photos && targetParticipantData.photos.length > 0
-        ? targetParticipantData.photos.find(p => p.is_primary)?.photo_url || targetParticipantData.photos[0].photo_url
+        ? (primaryTargetPhoto && primaryTargetPhoto.photo_url) || targetParticipantData.photos[0].photo_url
         : '/images/default-avatar.png';
     
+    const primaryParticipantPhoto = targetParticipant.photos && targetParticipant.photos.find(p => p.is_primary);
     const participantPhoto = targetParticipant.photos && targetParticipant.photos.length > 0
-        ? targetParticipant.photos.find(p => p.is_primary)?.photo_url || targetParticipant.photos[0].photo_url
+        ? (primaryParticipantPhoto && primaryParticipantPhoto.photo_url) || targetParticipant.photos[0].photo_url
         : '/images/default-avatar.png';
     
     participant1Div.innerHTML = `
@@ -1912,12 +1923,14 @@ function renderManageMatches(matches) {
     empty.style.display = 'none';
     
     grid.innerHTML = matches.map(match => {
+        const primaryPerson1Photo = match.person1_photos && match.person1_photos.find(p => p.is_primary);
         const person1Photo = match.person1_photos && match.person1_photos.length > 0
-            ? match.person1_photos.find(p => p.is_primary)?.photo_url || match.person1_photos[0].photo_url
+            ? (primaryPerson1Photo && primaryPerson1Photo.photo_url) || match.person1_photos[0].photo_url
             : '/images/default-avatar.png';
         
+        const primaryPerson2Photo = match.person2_photos && match.person2_photos.find(p => p.is_primary);
         const person2Photo = match.person2_photos && match.person2_photos.length > 0
-            ? match.person2_photos.find(p => p.is_primary)?.photo_url || match.person2_photos[0].photo_url
+            ? (primaryPerson2Photo && primaryPerson2Photo.photo_url) || match.person2_photos[0].photo_url
             : '/images/default-avatar.png';
         
         // 创建星级canvas
@@ -2124,11 +2137,15 @@ function editMatchRating(person1Id, person2Id, person1Name, person2Name, current
     if (!person1Photo || !person2Photo) {
         const person1Data = (typeof allUsers !== 'undefined') ? allUsers.find(u => u.id == person1Id) : null;
         const person2Data = (typeof allUsers !== 'undefined') ? allUsers.find(u => u.id == person2Id) : null;
+        
+        const primaryPerson1Photo = person1Data && person1Data.photos && person1Data.photos.find(p => p.is_primary);
         person1Photo = person1Photo || (person1Data && person1Data.photos && person1Data.photos.length > 0
-            ? person1Data.photos.find(p => p.is_primary)?.photo_url || person1Data.photos[0].photo_url
+            ? (primaryPerson1Photo && primaryPerson1Photo.photo_url) || person1Data.photos[0].photo_url
             : '/images/default-avatar.png');
+            
+        const primaryPerson2Photo = person2Data && person2Data.photos && person2Data.photos.find(p => p.is_primary);
         person2Photo = person2Photo || (person2Data && person2Data.photos && person2Data.photos.length > 0
-            ? person2Data.photos.find(p => p.is_primary)?.photo_url || person2Data.photos[0].photo_url
+            ? (primaryPerson2Photo && primaryPerson2Photo.photo_url) || person2Data.photos[0].photo_url
             : '/images/default-avatar.png');
     }
     
