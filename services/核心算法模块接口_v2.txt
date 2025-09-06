@@ -1,0 +1,65 @@
+核心算法模块接口_v2.0
+一、需要实现的函数
+1.generateGroups(participants, selections, matchmaker_picks, options)
+目标： 将所有参与者分到不同小组中。
+2.generateChatLists(participants, selections, matchmaker_picks, options)
+目标： 为每一位参与者生成一个专属的“待聊名单”。
+
+二、输入数据结构 (Inputs)
+1. participants: Array<Object>
+JSON
+[
+{ "id": "1001", "gender": "male" },
+{ "id": "1002", "gender": "male" },
+{ "id": "2101", "gender": "female" },
+{ "id": "2102", "gender": "female" }
+]
+
+2. selections: Object
+JSON
+{  
+"1001":
+[
+    { "id": "2101", "priority": 1 },
+    { "id": "2102", "priority": 2 },
+    { "id": "2103", "priority": 3 },
+    { "id": "2104", "priority": 4 },
+    { "id": "2105", "priority": 5 }
+],  
+"1101": 
+[
+    { "id": "2001", "priority": 1 },
+    { "id": "2002", "priority": 2 },
+    { "id": "2003", "priority": 3 },
+    { "id": "2004", "priority": 4 },
+    { "id": "2005", "priority": 5 }
+]
+}
+
+3. matchmaker_picks: Array<Object>
+JSON
+[  
+   { "matchmaker_id": "mk_01", "person1_id": "1001", "person2_id": "2101", "stars": 5 },  
+   { "matchmaker_id": "mk_01", "person1_id": "1002", "person2_id": "2103", "stars": 2 },  
+   { "matchmaker_id": "mk_02", "person1_id": "2101", "person2_id": "1001", "stars": 3 }
+]
+
+4. options: Object
+JSON
+{ 
+  "group_size_male": 3,   // 用于 generateGroups: 每组理想男性人数
+  "group_size_female": 3, // 用于 generateGroups: 每组理想女性人数 
+  "list_size": 5// 用于 generateChatLists: 每个待聊名单的人数
+}
+
+三、输出数据结构 (Outputs)
+1. generateGroups() 的返回值
+JSON
+{  "groups": [{ "group_id": 1, "male_ids": ["1001", "1005", "1008", "1012"], "female_ids": ["2101", "2103", "2109", "2111"]},{ "group_id": 2, "male_ids": ["1002", "1006", "1010", "1015"], "female_ids": ["2102", "2104", "2106", "2113"]},{ "group_id": 21, "male_ids": ["1081", "1082", "1083", "1084", "1085"], "female_ids": ["2091", "2092", "2093"]}  ]}
+
+2. generateChatLists() 的返回值
+JSON
+{  "1001": ["2101", "2102", "2105", "2108", "2110"],  "2101": ["1001", "1002", "1007", "1009", "1011"] }
+
+四、模块交付要求
+将 generateGroups 和 generateChatLists 两个函数在一个单独的 .js 文件中实现，并使用 module.exports 将它们导出，以供主程序调用。
