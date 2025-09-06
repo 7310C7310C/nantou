@@ -2651,3 +2651,251 @@ body {
         gap: 4px;
     }
 }
+
+/* 功能开关模态框样式 */
+.feature-flags-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    overflow: auto;
+}
+
+.feature-flags-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease;
+}
+
+.feature-flags-header {
+    background: linear-gradient(135deg, #8b6f47 0%, #6d5a3a 100%);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.feature-flags-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.feature-flags-body {
+    padding: 30px;
+}
+
+.feature-flag-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    margin-bottom: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.feature-flag-item:hover {
+    background-color: #f0f2f5;
+    border-color: #8b6f47;
+}
+
+.feature-flag-info h3 {
+    margin: 0 0 8px 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.feature-flag-info p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.toggle-switch input[type="checkbox"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 34px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input[type="checkbox"]:checked + .toggle-slider {
+    background-color: #8b6f47;
+}
+
+input[type="checkbox"]:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+.toggle-slider:hover {
+    box-shadow: 0 0 0 8px rgba(139, 111, 71, 0.1);
+}
+
+/* 确定按钮居中样式 */
+.form-actions {
+    text-align: center;
+    padding: 20px 30px;
+    border-top: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+    border-radius: 0 0 12px 12px;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .feature-flags-content {
+        margin: 10% auto;
+        width: 95%;
+    }
+    
+    .feature-flags-header {
+        padding: 15px 20px;
+    }
+    
+    .feature-flags-header h2 {
+        font-size: 20px;
+    }
+    
+    .feature-flags-body {
+        padding: 20px;
+    }
+    
+    .feature-flag-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .feature-flag-toggle {
+        align-self: flex-end;
+    }
+}
+
+/* Toast 样式 */
+.toast-container { 
+    position: fixed; 
+    top: 18px; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    z-index: 4000; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    align-items: center; 
+    pointer-events: none; 
+}
+
+.toast { 
+    min-width: 200px; 
+    max-width: 320px; 
+    padding: 14px 18px; 
+    border-radius: 14px; 
+    color: #fff; 
+    font-size: 15px; 
+    line-height: 1.5; 
+    backdrop-filter: blur(14px) saturate(130%); 
+    box-shadow: 0 6px 24px rgba(0,0,0,0.28); 
+    display: flex; 
+    align-items: flex-start; 
+    gap: 12px; 
+    animation: toast-in .35s ease; 
+    position: relative; 
+    overflow: hidden; 
+    pointer-events: auto; 
+}
+
+.toast.persist-leave { 
+    animation: fade-out .45s ease forwards; 
+}
+
+.toast.success { 
+    background: rgba(46, 204, 113, 0.85); 
+}
+
+.toast.error { 
+    background: rgba(231, 76, 60, 0.9); 
+}
+
+.toast.info { 
+    background: rgba(52, 152, 219, 0.85); 
+}
+
+.toast .close { 
+    position: absolute; 
+    top: 6px; 
+    right: 8px; 
+    background: none; 
+    border: none; 
+    color: #fff; 
+    font-size: 16px; 
+    cursor: pointer; 
+    opacity: .8; 
+}
+
+.toast .close:hover { 
+    opacity: 1; 
+}
+
+@keyframes toast-in { 
+    from { 
+        transform: translateY(-10px); 
+        opacity: 0;
+    } 
+    to { 
+        transform: translateY(0); 
+        opacity: 1;
+    } 
+}
+
+@keyframes fade-out {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+}

@@ -635,6 +635,114 @@ async function clearAllCheckins(req, res) {
   }
 }
 
+/**
+ * 获取功能开关状态
+ */
+async function getFeatureFlags(req, res) {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT grouping_enabled, chat_enabled FROM feature_flags LIMIT 1'
+    );
+
+    let featureFlags;
+    if (rows.length === 0) {
+      // 如果没有记录，返回默认值
+      featureFlags = {
+        grouping_enabled: false,
+        chat_enabled: false
+      };
+    } else {
+      featureFlags = {
+        grouping_enabled: Boolean(rows[0].grouping_enabled),
+        chat_enabled: Boolean(rows[0].chat_enabled)
+      };
+    }
+
+    logger.info('获取功能开关状态成功', { featureFlags });
+    
+    res.json({
+      success: true,
+      message: '获取功能开关状态成功',
+      featureFlags
+    });
+
+  } catch (error) {
+    logger.error('获取功能开关状态失败', error);
+    res.status(500).json({ 
+      success: false,
+      message: '获取功能开关状态失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
+ * 更新功能开关状态
+ */
+async function updateFeatureFlags(req, res) {
+  try {
+    const { grouping_enabled, chat_enabled } = req.body;
+
+    // 验证输入
+    if (typeof grouping_enabled !== 'boolean' || typeof chat_enabled !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: '功能开关状态必须是布尔值'
+      });
+    }
+
+    // 确保不能同时开启两个功能
+    if (grouping_enabled && chat_enabled) {
+      return res.status(400).json({
+        success: false,
+        message: '分组功能和聊天任务功能不能同时开启'
+      });
+    }
+
+    // 检查是否已有记录
+    const [existingRows] = await pool.execute(
+      'SELECT id FROM feature_flags LIMIT 1'
+    );
+
+    if (existingRows.length === 0) {
+      // 插入新记录
+      await pool.execute(
+        'INSERT INTO feature_flags (grouping_enabled, chat_enabled) VALUES (?, ?)',
+        [grouping_enabled, chat_enabled]
+      );
+    } else {
+      // 更新现有记录
+      await pool.execute(
+        'UPDATE feature_flags SET grouping_enabled = ?, chat_enabled = ? WHERE id = ?',
+        [grouping_enabled, chat_enabled, existingRows[0].id]
+      );
+    }
+
+    logger.info('更新功能开关状态成功', { 
+      grouping_enabled, 
+      chat_enabled,
+      operator: req.user?.username || 'unknown'
+    });
+    
+    res.json({
+      success: true,
+      message: '功能开关设置已更新',
+      featureFlags: {
+        grouping_enabled,
+        chat_enabled
+      }
+    });
+
+  } catch (error) {
+    logger.error('更新功能开关状态失败', error);
+    res.status(500).json({ 
+      success: false,
+      message: '更新功能开关状态失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
 module.exports = {
   registerParticipant,
   getAllParticipants,
@@ -646,5 +754,7 @@ module.exports = {
   resetParticipantPassword,
   getParticipantsForCheckin,
   updateParticipantCheckin,
-  clearAllCheckins
+  clearAllCheckins,
+  getFeatureFlags,
+  updateFeatureFlags
 };

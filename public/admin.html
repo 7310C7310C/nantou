@@ -64,6 +64,7 @@
                 <div class="dashboard-card">
                     <h3>⚙️ 系统设置</h3>
                     <button class="btn btn-primary" id="openStaffManagementBtn">工作人员管理</button>
+                    <button class="btn btn-secondary" id="openFeatureFlagsBtn" style="margin-top: 10px;">功能开关</button>
                 </div>
             </div>
         </div>
@@ -512,6 +513,51 @@
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" id="cancelDeleteStaffBtn">取消</button>
                 <button type="button" class="btn btn-danger" id="confirmDeleteStaffBtn" disabled>确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast提示容器 -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- 功能开关模态框 -->
+    <div class="feature-flags-modal" id="featureFlagsModal">
+        <div class="feature-flags-content">
+            <div class="feature-flags-header">
+                <h2>⚙️ 功能开关</h2>
+                <button class="close-btn" id="closeFeatureFlagsBtn">&times;</button>
+            </div>
+            
+            <div class="feature-flags-body">
+                <div class="feature-flag-item">
+                    <div class="feature-flag-info">
+                        <h3>📊 分组功能</h3>
+                        <p>启用后可以对参与者进行分组操作</p>
+                    </div>
+                    <div class="feature-flag-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="groupingToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="feature-flag-item">
+                    <div class="feature-flag-info">
+                        <h3>💬 聊天任务功能</h3>
+                        <p>启用后可以进行聊天任务相关操作</p>
+                    </div>
+                    <div class="feature-flag-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="chatToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-primary" id="closeFeatureFlagsConfirmBtn">确定</button>
             </div>
         </div>
     </div>

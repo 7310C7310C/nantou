@@ -2599,3 +2599,174 @@ async function handleDeleteStaff() {
         alert(error.message || '删除工作人员失败');
     }
 }
+
+// ==================== 功能开关管理 ====================
+
+// 功能开关相关元素
+const openFeatureFlagsBtn = document.getElementById('openFeatureFlagsBtn');
+const featureFlagsModal = document.getElementById('featureFlagsModal');
+const closeFeatureFlagsBtn = document.getElementById('closeFeatureFlagsBtn');
+const closeFeatureFlagsConfirmBtn = document.getElementById('closeFeatureFlagsConfirmBtn');
+const groupingToggle = document.getElementById('groupingToggle');
+const chatToggle = document.getElementById('chatToggle');
+
+// 打开功能开关模态框
+if (openFeatureFlagsBtn) {
+    openFeatureFlagsBtn.addEventListener('click', async function() {
+        await loadFeatureFlags();
+        featureFlagsModal.style.display = 'block';
+    });
+}
+
+// 关闭功能开关模态框
+function closeFeatureFlagsModal() {
+    featureFlagsModal.style.display = 'none';
+}
+
+if (closeFeatureFlagsBtn) {
+    closeFeatureFlagsBtn.addEventListener('click', closeFeatureFlagsModal);
+}
+
+if (closeFeatureFlagsConfirmBtn) {
+    closeFeatureFlagsConfirmBtn.addEventListener('click', closeFeatureFlagsModal);
+}
+
+// 点击模态框外部关闭
+featureFlagsModal?.addEventListener('click', function(e) {
+    if (e.target === featureFlagsModal) {
+        closeFeatureFlagsModal();
+    }
+});
+
+// 加载当前功能开关状态
+async function loadFeatureFlags() {
+    try {
+        showLoading();
+        
+        const response = await fetch('/api/admin/feature-flags', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        hideLoading();
+
+        if (data.success) {
+            const flags = data.featureFlags;
+            
+            // 设置开关状态
+            groupingToggle.checked = flags.grouping_enabled;
+            chatToggle.checked = flags.chat_enabled;
+        } else {
+            throw new Error(data.message || '获取功能开关状态失败');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('获取功能开关状态错误:', error);
+        showToast(error.message || '获取功能开关状态失败', 'error');
+        // 默认设置为关闭状态
+        groupingToggle.checked = false;
+        chatToggle.checked = false;
+    }
+}
+
+// 更新功能开关状态
+async function updateFeatureFlag(flagType, enabled) {
+    try {
+        let groupingEnabled = false;
+        let chatEnabled = false;
+        
+        if (flagType === 'grouping') {
+            groupingEnabled = enabled;
+            chatEnabled = false; // 确保互斥
+        } else if (flagType === 'chat') {
+            groupingEnabled = false; // 确保互斥
+            chatEnabled = enabled;
+        }
+        
+        const response = await fetch('/api/admin/feature-flags', {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                grouping_enabled: groupingEnabled,
+                chat_enabled: chatEnabled
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // 更新UI状态以确保互斥
+            groupingToggle.checked = groupingEnabled;
+            chatToggle.checked = chatEnabled;
+            
+            // 显示成功提示
+            if (enabled) {
+                showToast(`${flagType === 'grouping' ? '分组功能' : '聊天任务功能'} 已启用`, 'success');
+            } else {
+                showToast(`${flagType === 'grouping' ? '分组功能' : '聊天任务功能'} 已关闭`, 'info');
+            }
+        } else {
+            throw new Error(data.message || '更新功能开关失败');
+        }
+    } catch (error) {
+        console.error('更新功能开关错误:', error);
+        showToast(error.message || '更新功能开关失败', 'error');
+        
+        // 恢复之前的状态
+        await loadFeatureFlags();
+    }
+}
+
+// 分组功能开关事件
+if (groupingToggle) {
+    groupingToggle.addEventListener('change', function() {
+        updateFeatureFlag('grouping', this.checked);
+    });
+}
+
+// 聊天任务功能开关事件
+if (chatToggle) {
+    chatToggle.addEventListener('change', function() {
+        updateFeatureFlag('chat', this.checked);
+    });
+}
+
+// Toast 显示函数
+function showToast(message, type='info', duration=4000) {
+    const container = document.getElementById('toastContainer');
+    if (!container) { 
+        console.warn('Toast container missing'); 
+        return; 
+    }
+    
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.setAttribute('role','status');
+    el.innerHTML = `<span style="flex:1;">${message}</span><button class="close" aria-label="关闭" onclick="(function(btn){ const parent=btn.parentElement; parent.classList.add('persist-leave'); setTimeout(()=>parent.remove(),420);})(this)">×</button>`;
+    container.appendChild(el);
+    
+    let removed = false;
+    let hideTimer = setTimeout(startHide, duration);
+    
+    function startHide(){
+        if (removed) return; 
+        removed = true; 
+        el.classList.add('persist-leave'); 
+        setTimeout(()=> el.remove(), 420);
+    }
+    
+    // 鼠标悬停暂停
+    el.addEventListener('mouseenter', () => { 
+        clearTimeout(hideTimer); 
+    });
+    el.addEventListener('mouseleave', () => { 
+        if (!removed) hideTimer = setTimeout(startHide, 1600); 
+    });
+}

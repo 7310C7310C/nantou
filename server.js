@@ -121,6 +121,10 @@ app.post('/api/admin/staff', protect, restrictTo('admin'), staffController.creat
 app.post('/api/admin/staff/:staff_id/reset-password', protect, restrictTo('admin'), staffController.resetStaffPassword);
 app.delete('/api/admin/staff/:staff_id', protect, restrictTo('admin'), staffController.deleteStaff);
 
+// 功能开关管理API路由（仅管理员可访问）
+app.get('/api/admin/feature-flags', protect, restrictTo('admin'), adminController.getFeatureFlags);
+app.put('/api/admin/feature-flags', protect, restrictTo('admin'), adminController.updateFeatureFlags);
+
 // 红娘配对API路由
 app.get('/api/matchmaker/participants/:participant_id/matching', protect, restrictTo('matchmaker'), matchmakerController.getParticipantMatchingData);
 app.post('/api/matchmaker/recommendations', protect, restrictTo('matchmaker'), matchmakerController.createOrUpdateRecommendation);
