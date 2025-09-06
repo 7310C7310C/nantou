@@ -1,0 +1,10 @@
+-- 用户优先级选择表
+CREATE TABLE IF NOT EXISTS selections (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id VARCHAR(50) NOT NULL,
+    target_id VARCHAR(50) NOT NULL,
+    priority INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES participants(id) ON DELETE CASCADE,
+    FOREIGN KEY(target_id) REFERENCES participants(id) ON DELETE CASCADE
+);
