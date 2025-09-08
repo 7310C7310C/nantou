@@ -25,10 +25,10 @@ class AuthService {
         userType = 'staff';
       } else {
         // 如果不在 staff_users 表中，尝试在 participants 表中查找（参与者）
-        const [participants] = await pool.execute(
-          'SELECT id, username, password, name, baptismal_name, gender FROM participants WHERE username = ?',
-          [username]
-        );
+  const [participants] = await pool.execute(
+  'SELECT id, username, password, name, baptismal_name, gender, is_checked_in FROM participants WHERE username = ?',
+  [username]
+  );
 
         if (participants.length > 0) {
           user = participants[0];
@@ -62,6 +62,8 @@ class AuthService {
         userInfo.name = user.name;
         userInfo.baptismal_name = user.baptismal_name;
         userInfo.gender = user.gender;
+        // 将签到状态包含在返回的用户信息中，便于前端判断是否已 sign
+        userInfo.is_checked_in = !!user.is_checked_in;
       }
 
       return {
@@ -134,8 +136,8 @@ class AuthService {
         }
       } else if (userType === 'participant') {
         const [users] = await pool.execute(
-          'SELECT id, username, name, baptismal_name, gender FROM participants WHERE id = ?',
-          [userId]
+        'SELECT id, username, name, baptismal_name, gender, is_checked_in FROM participants WHERE id = ?',
+        [userId]
         );
 
         if (users.length > 0) {

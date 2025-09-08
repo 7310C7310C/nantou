@@ -64,6 +64,8 @@ class AuthController {
         userInfo.name = user.name;
         userInfo.baptismal_name = user.baptismal_name;
         userInfo.gender = user.gender;
+  // 包含签到状态，前端用来判断是否已 sign
+  userInfo.is_checked_in = !!user.is_checked_in;
       }
 
       res.status(200).json({

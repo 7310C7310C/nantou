@@ -175,6 +175,30 @@ async function setDefaultGenderForUser() {
     }
 }
 
+// Helper: update localStorage from /api/auth/me response
+async function refreshCurrentUserToLocalStorage() {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) return null;
+    try {
+        const resp = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${authToken}` } });
+        if (!resp.ok) return null;
+        const json = await resp.json();
+        const user = json.data && json.data.user;
+        if (user) {
+            localStorage.setItem('userRole', user.role || 'participant');
+            localStorage.setItem('username', user.username || '');
+            localStorage.setItem('userName', user.name || '');
+            if (user.gender) localStorage.setItem('userGender', user.gender);
+            // store sign status
+            localStorage.setItem('isSigned', user.is_checked_in ? '1' : '0');
+            return user;
+        }
+    } catch (e) {
+        return null;
+    }
+    return null;
+}
+
 // 切换性别
 function switchGender(gender) {
     if (currentGender === gender) return;
@@ -964,6 +988,12 @@ function setupLoginEvents() {
                 if (data.data && data.data.user && data.data.user.gender) {
                     localStorage.setItem('userGender', data.data.user.gender);
                 }
+                // store sign status if provided
+                if (data.data && data.data.user && typeof data.data.user.is_checked_in !== 'undefined') {
+                    localStorage.setItem('isSigned', data.data.user.is_checked_in ? '1' : '0');
+                } else {
+                    localStorage.setItem('isSigned', '0');
+                }
                 
                 // 根据角色跳转
                 if (['admin', 'staff', 'matchmaker'].includes(userRole)) {
@@ -1064,6 +1094,8 @@ function updateUserInterface(username, role, userName = '') {
             searchInputEl.placeholder = '输入编号…';
         }
     }
+    // 更新功能按钮显示（考虑功能开关 + 本地用户签到状态）
+    checkFeatureFlags();
 }
 
 // 设置用户下拉菜单
@@ -1098,6 +1130,7 @@ function setupUserDropdown() {
         localStorage.removeItem('username');
         localStorage.removeItem('userName');
         localStorage.removeItem('userGender');
+            localStorage.removeItem('isSigned');
             const searchInput = document.getElementById('searchInput');
             if (searchInput) searchInput.placeholder = '输入编号…';
         
@@ -1113,6 +1146,13 @@ function setupUserDropdown() {
         adminPanelBtn.style.display = 'none';
     favoritesBtn.style.display = 'none';
     if (favoritesModal) favoritesModal.classList.remove('active');
+    // 立即隐藏分组/聊天匹配按钮，避免登出后仍显示
+    const groupMatchingBtn = document.getElementById('groupMatchingBtn');
+    const chatMatchingBtn = document.getElementById('chatMatchingBtn');
+    if (groupMatchingBtn) groupMatchingBtn.style.display = 'none';
+    if (chatMatchingBtn) chatMatchingBtn.style.display = 'none';
+    // 触发一次功能开关检查以同步状态（server side + local state）
+    try { checkFeatureFlags(); } catch(e) { /* ignore */ }
         
         // 清除收藏相关状态
         favoriteIds.clear();
@@ -2306,14 +2346,18 @@ async function checkFeatureFlags() {
             const groupMatchingBtn = document.getElementById('groupMatchingBtn');
             const chatMatchingBtn = document.getElementById('chatMatchingBtn');
             
-            // 根据功能开关显示/隐藏按钮
-            if (featureFlags.grouping_enabled) {
+            // 根据功能开关和用户状态显示/隐藏按钮
+            const userRole = localStorage.getItem('userRole');
+            const isSigned = localStorage.getItem('isSigned') === '1';
+            const allowParticipantView = userRole === 'participant' && isSigned;
+
+            if (featureFlags.grouping_enabled && allowParticipantView) {
                 groupMatchingBtn.style.display = 'block';
             } else {
                 groupMatchingBtn.style.display = 'none';
             }
-            
-            if (featureFlags.chat_enabled) {
+
+            if (featureFlags.chat_enabled && allowParticipantView) {
                 chatMatchingBtn.style.display = 'block';
             } else {
                 chatMatchingBtn.style.display = 'none';
