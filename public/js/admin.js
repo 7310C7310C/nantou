@@ -2708,9 +2708,9 @@ async function updateFeatureFlag(flagType, enabled) {
             
             // 显示成功提示
             if (enabled) {
-                showToast(`${flagType === 'grouping' ? '分组功能' : '聊天任务功能'} 已启用`, 'success');
+                showToast(`${flagType === 'grouping' ? '分组匹配功能' : '聊天匹配功能'} 已启用`, 'success');
             } else {
-                showToast(`${flagType === 'grouping' ? '分组功能' : '聊天任务功能'} 已关闭`, 'info');
+                showToast(`${flagType === 'grouping' ? '分组匹配功能' : '聊天匹配功能'} 已关闭`, 'info');
             }
         } else {
             throw new Error(data.message || '更新功能开关失败');
