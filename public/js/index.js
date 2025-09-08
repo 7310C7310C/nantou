@@ -1418,6 +1418,218 @@ function setupFavoritesModal() {
     });
 }
 
+// ============ 选择最喜欢的五人（分组匹配 / 聊天匹配） ============
+function openSelectionsModal() {
+    const modal = document.getElementById('selectionsModal');
+    if (!modal) return;
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    loadSelectionsModal();
+}
+
+function closeSelectionsModal() {
+    const modal = document.getElementById('selectionsModal');
+    if (!modal) return;
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+function setupSelectionsModal() {
+    const openBtns = [document.getElementById('groupMatchingBtn'), document.getElementById('chatMatchingBtn')];
+    openBtns.forEach(b => { if (b) b.addEventListener('click', openSelectionsModal); });
+    const closeBtn = document.getElementById('closeSelectionsModal');
+    if (closeBtn) closeBtn.addEventListener('click', closeSelectionsModal);
+    const modal = document.getElementById('selectionsModal');
+    if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeSelectionsModal(); });
+}
+
+async function loadSelectionsModal() {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) { showToast('请先登录', 'error'); return; }
+
+    // load favorites and current selections
+    try {
+        const [favResp, selResp] = await Promise.all([
+            fetch('/api/favorites', { headers: { 'Authorization': `Bearer ${authToken}` } }),
+            fetch('/api/selections', { headers: { 'Authorization': `Bearer ${authToken}` } })
+        ]);
+
+        if (!favResp.ok) throw new Error('加载收藏失败');
+        if (!selResp.ok) throw new Error('加载选择失败');
+
+        const favJson = await favResp.json();
+        const selJson = await selResp.json();
+        const favorites = favJson.data.favorites || [];
+        const selections = selJson.data || [];
+
+        renderSelectionsTop(selections);
+        renderSelectionsGrid(favorites, selections);
+        enableSelectionsDrag();
+    } catch (e) {
+        console.error('加载选择器失败', e);
+        showToast('加载选择器失败', 'error');
+    }
+}
+
+function renderSelectionsTop(selections) {
+    const top = document.getElementById('selectionsTop');
+    top.innerHTML = '';
+    for (let i = 1; i <=5; i++) {
+        const sel = selections.find(s => Number(s.priority) === i);
+        if (sel) {
+            const item = createSelectionTopCard(sel.target_id, (sel.target_name || sel.target_username || ''), i, true, sel.target_photo_url || '', sel.target_baptismal || '');
+            top.insertAdjacentHTML('beforeend', item);
+        } else {
+            const item = createSelectionTopCard(null, '', i, false);
+            top.insertAdjacentHTML('beforeend', item);
+        }
+    }
+}
+
+function createSelectionTopCard(id, name, idx, filled, photoUrl = '', baptismal = '') {
+    if (!filled) {
+        // render empty slot as a user-card styled placeholder
+        return `
+        <div class="user-card selection-top-card empty" data-index="${idx}">
+            <img src="/placeholder.jpg" class="user-photo" alt="" aria-hidden="true">
+            <div class="user-info">
+                <div class="user-username">&nbsp;</div>
+                <div class="user-baptismal">序号 ${idx}</div>
+            </div>
+            <div class="selection-index">${idx}</div>
+            <button class="selection-plus" aria-label="添加到第${idx}位">+</button>
+        </div>`;
+    }
+    // filled slot uses same .user-card structure
+    const img = photoUrl || '/placeholder.jpg';
+    const bapt = baptismal || `编号 ${id}`;
+    return `
+        <div class="user-card selection-top-card filled" data-index="${idx}" data-id="${id}" draggable="true">
+            <button class="selection-remove" aria-label="移除第${idx}位">-</button>
+            <img src="${img}" class="user-photo" alt="" onerror="this.src='/placeholder.jpg'" aria-hidden="true">
+            <div class="user-info">
+                <div class="user-username">${name}</div>
+                <div class="user-baptismal">${bapt}</div>
+            </div>
+            <div class="selection-index">${idx}</div>
+        </div>`;
+}
+
+function renderSelectionsGrid(favorites, selections) {
+    const grid = document.getElementById('selectionsGrid');
+    const emptyEl = document.getElementById('selectionsEmptyModal');
+    grid.innerHTML = '';
+    // hide favorites that are already selected
+    const selectedIds = new Set((selections || []).map(s => Number(s.target_id)));
+    const available = favorites.filter(f => !selectedIds.has(Number(f.id)));
+    if (available.length === 0) {
+        if (emptyEl) emptyEl.style.display = 'block';
+    } else {
+        if (emptyEl) emptyEl.style.display = 'none';
+        const html = available.map(p => {
+            const photo = (p.photos || []).find(ph => ph.is_primary) || (p.photos || [])[0];
+            const photoUrl = photo ? photo.photo_url : '/placeholder.jpg';
+            return `<div class="user-card" data-id="${p.id}" data-username="${p.username}" data-photos='${JSON.stringify(p.photos||[])}'>
+                        <button class="select-add" data-id="${p.id}" title="添加">+</button>
+                        <img src="${photoUrl}" class="user-photo">
+                        <div class="user-info"><div class="user-username">${p.username}</div><div class="user-baptismal">${p.baptismal_name||''}</div></div>
+                    </div>`;
+        }).join('');
+        grid.insertAdjacentHTML('beforeend', html);
+        // bind add buttons on bottom cards
+        grid.querySelectorAll('.select-add').forEach(btn => btn.addEventListener('click', onSelectAdd));
+        // bind top-slot '+' buttons to scroll/focus the favorites grid for accessibility
+        document.querySelectorAll('#selectionsTop .selection-plus').forEach(btn => {
+            btn.addEventListener('click', (ev) => {
+                ev.preventDefault();
+                const firstAdd = document.querySelector('#selectionsGrid .select-add');
+                if (firstAdd) {
+                    firstAdd.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstAdd.focus();
+                }
+            });
+        });
+    }
+    // bind remove on top filled cards
+    document.querySelectorAll('#selectionsTop .selection-remove').forEach(btn => btn.addEventListener('click', onSelectRemove));
+}
+
+async function onSelectAdd(e) {
+    const id = Number(e.currentTarget.dataset.id);
+    const topEmpty = Array.from(document.querySelectorAll('#selectionsTop .selection-top-card.empty'))[0];
+    if (!topEmpty) { showToast('最多只能选择5位', 'info'); return; }
+    const priority = Number(topEmpty.dataset.index);
+    const authToken = localStorage.getItem('authToken');
+    try {
+        const resp = await fetch('/api/selections', { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type':'application/json' }, body: JSON.stringify({ target_id: id, priority }) });
+        if (!resp.ok) throw new Error('添加失败');
+        showToast('已添加', 'success');
+    // remove the bottom card immediately for instant feedback
+    const bottomCard = document.querySelector(`#selectionsGrid .user-card[data-id='${id}']`);
+    if (bottomCard) bottomCard.remove();
+    // reload modal to ensure top slot shows correct photo/name from server
+    await loadSelectionsModal();
+    } catch (err) {
+        console.error(err);
+        showToast('添加失败', 'error');
+    }
+}
+
+async function onSelectRemove(e) {
+    const card = e.currentTarget.closest('.selection-top-card');
+    const targetId = Number(card.dataset.id);
+    const authToken = localStorage.getItem('authToken');
+    try {
+        const resp = await fetch('/api/selections', { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type':'application/json' }, body: JSON.stringify({ target_id: targetId }) });
+        if (!resp.ok) throw new Error('移除失败');
+        showToast('已移除', 'success');
+        // remove top card and re-add to bottom grid if possible
+        const topCard = document.querySelector(`#selectionsTop .selection-top-card.filled[data-id='${targetId}']`);
+        const grid = document.getElementById('selectionsGrid');
+        if (topCard) topCard.outerHTML = createSelectionTopCard(null, '', Number(topCard.dataset.index), false);
+        // reload favorites grid item for this id: simply reload modal to ensure consistency
+        await loadSelectionsModal();
+    } catch (err) {
+        console.error(err);
+        showToast('移除失败', 'error');
+    }
+}
+
+function enableSelectionsDrag() {
+    const top = document.getElementById('selectionsTop');
+    let dragSrc = null;
+    top.querySelectorAll('.selection-top-card.filled').forEach(card => {
+        card.addEventListener('dragstart', function (e) { dragSrc = this; e.dataTransfer.effectAllowed = 'move'; });
+        card.addEventListener('dragover', function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+        card.addEventListener('drop', async function (e) {
+            e.stopPropagation();
+            if (dragSrc === this) return;
+            // swap priorities
+            const idxA = Number(dragSrc.dataset.index);
+            const idxB = Number(this.dataset.index);
+            const idA = Number(dragSrc.dataset.id);
+            const idB = Number(this.dataset.id);
+            // perform reorder locally then send to server
+            const authToken = localStorage.getItem('authToken');
+            const items = [ { target_id: idA, priority: idxB }, { target_id: idB, priority: idxA } ];
+            try {
+                const resp = await fetch('/api/selections/reorder', { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type':'application/json' }, body: JSON.stringify({ items }) });
+                if (!resp.ok) throw new Error('排序失败');
+                showToast('排序成功', 'success');
+                await loadSelectionsModal();
+            } catch (err) {
+                console.error(err);
+                showToast('排序失败', 'error');
+            }
+        });
+    });
+}
+
+// 初始化 selections modal
+document.addEventListener('DOMContentLoaded', function() {
+    setupSelectionsModal();
+});
+
 // 显示“我的喜欢”按钮（参与者登录）
 function showFavoritesButtonIfParticipant(role) {
     const btn = document.getElementById('favoritesBtn');
@@ -2375,14 +2587,16 @@ async function checkFeatureFlags() {
  * 分组匹配按钮点击事件
  */
 function handleGroupMatching() {
-    showToast('分组匹配功能开发中...', 'info');
+    // 打开选择最喜欢的人模态（功能已实现）
+    openSelectionsModal();
 }
 
 /**
  * 聊天匹配按钮点击事件
  */
 function handleChatMatching() {
-    showToast('聊天匹配功能开发中...', 'info');
+    // 打开选择最喜欢的人模态（功能已实现）
+    openSelectionsModal();
 }
 
 // 为功能匹配按钮添加事件监听器

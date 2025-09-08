@@ -149,6 +149,24 @@
         </div>
     </div>
 
+    <!-- 选择最喜欢的五人模态（分组匹配/聊天匹配调用） -->
+    <div class="favorites-modal" id="selectionsModal">
+        <div class="favorites-modal-content">
+            <div class="favorites-modal-header">
+                <h2>选择最喜欢的人</h2>
+                <button class="favorites-close" id="closeSelectionsModal">×</button>
+            </div>
+            <div class="favorites-modal-body">
+                <div class="selections-top" id="selectionsTop">
+                    <!-- 5 个空白卡位 -->
+                </div>
+                <div class="selections-note">从下面的“我的喜欢”中选择，最多 5 位，拖动可调整顺序</div>
+                <div class="favorites-grid" id="selectionsGrid"></div>
+                <div class="favorites-empty" id="selectionsEmptyModal" style="display:none;">暂无可选择的收藏</div>
+            </div>
+        </div>
+    </div>
+
     <!-- 星级评分模态框 -->
     <div class="star-rating-modal" id="starRatingModal">
         <div class="star-rating-content">

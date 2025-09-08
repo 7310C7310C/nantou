@@ -13,6 +13,7 @@ const logController = require('./controllers/log.controller');
 const participantsController = require('./controllers/participants.controller');
 const favoriteController = require('./controllers/favorite.controller');
 const matchmakerController = require('./controllers/matchmaker.controller');
+const selectionsController = require('./controllers/selections.controller');
 const { protect, restrictTo, optionalAuth } = require('./middleware/auth.middleware');
 
 const app = express();
@@ -140,6 +141,12 @@ app.get('/api/feature-flags', adminController.getFeatureFlags);
 app.post('/api/favorites/:participant_id/toggle', protect, favoriteController.toggle);
 app.get('/api/favorites', protect, favoriteController.list);
 app.get('/api/favorites/ids', protect, favoriteController.ids);
+
+// 选择优先级相关路由（参与者登录）
+app.post('/api/selections', protect, selectionsController.add);
+app.delete('/api/selections', protect, selectionsController.remove);
+app.get('/api/selections', protect, selectionsController.list);
+app.put('/api/selections/reorder', protect, selectionsController.reorder);
 
 // 管理后台页面路由 - 不需要服务器端认证，由客户端JavaScript处理
 app.get('/admin', (req, res) => {
