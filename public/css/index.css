@@ -294,8 +294,39 @@ body {
 .selection-top-card.pending { opacity: 0.7; outline: 2px dashed rgba(255,255,255,0.18); }
 .select-add[data-pending='1'] { opacity: 0.6; transform: scale(0.98); cursor: progress; }
 
-/* drag feedback */
+/* drag feedback - 原生拖拽样式保留以向后兼容 */
 .selection-top-card.dragging { opacity: 0.6; transform: scale(0.98); box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
+
+/* SortableJS 拖拽样式 */
+.selection-sortable-ghost { 
+    opacity: 0.4; 
+    background: rgba(255, 255, 255, 0.1); 
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    transform: scale(0.95);
+}
+
+.selection-sortable-chosen { 
+    cursor: grabbing !important; 
+    transform: scale(1.02);
+    z-index: 999;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.selection-sortable-drag { 
+    opacity: 0.8; 
+    transform: rotate(5deg) scale(1.05);
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+/* 拖拽时禁用指针事件 */
+.selection-top-card.filled {
+    cursor: grab;
+}
+
+.selection-top-card.filled:active {
+    cursor: grabbing;
+}
 
 @media (max-width: 1024px) {
     .favorites-modal { padding:50px 30px 70px; }

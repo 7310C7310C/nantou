@@ -1660,7 +1660,11 @@ async function onSelectRemove(e) {
 function enableSelectionsDrag() {
     const top = document.getElementById('selectionsTop');
     if (!top) return;
-    let dragSrc = null;
+
+    // 销毁之前的Sortable实例（如果存在）
+    if (top.sortableInstance) {
+        top.sortableInstance.destroy();
+    }
 
     // Helper: update dataset.index and visible index number for all top slots (ensure 1..N where N<=5)
     function refreshTopIndices() {
@@ -1673,96 +1677,85 @@ function enableSelectionsDrag() {
         });
     }
 
-    // Attach listeners to all top slots (including empty slots) so we can drop into empty positions
-    const slots = Array.from(top.querySelectorAll('.selection-top-card'));
-    slots.forEach(slot => {
-        // only filled cards are draggable
-        if (slot.classList.contains('filled')) {
-            slot.setAttribute('draggable', 'true');
-        } else {
-            slot.setAttribute('draggable', 'false');
-        }
-
-        slot.addEventListener('dragstart', function (e) {
-            if (!this.classList.contains('filled')) return;
-            dragSrc = this;
-            this.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-        });
-
-        slot.addEventListener('dragend', function () {
-            if (dragSrc) {
-                dragSrc.classList.remove('dragging');
+    // 使用SortableJS创建拖拽实例
+    const sortable = new Sortable(top, {
+        // 只允许拖拽已填充的卡片
+        filter: '.selection-top-card:not(.filled)',
+        
+        // 动画配置
+        animation: 200,
+        easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
+        
+        // 拖拽时的样式
+        ghostClass: 'selection-sortable-ghost',
+        chosenClass: 'selection-sortable-chosen',
+        dragClass: 'selection-sortable-drag',
+        
+        // 禁用默认的拖拽行为
+        forceFallback: false,
+        
+        // 拖拽手柄 - 整个卡片都可以拖拽
+        handle: '.selection-top-card.filled',
+        
+        // 拖拽开始事件
+        onStart: function(evt) {
+            evt.item.classList.add('dragging');
+        },
+        
+        // 拖拽结束事件
+        onEnd: async function(evt) {
+            evt.item.classList.remove('dragging');
+            
+            // 如果位置没有改变，不需要更新
+            if (evt.oldIndex === evt.newIndex) {
+                return;
             }
-            dragSrc = null;
-        });
-
-        // Keep dragover light-weight: only prevent default so drop is allowed
-        slot.addEventListener('dragover', function (e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-        });
-
-        // Immediate reaction: when the dragging pointer enters a slot, move dragSrc here
-        slot.addEventListener('dragenter', function(e) {
-            if (!dragSrc || dragSrc === this) return;
-
-            // Determine insertion side based on horizontal midpoint of the slot.
-            // If pointer is on left half, insert before this slot; if on right half, insert after.
-            try {
-                const rect = this.getBoundingClientRect();
-                const midX = rect.left + rect.width / 2;
-                if (e.clientX < midX) {
-                    // entering left half -> insert before
-                    if (this.previousElementSibling !== dragSrc) {
-                        top.insertBefore(dragSrc, this);
-                        refreshTopIndices();
-                    }
-                } else {
-                    // entering right half -> insert after
-                    if (this.nextElementSibling !== dragSrc) {
-                        top.insertBefore(dragSrc, this.nextSibling);
-                        refreshTopIndices();
-                    }
-                }
-            } catch (err) {
-                // fallback: simple insert before
-                if (this.previousElementSibling !== dragSrc) {
-                    top.insertBefore(dragSrc, this);
-                    refreshTopIndices();
-                }
-            }
-        });
-
-        slot.addEventListener('drop', async function (e) {
-            e.preventDefault();
-            if (!dragSrc) return;
-            // After drop, ensure indices are refreshed
+            
+            // 更新所有卡片的索引
             refreshTopIndices();
-
-            // Prepare batch update for all filled slots only
+            
+            // 准备批量更新数据
             const filledCards = Array.from(top.querySelectorAll('.selection-top-card.filled'));
-            const items = filledCards.map((c, i) => ({ target_id: Number(c.dataset.id), priority: i + 1 }));
+            const items = filledCards.map((c, i) => ({ 
+                target_id: Number(c.dataset.id), 
+                priority: i + 1 
+            }));
 
-            // Send one request with all updated priorities
+            // 发送更新请求到服务器
             const authToken = localStorage.getItem('authToken');
             try {
                 const resp = await fetch('/api/selections/reorder', {
                     method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type':'application/json' },
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`, 
+                        'Content-Type': 'application/json' 
+                    },
                     body: JSON.stringify({ items })
                 });
-                if (!resp.ok) throw new Error('排序失败');
-                // refresh modal to reflect server canonical state
+                
+                if (!resp.ok) {
+                    throw new Error('排序失败');
+                }
+                
+                // 成功后刷新模态框以反映服务器的权威状态
                 await loadSelectionsModal();
             } catch (err) {
-                console.error(err);
+                console.error('拖拽排序失败:', err);
                 showToast('排序失败', 'error');
-                // if failed, reload modal to restore server state
+                // 如果失败，重新加载模态框以恢复服务器状态
                 await loadSelectionsModal();
             }
-        });
+        },
+        
+        // 拖拽过程中的事件
+        onMove: function(evt) {
+            // 只允许在已填充的卡片之间移动
+            return evt.related.classList.contains('selection-top-card');
+        }
     });
+
+    // 保存实例引用以便后续销毁
+    top.sortableInstance = sortable;
 }
 
 // 初始化 selections modal
