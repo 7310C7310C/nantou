@@ -102,10 +102,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('femaleBtn').classList.add('active');
     
     document.addEventListener('contextmenu', function(e) {
-        if (e.target.tagName === 'IMG') {
-            e.preventDefault();
-            return false;
+        // 全局阻止长按弹出的原生菜单（Android Chrome 等），但允许在输入/可编辑元素上使用原生菜单
+        if (e.target.closest && e.target.closest('input, textarea, [contenteditable="true"]')) {
+            return; // 允许表单控件的原生上下文菜单
         }
+        e.preventDefault();
+        return false;
     });
     document.addEventListener('dragstart', function(e) {
         if (e.target.tagName === 'IMG') {

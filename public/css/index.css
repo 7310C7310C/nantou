@@ -344,6 +344,14 @@ body {
     pointer-events: none;
 }
 
+/* 减少移动设备长按触发的原生菜单 */
+img, a, .user-photo {
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 .user-info {
     position: absolute;
     bottom: 0;
