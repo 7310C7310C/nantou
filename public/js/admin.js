@@ -585,7 +585,7 @@ function handleFiles(files) {
     }
 
     // 检查文件大小限制 (5MB)
-    const maxFileSize = 5 * 1024 * 1024; // 5MB
+    const maxFileSize = 15 * 1024 * 1024; // 15MB
     const oversizedFiles = imageFiles.filter(file => file.size > maxFileSize);
     
     if (oversizedFiles.length > 0) {
