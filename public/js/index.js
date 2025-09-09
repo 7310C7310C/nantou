@@ -275,9 +275,10 @@ function loadGenderState(gender) {
 // 处理搜索输入
 function handleSearchInput(input) {
     const role = localStorage.getItem('userRole');
-    const allowName = ['admin','staff','matchmaker'].includes(role || '');
+    const isSigned = localStorage.getItem('isSigned') === '1';
+    const allowName = ['admin','staff','matchmaker'].includes(role || '') || (role === 'participant' && isSigned);
     if (!allowName) {
-        // 参与者或未登录：只允许数字
+        // 未签到的参与者或未登录：只允许数字
         input.value = input.value.replace(/[^0-9]/g, '');
     }
     
@@ -364,9 +365,11 @@ async function loadUsers() {
             await initFavorites();
         }
         
-        // 检查是否为管理员角色的姓名搜索
+        // 检查是否为管理员角色或已签到参与者的姓名搜索
+        const isSigned = localStorage.getItem('isSigned') === '1';
         const isAdminRole = ['admin', 'staff', 'matchmaker'].includes(userRole);
-        const isNameSearch = isAdminRole && searchTerm && isNaN(searchTerm);
+        const isSignedParticipant = userRole === 'participant' && isSigned;
+        const isNameSearch = (isAdminRole || isSignedParticipant) && searchTerm && isNaN(searchTerm);
         
         // 如果是姓名搜索，则不传递search参数给后端，让后端返回所有数据，前端来过滤
         // 同时需要获取更多数据以确保能找到所有匹配的姓名
@@ -591,8 +594,9 @@ function createUserCard(user) {
     const isMatchedAlready = showMatchBtn && matchedParticipantIdSet.has(user.id);
     const matchBtnHtml = showMatchBtn ? `<button class="match-btn ${isMatchedAlready ? 'matched-exists' : ''}" data-id="${user.id}" title="配对" onclick="event.stopPropagation(); openMatchingModal(${user.id}, '${user.name}')">配对</button>` : '';
     
-    // 对 admin / staff / matchmaker 显示真实姓名，其余显示圣名
-    const roleShowRealName = ['matchmaker','admin','staff'].includes(userRole || '');
+    // 对 admin / staff / matchmaker 以及已签到的参与者显示真实姓名，其余显示圣名
+    const isSigned = localStorage.getItem('isSigned') === '1';
+    const roleShowRealName = ['matchmaker','admin','staff'].includes(userRole || '') || (userRole === 'participant' && isSigned);
     const rawDisplayName = roleShowRealName ? (user.name || '') : (user.baptismal_name || '');
     // 搜索高亮：仅当搜索词存在时在显示名称上一起高亮（允许编号或姓名）
     const highlightedDisplayName = searchTerm ? highlightSearchTerm(rawDisplayName, searchTerm) : rawDisplayName;
@@ -993,8 +997,11 @@ function setupLoginEvents() {
                 // store sign status if provided
                 if (data.data && data.data.user && typeof data.data.user.is_checked_in !== 'undefined') {
                     localStorage.setItem('isSigned', data.data.user.is_checked_in ? '1' : '0');
+                    // 更新搜索框状态（因为签到状态可能影响搜索权限）
+                    updateSearchInputState();
                 } else {
                     localStorage.setItem('isSigned', '0');
+                    updateSearchInputState();
                 }
                 
                 // 根据角色跳转
@@ -1050,6 +1057,25 @@ function closeLoginModal() {
     document.getElementById('loginError').textContent = '';
 }
 
+// 更新搜索框状态（根据角色和签到状态）
+function updateSearchInputState() {
+    const searchInputEl = document.getElementById('searchInput');
+    if (!searchInputEl) return;
+    
+    const role = localStorage.getItem('userRole') || '';
+    const isSigned = localStorage.getItem('isSigned') === '1';
+    
+    if (['admin','staff','matchmaker'].includes(role) || (role === 'participant' && isSigned)) {
+        searchInputEl.placeholder = '输入编号或姓名…';
+        searchInputEl.removeAttribute('pattern');
+        searchInputEl.removeAttribute('inputmode');
+    } else {
+        searchInputEl.placeholder = '输入编号…';
+        searchInputEl.setAttribute('pattern', '[0-9]*');
+        searchInputEl.setAttribute('inputmode', 'numeric');
+    }
+}
+
 // 更新用户界面
 function updateUserInterface(username, role, userName = '') {
     const loginBtn = document.getElementById('loginBtn');
@@ -1088,14 +1114,9 @@ function updateUserInterface(username, role, userName = '') {
     // 恢复下拉菜单事件绑定
     setupUserDropdown();
 
-    // 根据角色调整首页搜索框 placeholder 与输入限制提示
-    if (searchInputEl) {
-        if (['admin','staff','matchmaker'].includes(role)) {
-            searchInputEl.placeholder = '输入编号或姓名…';
-        } else {
-            searchInputEl.placeholder = '输入编号…';
-        }
-    }
+    // 根据角色和签到状态调整首页搜索框
+    updateSearchInputState();
+    
     // 更新功能按钮显示（考虑功能开关 + 本地用户签到状态）
     checkFeatureFlags();
 }
@@ -1132,9 +1153,13 @@ function setupUserDropdown() {
         localStorage.removeItem('username');
         localStorage.removeItem('userName');
         localStorage.removeItem('userGender');
-            localStorage.removeItem('isSigned');
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) searchInput.placeholder = '输入编号…';
+        localStorage.removeItem('isSigned');
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.placeholder = '输入编号…';
+            searchInput.setAttribute('pattern', '[0-9]*');
+            searchInput.setAttribute('inputmode', 'numeric');
+        }
         
         const loginBtn = document.getElementById('loginBtn');
         const userInfo = document.getElementById('userInfo');
@@ -1476,11 +1501,20 @@ async function loadSelectionsModal() {
 function renderSelectionsTop(selections) {
     const top = document.getElementById('selectionsTop');
     top.innerHTML = '';
+    
+    // 获取当前用户的角色和签到状态，判断是否显示真实姓名
+    const userRole = localStorage.getItem('userRole') || '';
+    const isSigned = localStorage.getItem('isSigned') === '1';
+    const shouldShowRealName = ['matchmaker','admin','staff'].includes(userRole) || (userRole === 'participant' && isSigned);
+    
     for (let i = 1; i <=5; i++) {
         const sel = selections.find(s => Number(s.priority) === i);
         if (sel) {
-            // 显示顶部卡片时优先使用账号(target_username)，若不存在再回退到真实姓名(target_name)
-            const item = createSelectionTopCard(sel.target_id, (sel.target_username || sel.target_name || ''), i, true, sel.target_photo_url || '', sel.target_baptismal || '');
+            // 第一行始终显示账号，第二行根据权限显示真实姓名或圣名
+            const username = sel.target_username || `编号 ${sel.target_id}`;
+            const displayName = shouldShowRealName ? (sel.target_name || sel.target_baptismal || '') : (sel.target_baptismal || '');
+            
+            const item = createSelectionTopCard(sel.target_id, username, i, true, sel.target_photo_url || '', displayName);
             top.insertAdjacentHTML('beforeend', item);
         } else {
             const item = createSelectionTopCard(null, '', i, false);
@@ -1530,11 +1564,18 @@ function renderSelectionsGrid(favorites, selections) {
         const html = available.map(p => {
             const photo = (p.photos || []).find(ph => ph.is_primary) || (p.photos || [])[0];
             const photoUrl = photo ? photo.photo_url : '/placeholder.jpg';
+            
+            // 根据用户角色和签到状态决定第二行显示内容
+            const userRole = localStorage.getItem('userRole') || '';
+            const isSigned = localStorage.getItem('isSigned') === '1';
+            const shouldShowRealName = ['admin','staff','matchmaker'].includes(userRole) || (userRole === 'participant' && isSigned);
+            const secondLineDisplay = shouldShowRealName ? (p.name || p.baptismal_name || '') : (p.baptismal_name || '');
+            
             // 添加右上角的添加控件（用于将该收藏加入顶部选择）
             return `<div class="user-card" data-id="${p.id}" data-username="${p.username}" data-photos='${JSON.stringify(p.photos||[])}'>
                         <button class="select-add" data-id="${p.id}" title="加入选择">+</button>
                         <img src="${photoUrl}" class="user-photo">
-                        <div class="user-info"><div class="user-username">${p.username}</div><div class="user-baptismal">${p.baptismal_name||''}</div></div>
+                        <div class="user-info"><div class="user-username">${p.username}</div><div class="user-baptismal">${secondLineDisplay}</div></div>
                     </div>`;
         }).join('');
         grid.insertAdjacentHTML('beforeend', html);
