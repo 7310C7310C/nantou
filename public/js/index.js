@@ -1479,7 +1479,8 @@ function renderSelectionsTop(selections) {
     for (let i = 1; i <=5; i++) {
         const sel = selections.find(s => Number(s.priority) === i);
         if (sel) {
-            const item = createSelectionTopCard(sel.target_id, (sel.target_name || sel.target_username || ''), i, true, sel.target_photo_url || '', sel.target_baptismal || '');
+            // 显示顶部卡片时优先使用账号(target_username)，若不存在再回退到真实姓名(target_name)
+            const item = createSelectionTopCard(sel.target_id, (sel.target_username || sel.target_name || ''), i, true, sel.target_photo_url || '', sel.target_baptismal || '');
             top.insertAdjacentHTML('beforeend', item);
         } else {
             const item = createSelectionTopCard(null, '', i, false);
