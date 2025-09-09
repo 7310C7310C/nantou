@@ -1697,24 +1697,41 @@ function enableSelectionsDrag() {
             dragSrc = null;
         });
 
+        // Keep dragover light-weight: only prevent default so drop is allowed
         slot.addEventListener('dragover', function (e) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
+        });
+
+        // Immediate reaction: when the dragging pointer enters a slot, move dragSrc here
+        slot.addEventListener('dragenter', function(e) {
             if (!dragSrc || dragSrc === this) return;
 
-            // Determine whether to insert before or after based on cursor position
-            const rect = this.getBoundingClientRect();
-            const middleY = rect.top + rect.height / 2;
-            if (e.clientY < middleY) {
-                // insert before this slot
-                top.insertBefore(dragSrc, this);
-            } else {
-                // insert after this slot
-                top.insertBefore(dragSrc, this.nextSibling);
+            // Determine insertion side based on horizontal midpoint of the slot.
+            // If pointer is on left half, insert before this slot; if on right half, insert after.
+            try {
+                const rect = this.getBoundingClientRect();
+                const midX = rect.left + rect.width / 2;
+                if (e.clientX < midX) {
+                    // entering left half -> insert before
+                    if (this.previousElementSibling !== dragSrc) {
+                        top.insertBefore(dragSrc, this);
+                        refreshTopIndices();
+                    }
+                } else {
+                    // entering right half -> insert after
+                    if (this.nextElementSibling !== dragSrc) {
+                        top.insertBefore(dragSrc, this.nextSibling);
+                        refreshTopIndices();
+                    }
+                }
+            } catch (err) {
+                // fallback: simple insert before
+                if (this.previousElementSibling !== dragSrc) {
+                    top.insertBefore(dragSrc, this);
+                    refreshTopIndices();
+                }
             }
-
-            // After DOM move, refresh indices so user sees 1..5 updated in real time
-            refreshTopIndices();
         });
 
         slot.addEventListener('drop', async function (e) {
