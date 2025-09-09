@@ -1489,15 +1489,13 @@ function renderSelectionsTop(selections) {
 function createSelectionTopCard(id, name, idx, filled, photoUrl = '', baptismal = '') {
     if (!filled) {
         // render empty slot as a user-card styled placeholder
+        // use 1x1 transparent gif to avoid any browser default missing-image decoration
+        const transparent = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
         return `
         <div class="user-card selection-top-card empty" data-index="${idx}">
-            <img src="/placeholder.jpg" class="user-photo" alt="" aria-hidden="true">
-            <div class="user-info">
-                <div class="user-username">&nbsp;</div>
-                <div class="user-baptismal">序号 ${idx}</div>
-            </div>
+            <img src="${transparent}" class="user-photo" alt="" aria-hidden="true">
             <div class="selection-index">${idx}</div>
-            <button class="selection-plus" aria-label="添加到第${idx}位">+</button>
+            <div class="empty-center">请选择</div>
         </div>`;
     }
     // filled slot uses same .user-card structure
@@ -1530,14 +1528,11 @@ function renderSelectionsGrid(favorites, selections) {
             const photo = (p.photos || []).find(ph => ph.is_primary) || (p.photos || [])[0];
             const photoUrl = photo ? photo.photo_url : '/placeholder.jpg';
             return `<div class="user-card" data-id="${p.id}" data-username="${p.username}" data-photos='${JSON.stringify(p.photos||[])}'>
-                        <button class="select-add" data-id="${p.id}" title="添加">+</button>
                         <img src="${photoUrl}" class="user-photo">
                         <div class="user-info"><div class="user-username">${p.username}</div><div class="user-baptismal">${p.baptismal_name||''}</div></div>
                     </div>`;
         }).join('');
         grid.insertAdjacentHTML('beforeend', html);
-        // bind add buttons on bottom cards
-        grid.querySelectorAll('.select-add').forEach(btn => btn.addEventListener('click', onSelectAdd));
         // bind top-slot '+' buttons to scroll/focus the favorites grid for accessibility
         document.querySelectorAll('#selectionsTop .selection-plus').forEach(btn => {
             btn.addEventListener('click', (ev) => {
