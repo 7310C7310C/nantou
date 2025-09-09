@@ -1527,7 +1527,9 @@ function renderSelectionsGrid(favorites, selections) {
         const html = available.map(p => {
             const photo = (p.photos || []).find(ph => ph.is_primary) || (p.photos || [])[0];
             const photoUrl = photo ? photo.photo_url : '/placeholder.jpg';
+            // 添加右上角的添加控件（用于将该收藏加入顶部选择）
             return `<div class="user-card" data-id="${p.id}" data-username="${p.username}" data-photos='${JSON.stringify(p.photos||[])}'>
+                        <button class="select-add" data-id="${p.id}" title="加入选择">+</button>
                         <img src="${photoUrl}" class="user-photo">
                         <div class="user-info"><div class="user-username">${p.username}</div><div class="user-baptismal">${p.baptismal_name||''}</div></div>
                     </div>`;
@@ -1547,6 +1549,8 @@ function renderSelectionsGrid(favorites, selections) {
     }
     // bind remove on top filled cards
     document.querySelectorAll('#selectionsTop .selection-remove').forEach(btn => btn.addEventListener('click', onSelectRemove));
+    // bind add buttons on bottom favorites grid
+    document.querySelectorAll('#selectionsGrid .select-add').forEach(btn => btn.addEventListener('click', onSelectAdd));
 }
 
 async function onSelectAdd(e) {
