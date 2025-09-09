@@ -1563,7 +1563,7 @@ async function onSelectAdd(e) {
     if (btn.dataset.pending === '1') return;
 
     const topEmpty = Array.from(document.querySelectorAll('#selectionsTop .selection-top-card.empty'))[0];
-    if (!topEmpty) { showToast('请选满 5 位', 'info'); return; }
+    if (!topEmpty) { showToast('已选满 5 位', 'info'); return; }
     const priority = Number(topEmpty.dataset.index);
 
     const authToken = localStorage.getItem('authToken');
