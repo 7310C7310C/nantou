@@ -1636,29 +1636,91 @@ async function onSelectRemove(e) {
 
 function enableSelectionsDrag() {
     const top = document.getElementById('selectionsTop');
+    if (!top) return;
     let dragSrc = null;
-    top.querySelectorAll('.selection-top-card.filled').forEach(card => {
-        card.addEventListener('dragstart', function (e) { dragSrc = this; e.dataTransfer.effectAllowed = 'move'; });
-        card.addEventListener('dragover', function (e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
-        card.addEventListener('drop', async function (e) {
-            e.stopPropagation();
-            if (dragSrc === this) return;
-            // swap priorities
-            const idxA = Number(dragSrc.dataset.index);
-            const idxB = Number(this.dataset.index);
-            const idA = Number(dragSrc.dataset.id);
-            const idB = Number(this.dataset.id);
-            // perform reorder locally then send to server
+
+    // Helper: update dataset.index and visible index number for all top slots (ensure 1..N where N<=5)
+    function refreshTopIndices() {
+        const cards = Array.from(top.querySelectorAll('.selection-top-card'));
+        cards.forEach((c, i) => {
+            const idx = i + 1;
+            c.dataset.index = String(idx);
+            const idxEl = c.querySelector('.selection-index');
+            if (idxEl) idxEl.textContent = String(idx);
+        });
+    }
+
+    // Attach listeners to all top slots (including empty slots) so we can drop into empty positions
+    const slots = Array.from(top.querySelectorAll('.selection-top-card'));
+    slots.forEach(slot => {
+        // only filled cards are draggable
+        if (slot.classList.contains('filled')) {
+            slot.setAttribute('draggable', 'true');
+        } else {
+            slot.setAttribute('draggable', 'false');
+        }
+
+        slot.addEventListener('dragstart', function (e) {
+            if (!this.classList.contains('filled')) return;
+            dragSrc = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        slot.addEventListener('dragend', function () {
+            if (dragSrc) {
+                dragSrc.classList.remove('dragging');
+            }
+            dragSrc = null;
+        });
+
+        slot.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (!dragSrc || dragSrc === this) return;
+
+            // Determine whether to insert before or after based on cursor position
+            const rect = this.getBoundingClientRect();
+            const middleY = rect.top + rect.height / 2;
+            if (e.clientY < middleY) {
+                // insert before this slot
+                top.insertBefore(dragSrc, this);
+            } else {
+                // insert after this slot
+                top.insertBefore(dragSrc, this.nextSibling);
+            }
+
+            // After DOM move, refresh indices so user sees 1..5 updated in real time
+            refreshTopIndices();
+        });
+
+        slot.addEventListener('drop', async function (e) {
+            e.preventDefault();
+            if (!dragSrc) return;
+            // After drop, ensure indices are refreshed
+            refreshTopIndices();
+
+            // Prepare batch update for all filled slots only
+            const filledCards = Array.from(top.querySelectorAll('.selection-top-card.filled'));
+            const items = filledCards.map((c, i) => ({ target_id: Number(c.dataset.id), priority: i + 1 }));
+
+            // Send one request with all updated priorities
             const authToken = localStorage.getItem('authToken');
-            const items = [ { target_id: idA, priority: idxB }, { target_id: idB, priority: idxA } ];
             try {
-                const resp = await fetch('/api/selections/reorder', { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type':'application/json' }, body: JSON.stringify({ items }) });
+                const resp = await fetch('/api/selections/reorder', {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type':'application/json' },
+                    body: JSON.stringify({ items })
+                });
                 if (!resp.ok) throw new Error('排序失败');
                 showToast('排序成功', 'success');
+                // refresh modal to reflect server canonical state
                 await loadSelectionsModal();
             } catch (err) {
                 console.error(err);
                 showToast('排序失败', 'error');
+                // if failed, reload modal to restore server state
+                await loadSelectionsModal();
             }
         });
     });
