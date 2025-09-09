@@ -290,6 +290,10 @@ body {
 }
 .select-add:hover { transform: scale(1.05); }
 
+/* pending 状态样式：顶部占位卡和底部按钮 */
+.selection-top-card.pending { opacity: 0.7; outline: 2px dashed rgba(255,255,255,0.18); }
+.select-add[data-pending='1'] { opacity: 0.6; transform: scale(0.98); cursor: progress; }
+
 @media (max-width: 1024px) {
     .favorites-modal { padding:50px 30px 70px; }
     .favorites-grid { grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:18px; }

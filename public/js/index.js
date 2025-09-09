@@ -1554,23 +1554,63 @@ function renderSelectionsGrid(favorites, selections) {
 }
 
 async function onSelectAdd(e) {
-    const id = Number(e.currentTarget.dataset.id);
+    // 防止快速重复点击造成冲突：使用本地 pending 预留机制（乐观更新）
+    const btn = e.currentTarget;
+    const id = Number(btn.dataset.id);
+    // 如果该按钮已在 pending 中，则忽略
+    if (btn.dataset.pending === '1') return;
+
     const topEmpty = Array.from(document.querySelectorAll('#selectionsTop .selection-top-card.empty'))[0];
     if (!topEmpty) { showToast('最多只能选择5位', 'info'); return; }
     const priority = Number(topEmpty.dataset.index);
+
     const authToken = localStorage.getItem('authToken');
+
+    // 读取一些必要的展示信息用于乐观更新
+    const bottomCard = document.querySelector(`#selectionsGrid .user-card[data-id='${id}']`);
+    const cardUsername = (bottomCard && bottomCard.dataset.username) || '';
+    const photosData = (bottomCard && bottomCard.dataset.photos) || '[]';
+    const baptismalEl = bottomCard && bottomCard.querySelector('.user-baptismal');
+    const baptismal_name = (baptismalEl && baptismalEl.textContent) || '';
+
     try {
+        // 标记为 pending，立即更新 UI（移除底部卡片并占位顶部）以防止并发分配相同 priority
+        btn.dataset.pending = '1';
+        btn.disabled = true;
+
+        // 移除底部卡片以避免重复点击同一项
+        if (bottomCard) bottomCard.remove();
+
+        // 在顶部插入一个 pending 的占位卡片以预留优先级
+        const placeholderHtml = createSelectionTopCard(id, cardUsername || '', priority, true, (JSON.parse(photosData)[0] && JSON.parse(photosData)[0].photo_url) || '', baptismal_name).replace('selection-top-card filled', 'selection-top-card filled pending');
+        topEmpty.outerHTML = placeholderHtml;
+
         const resp = await fetch('/api/selections', { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type':'application/json' }, body: JSON.stringify({ target_id: id, priority }) });
         if (!resp.ok) throw new Error('添加失败');
         showToast('已添加', 'success');
-    // remove the bottom card immediately for instant feedback
-    const bottomCard = document.querySelector(`#selectionsGrid .user-card[data-id='${id}']`);
-    if (bottomCard) bottomCard.remove();
-    // reload modal to ensure top slot shows correct photo/name from server
-    await loadSelectionsModal();
+
+        // 成功后，清除 pending 标记并刷新 modal 确保数据一致
+        // （refresh 会把 pending 状态用服务端数据覆盖）
+        await loadSelectionsModal();
     } catch (err) {
         console.error(err);
         showToast('添加失败', 'error');
+        // 回滚：如果我们移除了底部卡片，需要把它恢复到 grid 中
+        if (!document.querySelector(`#selectionsGrid .user-card[data-id='${id}']`) && bottomCard) {
+            const grid = document.getElementById('selectionsGrid');
+            grid.insertAdjacentHTML('beforeend', bottomCard.outerHTML);
+            // 重新绑定新增按钮
+            const newBtn = grid.querySelector(`.user-card[data-id='${id}'] .select-add`);
+            if (newBtn) newBtn.addEventListener('click', onSelectAdd);
+        }
+        // 清理顶部占位（如果仍存在）并刷新 modal
+        await loadSelectionsModal();
+    } finally {
+        // 移除 pending 标识（如果在 UI 刷新后还是存在该按钮，这里保证能交互）
+        if (btn) {
+            btn.dataset.pending = '0';
+            btn.disabled = false;
+        }
     }
 }
 
