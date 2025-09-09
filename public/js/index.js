@@ -1563,7 +1563,7 @@ async function onSelectAdd(e) {
     if (btn.dataset.pending === '1') return;
 
     const topEmpty = Array.from(document.querySelectorAll('#selectionsTop .selection-top-card.empty'))[0];
-    if (!topEmpty) { showToast('最多只能选择5位', 'info'); return; }
+    if (!topEmpty) { showToast('请选满 5 位', 'info'); return; }
     const priority = Number(topEmpty.dataset.index);
 
     const authToken = localStorage.getItem('authToken');
@@ -1623,12 +1623,33 @@ async function onSelectRemove(e) {
     try {
         const resp = await fetch('/api/selections', { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type':'application/json' }, body: JSON.stringify({ target_id: targetId }) });
         if (!resp.ok) throw new Error('移除失败');
-        showToast('已移除', 'success');
-        // remove top card and re-add to bottom grid if possible
+
+        // remove the top card in-place
         const topCard = document.querySelector(`#selectionsTop .selection-top-card.filled[data-id='${targetId}']`);
-        const grid = document.getElementById('selectionsGrid');
-        if (topCard) topCard.outerHTML = createSelectionTopCard(null, '', Number(topCard.dataset.index), false);
-        // reload favorites grid item for this id: simply reload modal to ensure consistency
+        if (topCard) {
+            // replace with an empty slot at the same position to preserve slot count
+            const idx = Number(topCard.dataset.index) || 1;
+            topCard.outerHTML = createSelectionTopCard(null, '', idx, false);
+        }
+
+        // Move subsequent filled cards forward: gather all filled slots, reassign priorities 1..N
+        const top = document.getElementById('selectionsTop');
+        const filledCards = Array.from(top.querySelectorAll('.selection-top-card.filled'));
+        // Recompute indices and ensure they are 1..filledCards.length
+        filledCards.forEach((c, i) => {
+            c.dataset.index = String(i + 1);
+            const idxEl = c.querySelector('.selection-index'); if (idxEl) idxEl.textContent = String(i + 1);
+        });
+
+        // Prepare batch update items
+        const items = filledCards.map((c, i) => ({ target_id: Number(c.dataset.id), priority: i + 1 }));
+        if (items.length > 0) {
+            // send single batch update; do not show success toast per request
+            const r = await fetch('/api/selections/reorder', { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type':'application/json' }, body: JSON.stringify({ items }) });
+            if (!r.ok) throw new Error('排序更新失败');
+        }
+
+        // finally reload modal to keep UI consistent with server
         await loadSelectionsModal();
     } catch (err) {
         console.error(err);
@@ -1715,7 +1736,6 @@ function enableSelectionsDrag() {
                     body: JSON.stringify({ items })
                 });
                 if (!resp.ok) throw new Error('排序失败');
-                showToast('排序成功', 'success');
                 // refresh modal to reflect server canonical state
                 await loadSelectionsModal();
             } catch (err) {
