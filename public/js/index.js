@@ -121,6 +121,33 @@ document.addEventListener('DOMContentLoaded', async function() {
             return false;
         }
     });
+    
+    // 监听页面可见性变化，当用户重新回到页面时刷新用户状态
+    document.addEventListener('visibilitychange', async function() {
+        if (!document.hidden && localStorage.getItem('authToken')) {
+            // 页面变为可见且用户已登录时，刷新用户状态
+            await refreshCurrentUserToLocalStorage();
+            // 更新搜索框状态（因为签到状态可能影响搜索权限）
+            updateSearchInputState();
+            // 如果当前显示的是"我的喜欢"模态框，刷新它
+            const favoritesModal = document.getElementById('favoritesModal');
+            if (favoritesModal && favoritesModal.classList.contains('active')) {
+                loadFavoritesModal(true);
+            }
+            // 刷新主页用户列表以更新名称显示
+            const currentPageBackup = currentPage;
+            const hasMoreBackup = hasMore;
+            currentPage = 0;
+            hasMore = true;
+            await loadUsers();
+            // 如果有更多页面，恢复分页状态继续加载
+            if (currentPageBackup > 0) {
+                currentPage = currentPageBackup;
+                hasMore = hasMoreBackup;
+            }
+        }
+    });
+    
     setupLoginEvents();
     // 检查登录状态，如果是参与者，则由 checkLoginStatus 内部处理加载
     // 如果不是参与者，则加载默认用户列表
@@ -132,6 +159,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('adminPanelBtn').addEventListener('click', function() {
         window.location.href = '/admin';
     });
+});
+
+// 页面加载完成时确保用户状态是最新的
+window.addEventListener('load', async function() {
+    if (localStorage.getItem('authToken')) {
+        await refreshCurrentUserToLocalStorage();
+        updateSearchInputState();
+    }
 });
 
 // 为登录用户设置默认性别筛选（显示异性）
@@ -353,9 +388,14 @@ async function loadUsers() {
     isLoading = true;
     
     try {
+        // 首先刷新当前用户状态（包括签到状态），确保显示最新状态
+        const authToken = localStorage.getItem('authToken');
+        if (authToken) {
+            await refreshCurrentUserToLocalStorage();
+        }
+        
         // 红娘首次加载：预取配对集合用于高亮
         const userRole = localStorage.getItem('userRole');
-        const authToken = localStorage.getItem('authToken');
         if (userRole === 'matchmaker' && matchedParticipantIdSet.size === 0) {
             try { await loadMatchPairsForMatchmaker(); } catch (e) { console.warn('预取配对集合失败(忽略)', e); }
         }
@@ -1369,6 +1409,13 @@ async function loadFavoritesModal(forceReload = false) {
     const authToken = localStorage.getItem('authToken');
     if (!authToken) return;
     if (!forceReload && favoritesLoaded) return;
+    
+    // 刷新当前用户状态（包括签到状态），确保显示最新状态
+    await refreshCurrentUserToLocalStorage();
+    
+    // 更新搜索框状态（因为签到状态可能影响搜索权限）
+    updateSearchInputState();
+    
     const grid = document.getElementById('favoritesGrid');
     const emptyEl = document.getElementById('favoritesEmptyModal');
     try {
@@ -1385,10 +1432,17 @@ async function loadFavoritesModal(forceReload = false) {
             const cardsHtml = arr.map(p => {
                 const photo = (p.photos || []).find(ph => ph.is_primary) || (p.photos || [])[0];
                 const photoUrl = photo ? photo.photo_url : '/placeholder.jpg';
+                
+                // 获取当前用户角色和签到状态，判断是否显示真实姓名
+                const userRole = localStorage.getItem('userRole');
+                const isSigned = localStorage.getItem('isSigned') === '1';
+                const roleShowRealName = ['matchmaker','admin','staff'].includes(userRole || '') || (userRole === 'participant' && isSigned);
+                const displayName = roleShowRealName ? (p.name || '') : (p.baptismal_name || '');
+                
                 return `<div class=\"user-card\" data-id=\"${p.id}\" data-username=\"${p.username}\" data-photos='${JSON.stringify(p.photos || [])}'>
                     <button class=\"favorite-toggle favorited\" data-id=\"${p.id}\" title=\"取消喜欢\"><canvas class=\"heart-icon\" width=\"24\" height=\"24\"></canvas></button>
                     <img src=\"${photoUrl}\" class=\"user-photo\" alt=\"${p.username}\" onerror=\"this.src='/placeholder.jpg'\">
-                    <div class=\"user-info\"><div class=\"user-username\">${p.username}</div><div class=\"user-baptismal\">${p.baptismal_name || ''}</div></div>
+                    <div class=\"user-info\"><div class=\"user-username\">${p.username}</div><div class=\"user-baptismal\">${displayName}</div></div>
                 </div>`;
             }).join('');
             grid.insertAdjacentHTML('beforeend', cardsHtml);
