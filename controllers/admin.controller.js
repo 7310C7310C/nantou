@@ -7,7 +7,7 @@ const logger = require('../utils/logger');
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB 限制
+    fileSize: 15 * 1024 * 1024, // 15MB 限制
   },
   fileFilter: (req, file, cb) => {
     // 只允许图片文件
@@ -38,7 +38,7 @@ async function registerParticipant(req, res) {
             success: false,
             message: '文件大小超过限制',
             error_type: 'FILE_SIZE_LIMIT',
-            details: '单个文件大小不能超过5MB'
+            details: '单个文件大小不能超过15MB'
           });
         } else if (err.code === 'LIMIT_FILE_COUNT') {
           return res.status(400).json({

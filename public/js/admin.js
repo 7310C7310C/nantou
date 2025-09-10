@@ -584,7 +584,7 @@ function handleFiles(files) {
         return;
     }
 
-    // 检查文件大小限制 (5MB)
+    // 检查文件大小限制 (15MB)
     const maxFileSize = 15 * 1024 * 1024; // 15MB
     const oversizedFiles = imageFiles.filter(file => file.size > maxFileSize);
     
@@ -595,7 +595,7 @@ function handleFiles(files) {
         
         showErrorModal(
             '文件大小超限',
-            '以下文件超过5MB限制，请压缩后重新上传：',
+            '以下文件超过15MB限制，请压缩后重新上传：',
             fileDetails
         );
         return;
@@ -797,7 +797,7 @@ async function submitRegistration() {
                 
                 switch (data.error_type) {
                     case 'FILE_SIZE_LIMIT':
-                        errorDetails = '请将图片压缩至5MB以下后重新上传';
+                        errorDetails = '请将图片压缩至15MB以下后重新上传';
                         break;
                     case 'FILE_COUNT_LIMIT':
                         errorDetails = '请减少照片数量至5张以内';
