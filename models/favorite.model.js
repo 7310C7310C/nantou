@@ -83,7 +83,7 @@ class FavoriteModel {
 	static async getFavoritesWithPhotos(userId) {
 		try {
 			const [participants] = await pool.execute(
-				`SELECT p.id, p.username, p.name, p.baptismal_name, p.gender, f.created_at AS favorited_at
+				`SELECT p.id, p.username, p.name, p.baptismal_name, p.gender, p.is_checked_in, f.created_at AS favorited_at
 				 FROM favorites f
 				 JOIN participants p ON p.id = f.favorited_participant_id
 				 WHERE f.user_id = ?

@@ -1572,7 +1572,7 @@ function renderSelectionsGrid(favorites, selections) {
             const secondLineDisplay = shouldShowRealName ? (p.name || p.baptismal_name || '') : (p.baptismal_name || '');
             
             // 添加右上角的添加控件（用于将该收藏加入顶部选择）
-            return `<div class="user-card" data-id="${p.id}" data-username="${p.username}" data-photos='${JSON.stringify(p.photos||[])}'>
+            return `<div class="user-card" data-id="${p.id}" data-username="${p.username}" data-photos='${JSON.stringify(p.photos||[])}' data-is-checked-in="${p.is_checked_in || 0}">
                         <button class="select-add" data-id="${p.id}" title="加入选择">+</button>
                         <img src="${photoUrl}" class="user-photo">
                         <div class="user-info"><div class="user-username">${p.username}</div><div class="user-baptismal">${secondLineDisplay}</div></div>
@@ -1604,6 +1604,15 @@ async function onSelectAdd(e) {
     // 如果该按钮已在 pending 中，则忽略
     if (btn.dataset.pending === '1') return;
 
+    // 检查签到状态
+    const bottomCard = document.querySelector(`#selectionsGrid .user-card[data-id='${id}']`);
+    const isCheckedIn = bottomCard && bottomCard.dataset.isCheckedIn === '1';
+    
+    if (!isCheckedIn) {
+        showToast('此用户未签到', 'error');
+        return;
+    }
+
     const topEmpty = Array.from(document.querySelectorAll('#selectionsTop .selection-top-card.empty'))[0];
     if (!topEmpty) { showToast('已选满 5 位', 'info'); return; }
     const priority = Number(topEmpty.dataset.index);
@@ -1611,7 +1620,6 @@ async function onSelectAdd(e) {
     const authToken = localStorage.getItem('authToken');
 
     // 读取一些必要的展示信息用于乐观更新
-    const bottomCard = document.querySelector(`#selectionsGrid .user-card[data-id='${id}']`);
     const cardUsername = (bottomCard && bottomCard.dataset.username) || '';
     const photosData = (bottomCard && bottomCard.dataset.photos) || '[]';
     const baptismalEl = bottomCard && bottomCard.querySelector('.user-baptismal');
