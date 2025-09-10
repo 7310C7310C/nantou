@@ -2,6 +2,16 @@ body {
     background-color: #f5f1eb; /* 浅棕色背景 */
 }
 
+/* 去掉移动端所有元素的点击高亮效果 */
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+}
+
+input, button, select, textarea {
+    -webkit-tap-highlight-color: transparent;
+}
+
 /* 默认隐藏登录界面，避免刷新时闪现 */
 #loginSection {
     display: none;
@@ -1812,6 +1822,8 @@ body {
 .checkbox-center {
     display: flex;
     justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
     flex-shrink: 0;
 }
 
@@ -2897,5 +2909,314 @@ input[type="checkbox"]:checked + .toggle-slider:before {
     to {
         transform: translateY(-10px);
         opacity: 0;
+    }
+}
+
+/* 互选情况模态框样式 - 复用签到模态框的样式 */
+.selections-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.selections-content {
+    background-color: #fefefe;
+    margin: 1% auto 1% auto;
+    padding: 0;
+    border-radius: 10px;
+    width: 95%;
+    max-width: 1200px;
+    height: 98vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* 互选数据看板 */
+.selections-dashboard {
+    display: flex;
+    gap: 15px;
+    padding: 20px 20px 15px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    border-radius: 10px 10px 0 0;
+}
+
+/* 互选搜索和过滤器 */
+.selections-filters {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+.selections-filters .search-input {
+    width: 100%;
+    padding: 12px 40px 12px 12px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* 互选列表 */
+.selections-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.selections-item {
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.selections-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.selections-item-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.selections-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #ddd;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.selections-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.selections-user-info {
+    flex: 1;
+}
+
+.selections-user-name {
+    font-weight: bold;
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.selections-user-details {
+    font-size: 14px;
+    color: #666;
+}
+
+.selections-count {
+    background-color: #8b6f47;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.selections-targets {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+.selections-targets-title {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.selections-target-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.selections-target-item {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 13px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.selections-target-priority {
+    background-color: #8b6f47;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.no-selections {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+    font-size: 16px;
+}
+
+.no-selections .emoji {
+    font-size: 48px;
+    margin-bottom: 15px;
+    display: block;
+}
+
+/* 互选关系高亮样式 */
+.selections-target-item.mutual-selection {
+    background-color: #ffebee;
+    border-color: #ffcdd2;
+    color: #c62828;
+}
+
+.selections-target-item.mutual-selection .selections-target-priority {
+    background-color: #c62828;
+}
+
+/* 无选择的样式 */
+.selections-no-choice {
+    color: #999;
+    font-style: italic;
+    font-size: 14px;
+    padding: 8px 0;
+}
+
+/* 互选情况过滤器样式 */
+.selections-filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+}
+
+.filter-group {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    white-space: nowrap;
+    /* 去掉移动端点击时的浅蓝色背景 */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    outline: none;
+}
+
+.radio-option input[type="radio"] {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    /* 去掉移动端点击时的浅蓝色背景 */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    background-color: white;
+    position: relative;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.radio-option input[type="radio"]:checked {
+    border-color: #8b6f47;
+    background-color: white;
+}
+
+.radio-option input[type="radio"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #8b6f47;
+}
+
+.radio-option input[type="radio"]:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.radio-option input[type="radio"]:active {
+    transform: none;
+    background-color: white;
+}
+
+.radio-option span {
+    cursor: pointer;
+    user-select: none;
+}
+
+/* 移动端响应式 */
+@media (max-width: 768px) {
+    .selections-filter-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .filter-group {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .radio-option {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .filter-group {
+        gap: 8px;
+    }
+    
+    .radio-option {
+        font-size: 12px;
     }
 }

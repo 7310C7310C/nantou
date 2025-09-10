@@ -743,6 +743,98 @@ async function updateFeatureFlags(req, res) {
   }
 }
 
+/**
+ * 获取互选情况数据
+ */
+async function getSelectionsData(req, res) {
+  try {
+    logger.operation('获取互选情况数据', req.user?.id, { operator: req.user?.username });
+    
+    // 获取所有已签到参与者的基本信息和照片
+    const [participants] = await pool.execute(`
+      SELECT 
+        p.id,
+        p.username,
+        p.name,
+        p.baptismal_name,
+        p.gender,
+        p.phone,
+        p.is_checked_in,
+        pp.photo_url
+      FROM participants p
+      LEFT JOIN participant_photos pp ON p.id = pp.participant_id AND pp.is_primary = 1
+      WHERE p.is_checked_in = 1
+      ORDER BY p.id ASC
+    `);
+
+    // 获取所有的互选记录（只包含已签到参与者）
+    const [selections] = await pool.execute(`
+      SELECT 
+        s.user_id,
+        s.target_id,
+        s.priority,
+        s.created_at,
+        u.name as user_name,
+        u.baptismal_name as user_baptismal,
+        u.username as user_username,
+        u.gender as user_gender,
+        t.name as target_name,
+        t.baptismal_name as target_baptismal,
+        t.username as target_username,
+        t.gender as target_gender
+      FROM selections s
+      JOIN participants u ON s.user_id = u.id
+      JOIN participants t ON s.target_id = t.id
+      WHERE u.is_checked_in = 1 AND t.is_checked_in = 1
+      ORDER BY s.user_id ASC, s.priority ASC
+    `);
+
+    // 构建互选关系映射
+    const mutualSelections = new Set();
+    const selectionMap = {};
+    
+    // 建立选择映射
+    selections.forEach(s => {
+      if (!selectionMap[s.user_id]) {
+        selectionMap[s.user_id] = [];
+      }
+      selectionMap[s.user_id].push(s.target_id);
+    });
+    
+    // 找出互选关系
+    selections.forEach(s => {
+      if (selectionMap[s.target_id] && selectionMap[s.target_id].includes(s.user_id)) {
+        mutualSelections.add(`${Math.min(s.user_id, s.target_id)}-${Math.max(s.user_id, s.target_id)}`);
+      }
+    });
+
+    // 将数据组织成更易于前端使用的格式
+    const selectionsData = {
+      participants: participants,
+      selections: selections,
+      mutualSelections: Array.from(mutualSelections),
+      summary: {
+        totalParticipants: participants.length,
+        maleCount: participants.filter(p => p.gender === 'male').length,
+        femaleCount: participants.filter(p => p.gender === 'female').length
+      }
+    };
+
+    res.json({
+      success: true,
+      data: selectionsData
+    });
+
+  } catch (error) {
+    logger.error('获取互选情况数据失败', error);
+    res.status(500).json({
+      success: false,
+      message: '获取互选情况数据失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
 module.exports = {
   registerParticipant,
   getAllParticipants,
@@ -756,5 +848,6 @@ module.exports = {
   updateParticipantCheckin,
   clearAllCheckins,
   getFeatureFlags,
-  updateFeatureFlags
+  updateFeatureFlags,
+  getSelectionsData
 };

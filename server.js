@@ -126,6 +126,9 @@ app.delete('/api/admin/staff/:staff_id', protect, restrictTo('admin'), staffCont
 app.get('/api/admin/feature-flags', protect, restrictTo('admin'), adminController.getFeatureFlags);
 app.put('/api/admin/feature-flags', protect, restrictTo('admin'), adminController.updateFeatureFlags);
 
+// 互选情况数据API路由（仅管理员和工作人员可访问）
+app.get('/api/admin/selections-data', protect, restrictTo('admin', 'staff'), adminController.getSelectionsData);
+
 // 红娘配对API路由
 app.get('/api/matchmaker/participants/:participant_id/matching', protect, restrictTo('matchmaker'), matchmakerController.getParticipantMatchingData);
 app.post('/api/matchmaker/recommendations', protect, restrictTo('matchmaker'), matchmakerController.createOrUpdateRecommendation);

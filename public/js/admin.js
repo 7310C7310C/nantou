@@ -95,6 +95,14 @@ const fullscreenImg = document.getElementById('fullscreenImg');
 // 存储选择的照片
 let selectedPhotos = [];
 
+// 互选情况相关全局变量
+let selectionsData = {
+    participants: [],
+    selections: [],
+    filteredParticipants: [],
+    summary: {}
+};
+
 // 页面加载时检查登录状态
 document.addEventListener('DOMContentLoaded', function() {
     // 先隐藏所有界面，避免闪现
@@ -208,6 +216,16 @@ function setupEventListeners() {
     }
     setupStaffManagementEventListeners();
 
+    // 互选情况功能
+    const openSelectionsBtn = document.getElementById('openSelectionsBtn');
+    if (openSelectionsBtn) {
+        openSelectionsBtn.addEventListener('click', openSelectionsModal);
+    }
+    const closeSelectionsBtn = document.getElementById('closeSelectionsBtn');
+    if (closeSelectionsBtn) {
+        closeSelectionsBtn.addEventListener('click', closeSelectionsModal);
+    }
+
     // 大图查看功能
     fullscreenImage.addEventListener('click', closeFullscreenImage);
 
@@ -240,6 +258,12 @@ function setupEventListeners() {
     logsModal.addEventListener('click', (e) => {
         if (e.target === logsModal) closeLogsModal();
     });
+    const selectionsModal = document.getElementById('selectionsModal');
+    if (selectionsModal) {
+        selectionsModal.addEventListener('click', (e) => {
+            if (e.target === selectionsModal) closeSelectionsModal();
+        });
+    }
 }
 
 // 检查认证状态
@@ -2769,4 +2793,259 @@ function showToast(message, type='info', duration=4000) {
     el.addEventListener('mouseleave', () => { 
         if (!removed) hideTimer = setTimeout(startHide, 1600); 
     });
+}
+
+// ==================== 互选情况相关功能 ====================
+
+// 打开互选情况模态框
+async function openSelectionsModal() {
+    const selectionsModal = document.getElementById('selectionsModal');
+    selectionsModal.style.display = 'block';
+    
+    // 设置互选情况事件监听器
+    setupSelectionsEventListeners();
+    
+    // 加载互选情况数据
+    await loadSelectionsData();
+}
+
+// 关闭互选情况模态框
+function closeSelectionsModal() {
+    const selectionsModal = document.getElementById('selectionsModal');
+    selectionsModal.style.display = 'none';
+    
+    // 清除搜索框
+    clearSelectionsSearch();
+}
+
+// 设置互选情况相关事件监听器
+function setupSelectionsEventListeners() {
+    const selectionsSearchInput = document.getElementById('selectionsSearchInput');
+    const clearSelectionsSearchBtn = document.getElementById('clearSelectionsSearchBtn');
+    const selectionsGenderRadios = document.querySelectorAll('input[name="selectionsGender"]');
+    const selectionsFilterRadios = document.querySelectorAll('input[name="selectionsFilter"]');
+
+    // 搜索输入
+    if (selectionsSearchInput) {
+        selectionsSearchInput.removeEventListener('input', handleSelectionsSearch);
+        selectionsSearchInput.addEventListener('input', handleSelectionsSearch);
+    }
+
+    // 清除搜索按钮
+    if (clearSelectionsSearchBtn) {
+        clearSelectionsSearchBtn.removeEventListener('click', clearSelectionsSearch);
+        clearSelectionsSearchBtn.addEventListener('click', clearSelectionsSearch);
+    }
+
+    // 性别过滤
+    selectionsGenderRadios.forEach(radio => {
+        radio.removeEventListener('change', handleSelectionsGenderFilter);
+        radio.addEventListener('change', handleSelectionsGenderFilter);
+    });
+
+    // 过滤选项单选按钮
+    selectionsFilterRadios.forEach(radio => {
+        radio.removeEventListener('change', handleSelectionsFilterChange);
+        radio.addEventListener('change', handleSelectionsFilterChange);
+    });
+}
+
+// 加载互选情况数据
+async function loadSelectionsData() {
+    try {
+        const token = getAuthToken();
+        
+        if (!token) {
+            throw new Error('认证令牌不存在');
+        }
+
+        const response = await fetch('/api/admin/selections-data', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            selectionsData = data.data;
+            
+            // 应用当前过滤器
+            applySelectionsFilters();
+            
+            // 更新统计数据
+            updateSelectionsStats();
+            
+            // 渲染参与者列表
+            renderSelectionsParticipants();
+        } else {
+            throw new Error('获取互选情况数据失败');
+        }
+    } catch (error) {
+        console.error('加载互选情况数据失败:', error);
+        showToast('加载互选情况数据失败: ' + error.message, 'error');
+    }
+}
+
+// 更新互选情况统计数据
+function updateSelectionsStats() {
+    const selectionsTotal = document.getElementById('selectionsTotal');
+    const selectionsMaleCount = document.getElementById('selectionsMaleCount');
+    const selectionsFemaleCount = document.getElementById('selectionsFemaleCount');
+
+    if (selectionsTotal) {
+        selectionsTotal.textContent = selectionsData.summary.totalParticipants || 0;
+    }
+    if (selectionsMaleCount) {
+        selectionsMaleCount.textContent = selectionsData.summary.maleCount || 0;
+    }
+    if (selectionsFemaleCount) {
+        selectionsFemaleCount.textContent = selectionsData.summary.femaleCount || 0;
+    }
+}
+
+// 应用互选情况过滤器
+function applySelectionsFilters() {
+    let filtered = [...selectionsData.participants];
+    
+    // 搜索过滤
+    const searchValue = document.getElementById('selectionsSearchInput')?.value.trim().toLowerCase();
+    if (searchValue) {
+        filtered = filtered.filter(participant => 
+            participant.username.toLowerCase().includes(searchValue) ||
+            participant.name.toLowerCase().includes(searchValue) ||
+            participant.baptismal_name.toLowerCase().includes(searchValue)
+        );
+    }
+    
+    // 性别过滤
+    const selectedGender = document.querySelector('input[name="selectionsGender"]:checked')?.value;
+    if (selectedGender) {
+        filtered = filtered.filter(participant => participant.gender === selectedGender);
+    }
+    
+    // 过滤选项处理
+    const selectedFilter = document.querySelector('input[name="selectionsFilter"]:checked')?.id;
+    
+    if (selectedFilter === 'withSelectionsOnlyCheckbox') {
+        // 只看有互选的过滤
+        const participantsWithSelections = new Set(selectionsData.selections.map(s => s.user_id));
+        filtered = filtered.filter(participant => participantsWithSelections.has(participant.id));
+    } else if (selectedFilter === 'notFullSelectionsCheckbox') {
+        // 只看未选满的过滤（未选满5个）
+        filtered = filtered.filter(participant => {
+            const userSelections = selectionsData.selections.filter(s => s.user_id === participant.id);
+            return userSelections.length < 5;
+        });
+    } else if (selectedFilter === 'fullSelectionsCheckbox') {
+        // 只看选满的过滤（已选满5个）
+        filtered = filtered.filter(participant => {
+            const userSelections = selectionsData.selections.filter(s => s.user_id === participant.id);
+            return userSelections.length === 5;
+        });
+    }
+    // allSelectionsFilter 或其他情况显示全部，不需要额外过滤
+    
+    selectionsData.filteredParticipants = filtered;
+}
+
+// 渲染互选情况参与者列表
+function renderSelectionsParticipants() {
+    const selectionsList = document.getElementById('selectionsList');
+    if (!selectionsList) return;
+
+    if (selectionsData.filteredParticipants.length === 0) {
+        selectionsList.innerHTML = `
+            <div class="no-selections">
+                <span class="emoji">😔</span>
+                <div>没有找到符合条件的参与者</div>
+            </div>
+        `;
+        return;
+    }
+
+    const html = selectionsData.filteredParticipants.map(participant => {
+        const userSelections = selectionsData.selections.filter(s => s.user_id === participant.id);
+        
+        return `
+            <div class="selections-item">
+                <div class="selections-item-header">
+                    <div class="selections-avatar">
+                        ${participant.photo_url ? 
+                            `<img src="${participant.photo_url}" alt="${participant.name}">` : 
+                            `<div style="display: flex; align-items: center; justify-content: center; height: 100%; background-color: #f0f0f0; color: #999; font-size: 12px;">无照片</div>`
+                        }
+                    </div>
+                    <div class="selections-user-info">
+                        <div class="selections-user-name">${participant.name} (${participant.username})</div>
+                    </div>
+                </div>
+                ${userSelections.length > 0 ? `
+                    <div class="selections-targets">
+                        <div class="selections-targets-title">选择的对象：</div>
+                        <div class="selections-target-list">
+                            ${userSelections.map(selection => {
+                                // 检查是否为互选关系
+                                const mutualKey1 = `${Math.min(participant.id, selection.target_id)}-${Math.max(participant.id, selection.target_id)}`;
+                                const isMutual = selectionsData.mutualSelections && selectionsData.mutualSelections.includes(mutualKey1);
+                                
+                                return `
+                                    <div class="selections-target-item ${isMutual ? 'mutual-selection' : ''}">
+                                        <div class="selections-target-priority">${selection.priority}</div>
+                                        <span>${selection.target_name} (${selection.target_username})</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                ` : `
+                    <div class="selections-targets">
+                        <div class="selections-targets-title">选择的对象：</div>
+                        <div class="selections-no-choice">无选择</div>
+                    </div>
+                `}
+            </div>
+        `;
+    }).join('');
+
+    selectionsList.innerHTML = html;
+}
+
+// 处理互选情况搜索
+function handleSelectionsSearch() {
+    const searchInput = document.getElementById('selectionsSearchInput');
+    const clearBtn = document.getElementById('clearSelectionsSearchBtn');
+    
+    if (searchInput.value.trim()) {
+        clearBtn.style.display = 'flex';
+    } else {
+        clearBtn.style.display = 'none';
+    }
+    
+    applySelectionsFilters();
+    renderSelectionsParticipants();
+}
+
+// 清除互选情况搜索
+function clearSelectionsSearch() {
+    const searchInput = document.getElementById('selectionsSearchInput');
+    const clearBtn = document.getElementById('clearSelectionsSearchBtn');
+    
+    searchInput.value = '';
+    clearBtn.style.display = 'none';
+    
+    applySelectionsFilters();
+    renderSelectionsParticipants();
+}
+
+// 处理互选情况性别过滤
+function handleSelectionsGenderFilter() {
+    applySelectionsFilters();
+    renderSelectionsParticipants();
+}
+
+// 处理过滤选项变化
+function handleSelectionsFilterChange() {
+    applySelectionsFilters();
+    renderSelectionsParticipants();
 }

@@ -52,6 +52,7 @@
 
                 <div class="dashboard-card">
                     <h3>📊 数据统计</h3>
+                    <button class="btn btn-primary" id="openSelectionsBtn">互选情况</button>
                 </div>
 
                 <div class="dashboard-card">
@@ -516,7 +517,79 @@
     </div>
 
     <!-- Toast提示容器 -->
-    <div id="toastContainer" class="toast-container"></div>
+    <div id="toastContainer" class="toast-container">    </div>
+
+    <!-- 互选情况模态框 -->
+    <div class="selections-modal" id="selectionsModal">
+        <div class="selections-content">
+            <button class="close-btn-floating" id="closeSelectionsBtn">&times;</button>
+            
+            <!-- 实时数据看板 -->
+            <div class="selections-dashboard">
+                <div class="stat-card">
+                    <h3>总参与者</h3>
+                    <div class="stat-number">
+                        <span id="selectionsTotal">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>男生</h3>
+                    <div class="stat-number">
+                        <span id="selectionsMaleCount">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>女生</h3>
+                    <div class="stat-number">
+                        <span id="selectionsFemaleCount">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 搜索和过滤器 -->
+            <div class="selections-filters">
+                <div class="search-container">
+                    <input type="text" id="selectionsSearchInput" placeholder="搜索编号或姓名..." class="search-input">
+                    <button class="clear-search-btn" id="clearSelectionsSearchBtn" style="display: none;">&times;</button>
+                </div>
+                <div class="filter-row">
+                    <div class="gender-toggle">
+                        <input type="radio" id="selectionsGenderFemale" name="selectionsGender" value="female" checked>
+                        <label for="selectionsGenderFemale" class="gender-btn">女</label>
+                        <input type="radio" id="selectionsGenderMale" name="selectionsGender" value="male">
+                        <label for="selectionsGenderMale" class="gender-btn">男</label>
+                    </div>
+                    <div class="selections-filter-container">
+                        <div class="filter-group">
+                            <label class="radio-option">
+                                <input type="radio" name="selectionsFilter" id="allSelectionsFilter" checked>
+                                <span>全部</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="selectionsFilter" id="withSelectionsOnlyCheckbox">
+                                <span>只看有互选的</span>
+                            </label>
+                        </div>
+                        <div class="filter-group">
+                            <label class="radio-option">
+                                <input type="radio" name="selectionsFilter" id="notFullSelectionsCheckbox">
+                                <span>只看未选满的</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="selectionsFilter" id="fullSelectionsCheckbox">
+                                <span>只看选满的</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 参与者互选列表 -->
+            <div class="selections-list" id="selectionsList">
+                <!-- 互选列表将在这里显示 -->
+            </div>
+        </div>
+    </div>
 
     <!-- 功能开关模态框 -->
     <div class="feature-flags-modal" id="featureFlagsModal">
