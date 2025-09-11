@@ -44,6 +44,8 @@
 
                 <div class="dashboard-card">
                     <h3>🧮 算法操作</h3>
+                    <button class="btn btn-primary" id="executeGroupMatchingBtn">执行分组匹配</button>
+                    <button class="btn btn-primary" id="executeChatMatchingBtn" style="margin-top: 10px;">执行聊天匹配</button>
                 </div>
 
                 <div class="dashboard-card">
@@ -54,6 +56,8 @@
                 <div class="dashboard-card">
                     <h3>📊 数据统计</h3>
                     <button class="btn btn-primary" id="openSelectionsBtn">互选情况</button>
+                    <button class="btn btn-secondary" id="viewGroupingResultsBtn" style="margin-top: 10px;">分组匹配结果</button>
+                    <button class="btn btn-secondary" id="viewChatResultsBtn" style="margin-top: 10px;">聊天匹配结果</button>
                 </div>
 
                 <div class="dashboard-card">
@@ -630,6 +634,112 @@
             
             <div class="form-actions">
                 <button type="button" class="btn btn-primary" id="closeFeatureFlagsConfirmBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分组匹配设置模态框 -->
+    <div class="matching-config-modal" id="groupMatchingModal">
+        <div class="matching-config-content">
+            <div class="matching-config-header">
+                <h3>🔥 分组匹配配置</h3>
+                <button class="close-btn" id="closeGroupMatchingBtn">&times;</button>
+            </div>
+            
+            <div class="matching-config-body">
+                <div class="config-group">
+                    <label>每组男性人数</label>
+                    <div class="number-input">
+                        <button type="button" class="number-btn" id="groupMaleDecBtn">-</button>
+                        <input type="number" id="groupMaleSize" value="3" min="1" max="10" readonly>
+                        <button type="button" class="number-btn" id="groupMaleIncBtn">+</button>
+                    </div>
+                </div>
+                
+                <div class="config-group">
+                    <label>每组女性人数</label>
+                    <div class="number-input">
+                        <button type="button" class="number-btn" id="groupFemaleDecBtn">-</button>
+                        <input type="number" id="groupFemaleSize" value="3" min="1" max="10" readonly>
+                        <button type="button" class="number-btn" id="groupFemaleIncBtn">+</button>
+                    </div>
+                </div>
+                
+                <div class="validation-status" id="groupValidationStatus">
+                    <div class="loading-spinner" style="display:none;">正在验证...</div>
+                    <div class="validation-result"></div>
+                </div>
+            </div>
+            
+            <div class="matching-config-actions">
+                <button type="button" class="btn btn-secondary" id="cancelGroupMatchingBtn">取消</button>
+                <button type="button" class="btn btn-primary" id="executeGroupMatchingConfirmBtn" disabled>执行分组匹配</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 聊天匹配设置模态框 -->
+    <div class="matching-config-modal" id="chatMatchingModal">
+        <div class="matching-config-content">
+            <div class="matching-config-header">
+                <h3>💬 聊天匹配配置</h3>
+                <button class="close-btn" id="closeChatMatchingBtn">&times;</button>
+            </div>
+            
+            <div class="matching-config-body">
+                <div class="config-group">
+                    <label>推荐名单人数</label>
+                    <div class="number-input">
+                        <button type="button" class="number-btn" id="chatListDecBtn">-</button>
+                        <input type="number" id="chatListSize" value="5" min="1" max="20" readonly>
+                        <button type="button" class="number-btn" id="chatListIncBtn">+</button>
+                    </div>
+                </div>
+                
+                <div class="validation-status" id="chatValidationStatus">
+                    <div class="loading-spinner" style="display:none;">正在验证...</div>
+                    <div class="validation-result"></div>
+                </div>
+            </div>
+            
+            <div class="matching-config-actions">
+                <button type="button" class="btn btn-secondary" id="cancelChatMatchingBtn">取消</button>
+                <button type="button" class="btn btn-primary" id="executeChatMatchingConfirmBtn" disabled>执行聊天匹配</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 匹配执行确认模态框 -->
+    <div class="confirm-modal" id="matchingConfirmModal">
+        <div class="confirm-content">
+            <h3 id="matchingConfirmTitle">确认执行</h3>
+            <div class="confirm-info" id="matchingConfirmInfo">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelMatchingConfirmBtn">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmMatchingExecuteBtn">确认执行</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 匹配结果查看模态框 -->
+    <div class="results-modal" id="matchingResultsModal">
+        <div class="results-content">
+            <div class="results-header">
+                <h3 id="resultsTitle">匹配结果</h3>
+                <button class="close-btn" id="closeResultsBtn">&times;</button>
+            </div>
+            
+            <div class="results-controls">
+                <label for="resultsBatchSelect">选择轮次：</label>
+                <select id="resultsBatchSelect">
+                    <option value="">请选择轮次</option>
+                </select>
+            </div>
+            
+            <div class="results-display" id="resultsDisplay">
+                <div class="results-loading" style="display:none;">加载中...</div>
+                <div class="results-content-area"></div>
             </div>
         </div>
     </div>

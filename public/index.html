@@ -43,8 +43,14 @@
 
     <!-- 功能匹配按钮 - 根据功能开关显示/隐藏 -->
     <div class="feature-matching-container">
-        <button class="feature-matching-btn" id="groupMatchingBtn" style="display:none;">分组匹配</button>
-        <button class="feature-matching-btn" id="chatMatchingBtn" style="display:none;">聊天匹配</button>
+        <div class="matching-group">
+            <button class="feature-matching-btn" id="groupMatchingBtn" style="display:none;">分组匹配</button>
+            <button class="feature-matching-btn" id="viewGroupResultBtn" style="display:none;">查看结果</button>
+        </div>
+        <div class="matching-group">
+            <button class="feature-matching-btn" id="chatMatchingBtn" style="display:none;">聊天匹配</button>
+            <button class="feature-matching-btn" id="viewChatResultBtn" style="display:none;">查看结果</button>
+        </div>
     </div>
 
     <!-- 红娘配对管理按钮 - 放在性别选择下方居中 -->
@@ -209,6 +215,27 @@
             <div class="message-modal-actions">
                 <button class="btn-cancel" id="messageModalCancel" style="display: none;">取消</button>
                 <button class="btn-confirm" id="messageModalConfirm">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 匹配结果查看模态框 -->
+    <div class="favorites-modal" id="userResultsModal">
+        <div class="favorites-modal-content">
+            <div class="favorites-modal-header">
+                <h2 id="userResultsTitle">匹配结果</h2>
+                <button class="favorites-close" id="closeUserResultsModal">×</button>
+            </div>
+            <div class="user-results-controls">
+                <select id="userResultsBatchSelect">
+                    <option value="">请选择轮次</option>
+                </select>
+            </div>
+            <div class="favorites-modal-body">
+                <div class="favorites-loading" id="userResultsLoading" style="display:none;">加载中...</div>
+                <div class="favorites-grid" id="userResultsGrid"></div>
+                <div class="user-results-content" id="userResultsContent"></div>
+                <div class="favorites-empty" id="userResultsEmpty" style="display:none;">暂无匹配结果</div>
             </div>
         </div>
     </div>

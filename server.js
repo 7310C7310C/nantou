@@ -14,6 +14,7 @@ const participantsController = require('./controllers/participants.controller');
 const favoriteController = require('./controllers/favorite.controller');
 const matchmakerController = require('./controllers/matchmaker.controller');
 const selectionsController = require('./controllers/selections.controller');
+const matchingUserController = require('./controllers/matching-user.controller');
 const { protect, restrictTo, optionalAuth } = require('./middleware/auth.middleware');
 
 const app = express();
@@ -129,6 +130,15 @@ app.put('/api/admin/feature-flags', protect, restrictTo('admin'), adminControlle
 // 互选情况数据API路由（仅管理员和工作人员可访问）
 app.get('/api/admin/selections-data', protect, restrictTo('admin', 'staff'), adminController.getSelectionsData);
 
+// 匹配算法管理API路由（仅管理员可访问）
+app.get('/api/admin/validate-selections', protect, restrictTo('admin'), adminController.validateUserSelections);
+app.post('/api/admin/execute-group-matching', protect, restrictTo('admin'), adminController.executeGroupMatching);
+app.post('/api/admin/execute-chat-matching', protect, restrictTo('admin'), adminController.executeChatMatching);
+app.get('/api/admin/grouping-history', protect, restrictTo('admin', 'staff'), adminController.getGroupingHistory);
+app.get('/api/admin/chat-history', protect, restrictTo('admin', 'staff'), adminController.getChatHistory);
+app.get('/api/admin/grouping-result/:runBatch', protect, restrictTo('admin', 'staff'), adminController.getGroupingResult);
+app.get('/api/admin/chat-result/:runBatch', protect, restrictTo('admin', 'staff'), adminController.getChatResult);
+
 // 红娘配对API路由
 app.get('/api/matchmaker/participants/:participant_id/matching', protect, restrictTo('matchmaker'), matchmakerController.getParticipantMatchingData);
 app.post('/api/matchmaker/recommendations', protect, restrictTo('matchmaker'), matchmakerController.createOrUpdateRecommendation);
@@ -150,6 +160,12 @@ app.post('/api/selections', protect, selectionsController.add);
 app.delete('/api/selections', protect, selectionsController.remove);
 app.get('/api/selections', protect, selectionsController.list);
 app.put('/api/selections/reorder', protect, selectionsController.reorder);
+
+// 用户端匹配结果查看路由（参与者登录）
+app.get('/api/user/grouping-result', protect, matchingUserController.getUserGroupingResult);
+app.get('/api/user/chat-result', protect, matchingUserController.getUserChatResult);
+app.get('/api/user/grouping-batches', protect, matchingUserController.getGroupingBatches);
+app.get('/api/user/chat-batches', protect, matchingUserController.getChatBatches);
 
 // 管理后台页面路由 - 不需要服务器端认证，由客户端JavaScript处理
 app.get('/admin', (req, res) => {

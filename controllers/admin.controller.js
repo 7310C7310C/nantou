@@ -2,6 +2,7 @@ const multer = require('multer');
 const { registerNewParticipant, deleteParticipantById, resetParticipantPasswordById } = require('../services/participant.service');
 const { pool } = require('../config/database');
 const logger = require('../utils/logger');
+const matchingAdminService = require('../services/matching-admin.service');
 
 // 配置 multer 用于内存存储
 const upload = multer({
@@ -835,6 +836,239 @@ async function getSelectionsData(req, res) {
   }
 }
 
+/**
+ * 验证用户选择状态
+ */
+async function validateUserSelections(req, res) {
+  try {
+    const validation = await matchingAdminService.validateUserSelections();
+    
+    res.json({
+      success: true,
+      data: validation
+    });
+
+  } catch (error) {
+    logger.error('验证用户选择状态失败', error);
+    res.status(500).json({
+      success: false,
+      message: '验证用户选择状态失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
+ * 执行分组匹配算法
+ */
+async function executeGroupMatching(req, res) {
+  try {
+    const { group_size_male = 3, group_size_female = 3 } = req.body;
+
+    // 验证输入
+    if (!Number.isInteger(group_size_male) || group_size_male < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '男性组大小必须是大于等于1的整数'
+      });
+    }
+
+    if (!Number.isInteger(group_size_female) || group_size_female < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '女性组大小必须是大于等于1的整数'
+      });
+    }
+
+    // 检查功能开关
+    const [flagRows] = await pool.execute(
+      'SELECT grouping_enabled FROM feature_flags LIMIT 1'
+    );
+
+    if (flagRows.length === 0 || !flagRows[0].grouping_enabled) {
+      return res.status(400).json({
+        success: false,
+        message: '分组匹配功能未开启'
+      });
+    }
+
+    const options = { group_size_male, group_size_female };
+    const result = await matchingAdminService.executeGroupMatching(options);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    logger.error('执行分组匹配算法失败', error);
+    res.status(500).json({
+      success: false,
+      message: '执行分组匹配算法失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
+ * 执行聊天匹配算法
+ */
+async function executeChatMatching(req, res) {
+  try {
+    const { list_size = 5 } = req.body;
+
+    // 验证输入
+    if (!Number.isInteger(list_size) || list_size < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '名单大小必须是大于等于1的整数'
+      });
+    }
+
+    // 检查功能开关
+    const [flagRows] = await pool.execute(
+      'SELECT chat_enabled FROM feature_flags LIMIT 1'
+    );
+
+    if (flagRows.length === 0 || !flagRows[0].chat_enabled) {
+      return res.status(400).json({
+        success: false,
+        message: '聊天匹配功能未开启'
+      });
+    }
+
+    const options = { list_size };
+    const result = await matchingAdminService.executeChatMatching(options);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    logger.error('执行聊天匹配算法失败', error);
+    res.status(500).json({
+      success: false,
+      message: '执行聊天匹配算法失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
+ * 获取分组匹配历史
+ */
+async function getGroupingHistory(req, res) {
+  try {
+    const history = await matchingAdminService.getGroupingHistory();
+    
+    res.json({
+      success: true,
+      data: history
+    });
+
+  } catch (error) {
+    logger.error('获取分组匹配历史失败', error);
+    res.status(500).json({
+      success: false,
+      message: '获取分组匹配历史失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
+ * 获取聊天匹配历史
+ */
+async function getChatHistory(req, res) {
+  try {
+    const history = await matchingAdminService.getChatHistory();
+    
+    res.json({
+      success: true,
+      data: history
+    });
+
+  } catch (error) {
+    logger.error('获取聊天匹配历史失败', error);
+    res.status(500).json({
+      success: false,
+      message: '获取聊天匹配历史失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
+ * 获取指定轮次的分组匹配结果
+ */
+async function getGroupingResult(req, res) {
+  try {
+    const { runBatch } = req.params;
+    
+    if (!Number.isInteger(parseInt(runBatch)) || parseInt(runBatch) < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '轮次号必须是大于等于1的整数'
+      });
+    }
+
+    const result = await matchingAdminService.getGroupingResult(parseInt(runBatch));
+    
+    res.json({
+      success: true,
+      data: {
+        runBatch: parseInt(runBatch),
+        groups: result
+      }
+    });
+
+  } catch (error) {
+    logger.error('获取分组匹配结果失败', error);
+    res.status(500).json({
+      success: false,
+      message: '获取分组匹配结果失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
+ * 获取指定轮次的聊天匹配结果
+ */
+async function getChatResult(req, res) {
+  try {
+    const { runBatch } = req.params;
+    
+    if (!Number.isInteger(parseInt(runBatch)) || parseInt(runBatch) < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '轮次号必须是大于等于1的整数'
+      });
+    }
+
+    const result = await matchingAdminService.getChatResult(parseInt(runBatch));
+    
+    res.json({
+      success: true,
+      data: {
+        runBatch: parseInt(runBatch),
+        chatLists: result
+      }
+    });
+
+  } catch (error) {
+    logger.error('获取聊天匹配结果失败', error);
+    res.status(500).json({
+      success: false,
+      message: '获取聊天匹配结果失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
 module.exports = {
   registerParticipant,
   getAllParticipants,
@@ -849,5 +1083,12 @@ module.exports = {
   clearAllCheckins,
   getFeatureFlags,
   updateFeatureFlags,
-  getSelectionsData
+  getSelectionsData,
+  validateUserSelections,
+  executeGroupMatching,
+  executeChatMatching,
+  getGroupingHistory,
+  getChatHistory,
+  getGroupingResult,
+  getChatResult
 };

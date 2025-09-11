@@ -2803,6 +2803,8 @@ async function checkFeatureFlags() {
             // 获取按钮元素
             const groupMatchingBtn = document.getElementById('groupMatchingBtn');
             const chatMatchingBtn = document.getElementById('chatMatchingBtn');
+            const viewGroupResultBtn = document.getElementById('viewGroupResultBtn');
+            const viewChatResultBtn = document.getElementById('viewChatResultBtn');
             
             // 根据功能开关和用户状态显示/隐藏按钮
             const userRole = localStorage.getItem('userRole');
@@ -2811,14 +2813,18 @@ async function checkFeatureFlags() {
 
             if (featureFlags.grouping_enabled && allowParticipantView) {
                 groupMatchingBtn.style.display = 'block';
+                viewGroupResultBtn.style.display = 'block';
             } else {
                 groupMatchingBtn.style.display = 'none';
+                viewGroupResultBtn.style.display = 'none';
             }
 
             if (featureFlags.chat_enabled && allowParticipantView) {
                 chatMatchingBtn.style.display = 'block';
+                viewChatResultBtn.style.display = 'block';
             } else {
                 chatMatchingBtn.style.display = 'none';
+                viewChatResultBtn.style.display = 'none';
             }
         }
     } catch (error) {
@@ -2826,6 +2832,8 @@ async function checkFeatureFlags() {
         // 如果获取失败，默认隐藏所有功能按钮
         document.getElementById('groupMatchingBtn').style.display = 'none';
         document.getElementById('chatMatchingBtn').style.display = 'none';
+        document.getElementById('viewGroupResultBtn').style.display = 'none';
+        document.getElementById('viewChatResultBtn').style.display = 'none';
     }
 }
 
@@ -2849,6 +2857,8 @@ function handleChatMatching() {
 document.addEventListener('DOMContentLoaded', () => {
     const groupMatchingBtn = document.getElementById('groupMatchingBtn');
     const chatMatchingBtn = document.getElementById('chatMatchingBtn');
+    const viewGroupResultBtn = document.getElementById('viewGroupResultBtn');
+    const viewChatResultBtn = document.getElementById('viewChatResultBtn');
     
     if (groupMatchingBtn) {
         groupMatchingBtn.addEventListener('click', handleGroupMatching);
@@ -2858,6 +2868,324 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMatchingBtn.addEventListener('click', handleChatMatching);
     }
     
+    if (viewGroupResultBtn) {
+        viewGroupResultBtn.addEventListener('click', () => openUserResultsModal('grouping'));
+    }
+    
+    if (viewChatResultBtn) {
+        viewChatResultBtn.addEventListener('click', () => openUserResultsModal('chat'));
+    }
+    
+    // 设置用户结果模态框事件监听器
+    setupUserResultsEventListeners();
+    
     // 页面加载时检查功能开关
     checkFeatureFlags();
 });
+
+// ==================== 用户结果查看功能 ====================
+
+/**
+ * 设置用户结果模态框事件监听器
+ */
+function setupUserResultsEventListeners() {
+    const closeUserResultsModalBtn = document.getElementById('closeUserResultsModal');
+    const userResultsBatchSelect = document.getElementById('userResultsBatchSelect');
+    const userResultsModal = document.getElementById('userResultsModal');
+    
+    if (closeUserResultsModalBtn) {
+        closeUserResultsModalBtn.addEventListener('click', closeUserResultsModal);
+    }
+    
+    if (userResultsBatchSelect) {
+        userResultsBatchSelect.addEventListener('change', loadSelectedUserBatchResult);
+    }
+    
+    if (userResultsModal) {
+        userResultsModal.addEventListener('click', (e) => {
+            if (e.target === userResultsModal) {
+                closeUserResultsModal();
+            }
+        });
+    }
+}
+
+/**
+ * 打开用户结果查看模态框
+ * @param {string} type - 结果类型 ('grouping' 或 'chat')
+ */
+async function openUserResultsModal(type) {
+    const modal = document.getElementById('userResultsModal');
+    const titleEl = document.getElementById('userResultsTitle');
+    const loadingEl = document.getElementById('userResultsLoading');
+    const gridEl = document.getElementById('userResultsGrid');
+    const contentEl = document.getElementById('userResultsContent');
+    const emptyEl = document.getElementById('userResultsEmpty');
+    
+    // 检查登录状态
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+        showToast('请先登录', 'error');
+        return;
+    }
+    
+    // 设置标题
+    const typeName = type === 'grouping' ? '分组匹配结果' : '聊天匹配结果';
+    titleEl.textContent = typeName;
+    
+    // 存储类型
+    modal.dataset.type = type;
+    
+    // 显示模态框
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // 清空显示区域
+    gridEl.innerHTML = '';
+    contentEl.innerHTML = '';
+    emptyEl.style.display = 'none';
+    
+    // 加载历史轮次
+    await loadUserResultsBatches(type);
+}
+
+/**
+ * 关闭用户结果查看模态框
+ */
+function closeUserResultsModal() {
+    const modal = document.getElementById('userResultsModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+/**
+ * 加载用户结果历史轮次
+ * @param {string} type - 结果类型
+ */
+async function loadUserResultsBatches(type) {
+    const batchSelect = document.getElementById('userResultsBatchSelect');
+    const authToken = localStorage.getItem('authToken');
+    
+    try {
+        const endpoint = type === 'grouping' ? '/api/user/grouping-batches' : '/api/user/chat-batches';
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('获取历史记录失败');
+        }
+        
+        const data = await response.json();
+        
+        // 清空选项
+        batchSelect.innerHTML = '<option value="">请选择轮次</option>';
+        
+        if (data.success && data.data.length > 0) {
+            data.data.forEach(batch => {
+                const option = document.createElement('option');
+                option.value = batch.run_batch;
+                const date = new Date(batch.created_at).toLocaleString();
+                option.textContent = `第 ${batch.run_batch} 轮 (${date})`;
+                batchSelect.appendChild(option);
+            });
+            
+            // 默认选中最新轮次
+            if (data.data.length > 0) {
+                batchSelect.value = data.data[0].run_batch;
+                await loadSelectedUserBatchResult();
+            }
+        } else {
+            batchSelect.innerHTML = '<option value="">暂无匹配结果</option>';
+            showUserResultsEmpty('暂无匹配结果');
+        }
+        
+    } catch (error) {
+        console.error('加载历史轮次失败:', error);
+        loadingEl.style.display = 'none';
+        showToast('加载历史轮次失败，请稍后重试', 'error');
+    }
+}
+
+/**
+ * 加载选中轮次的用户结果
+ */
+async function loadSelectedUserBatchResult() {
+    const modal = document.getElementById('userResultsModal');
+    const type = modal.dataset.type;
+    const batchSelect = document.getElementById('userResultsBatchSelect');
+    const runBatch = batchSelect.value;
+    const gridEl = document.getElementById('userResultsGrid');
+    const contentEl = document.getElementById('userResultsContent');
+    const titleEl = document.getElementById('userResultsTitle');
+    const authToken = localStorage.getItem('authToken');
+    
+    if (!runBatch) {
+        showUserResultsEmpty('请选择轮次');
+        return;
+    }
+    
+    try {
+        gridEl.innerHTML = '';
+        contentEl.innerHTML = '';
+        
+        const endpoint = type === 'grouping' ? 
+            `/api/user/grouping-result?runBatch=${runBatch}` : 
+            `/api/user/chat-result?runBatch=${runBatch}`;
+            
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('获取结果失败');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // 保持原标题不变（已在openUserResultsModal中设置）
+            
+            if (type === 'grouping') {
+                renderUserGroupingResult(data.data);
+            } else {
+                renderUserChatResult(data.data);
+            }
+        } else {
+            throw new Error(data.message || '获取结果失败');
+        }
+        
+    } catch (error) {
+        console.error('加载结果失败:', error);
+        showUserResultsEmpty('加载失败，请稍后重试');
+    }
+}
+
+/**
+ * 渲染用户分组匹配结果
+ * @param {Object} resultData - 结果数据
+ */
+function renderUserGroupingResult(resultData) {
+    const contentEl = document.getElementById('userResultsContent');
+    const gridEl = document.getElementById('userResultsGrid');
+    const { runBatch, groupId, members } = resultData;
+    
+    if (!members || members.length === 0) {
+        showUserResultsEmpty('该轮次暂无分组结果');
+        return;
+    }
+    
+    // 显示组信息
+    contentEl.innerHTML = `
+        <div class="user-group-info">
+            <h3>您在第 ${groupId} 组</h3>
+            <p>共有 ${members.length} 位其他组员</p>
+        </div>
+    `;
+    
+    // 显示组员列表（使用收藏列表的样式）
+    gridEl.innerHTML = members.map(member => {
+        const genderClass = member.gender === 'male' ? 'male' : 'female';
+        const photoUrl = member.photo_url || '/images/default-avatar.png';
+        
+        return `
+            <div class="favorites-card ${genderClass}">
+                <div class="favorites-card-photo">
+                    <img src="${photoUrl}" alt="${member.baptismal_name}" loading="lazy"
+                         onerror="this.src='/images/default-avatar.png'">
+                </div>
+                <div class="favorites-card-info">
+                    <div class="favorites-card-name">${member.baptismal_name}</div>
+                    <div class="favorites-card-username">${member.username}</div>
+                    <div class="favorites-card-gender">${member.gender === 'male' ? '男' : '女'}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    gridEl.style.display = 'grid';
+}
+
+/**
+ * 渲染用户聊天匹配结果
+ * @param {Object} resultData - 结果数据
+ */
+function renderUserChatResult(resultData) {
+    const contentEl = document.getElementById('userResultsContent');
+    const gridEl = document.getElementById('userResultsGrid');
+    const { runBatch, targets } = resultData;
+    
+    if (!targets || targets.length === 0) {
+        showUserResultsEmpty('该轮次暂无聊天匹配结果');
+        return;
+    }
+    
+    // 显示聊天信息
+    contentEl.innerHTML = `
+        <div class="user-chat-info">
+            <h3>您的推荐聊天名单</h3>
+            <p>共推荐 ${targets.length} 位聊天对象</p>
+        </div>
+    `;
+    
+    // 显示推荐对象列表（使用收藏列表的样式）
+    gridEl.innerHTML = targets.map(target => {
+        const genderClass = target.gender === 'male' ? 'male' : 'female';
+        const photoUrl = target.photo_url || '/images/default-avatar.png';
+        const statusText = target.is_completed ? '已聊' : '未聊';
+        const statusClass = target.is_completed ? 'completed' : 'pending';
+        
+        return `
+            <div class="favorites-card ${genderClass}">
+                <div class="favorites-card-photo">
+                    <img src="${photoUrl}" alt="${target.baptismal_name}" loading="lazy"
+                         onerror="this.src='/images/default-avatar.png'">
+                </div>
+                <div class="favorites-card-info">
+                    <div class="favorites-card-name">${target.baptismal_name}</div>
+                    <div class="favorites-card-username">${target.username}</div>
+                    <div class="favorites-card-gender">${target.gender === 'male' ? '男' : '女'}</div>
+                    <div class="chat-status ${statusClass}" style="
+                        margin-top: 8px; 
+                        padding: 4px 8px; 
+                        border-radius: 12px; 
+                        font-size: 12px; 
+                        font-weight: 600;
+                        ${target.is_completed ? 
+                            'background-color: #d4edda; color: #155724;' : 
+                            'background-color: #fff3cd; color: #856404;'
+                        }
+                    ">${statusText}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    gridEl.style.display = 'grid';
+}
+
+/**
+ * 显示空结果
+ * @param {string} message - 显示消息
+ */
+function showUserResultsEmpty(message) {
+    const gridEl = document.getElementById('userResultsGrid');
+    const contentEl = document.getElementById('userResultsContent');
+    const emptyEl = document.getElementById('userResultsEmpty');
+    
+    gridEl.innerHTML = '';
+    gridEl.style.display = 'none';
+    contentEl.innerHTML = '';
+    emptyEl.textContent = message;
+    emptyEl.style.display = 'block';
+}

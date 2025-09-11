@@ -226,6 +226,27 @@ function setupEventListeners() {
         closeSelectionsBtn.addEventListener('click', closeSelectionsModal);
     }
 
+    // 匹配算法功能
+    const executeGroupMatchingBtn = document.getElementById('executeGroupMatchingBtn');
+    const executeChatMatchingBtn = document.getElementById('executeChatMatchingBtn');
+    const viewGroupingResultsBtn = document.getElementById('viewGroupingResultsBtn');
+    const viewChatResultsBtn = document.getElementById('viewChatResultsBtn');
+    
+    if (executeGroupMatchingBtn) {
+        executeGroupMatchingBtn.addEventListener('click', openGroupMatchingModal);
+    }
+    if (executeChatMatchingBtn) {
+        executeChatMatchingBtn.addEventListener('click', openChatMatchingModal);
+    }
+    if (viewGroupingResultsBtn) {
+        viewGroupingResultsBtn.addEventListener('click', () => openResultsModal('grouping'));
+    }
+    if (viewChatResultsBtn) {
+        viewChatResultsBtn.addEventListener('click', () => openResultsModal('chat'));
+    }
+    
+    setupMatchingEventListeners();
+
     // 大图查看功能
     fullscreenImage.addEventListener('click', closeFullscreenImage);
 
@@ -3064,4 +3085,753 @@ function handleSelectionsGenderFilter() {
 function handleSelectionsFilterChange() {
     applySelectionsFilters();
     renderSelectionsParticipants();
+}
+
+// ==================== 匹配算法管理功能 ====================
+
+// 设置匹配相关事件监听器
+function setupMatchingEventListeners() {
+    // 分组匹配模态框
+    const closeGroupMatchingBtn = document.getElementById('closeGroupMatchingBtn');
+    const cancelGroupMatchingBtn = document.getElementById('cancelGroupMatchingBtn');
+    const executeGroupMatchingConfirmBtn = document.getElementById('executeGroupMatchingConfirmBtn');
+    
+    if (closeGroupMatchingBtn) {
+        closeGroupMatchingBtn.addEventListener('click', closeGroupMatchingModal);
+    }
+    if (cancelGroupMatchingBtn) {
+        cancelGroupMatchingBtn.addEventListener('click', closeGroupMatchingModal);
+    }
+    if (executeGroupMatchingConfirmBtn) {
+        executeGroupMatchingConfirmBtn.addEventListener('click', executeGroupMatchingConfirm);
+    }
+    
+    // 聊天匹配模态框
+    const closeChatMatchingBtn = document.getElementById('closeChatMatchingBtn');
+    const cancelChatMatchingBtn = document.getElementById('cancelChatMatchingBtn');
+    const executeChatMatchingConfirmBtn = document.getElementById('executeChatMatchingConfirmBtn');
+    
+    if (closeChatMatchingBtn) {
+        closeChatMatchingBtn.addEventListener('click', closeChatMatchingModal);
+    }
+    if (cancelChatMatchingBtn) {
+        cancelChatMatchingBtn.addEventListener('click', closeChatMatchingModal);
+    }
+    if (executeChatMatchingConfirmBtn) {
+        executeChatMatchingConfirmBtn.addEventListener('click', executeChatMatchingConfirm);
+    }
+    
+    // 数字输入按钮
+    setupNumberInputs();
+    
+    // 匹配确认模态框
+    const cancelMatchingConfirmBtn = document.getElementById('cancelMatchingConfirmBtn');
+    const confirmMatchingExecuteBtn = document.getElementById('confirmMatchingExecuteBtn');
+    
+    if (cancelMatchingConfirmBtn) {
+        cancelMatchingConfirmBtn.addEventListener('click', closeMatchingConfirmModal);
+    }
+    if (confirmMatchingExecuteBtn) {
+        confirmMatchingExecuteBtn.addEventListener('click', executeMatching);
+    }
+    
+    // 结果查看模态框
+    const closeResultsBtn = document.getElementById('closeResultsBtn');
+    const resultsBatchSelect = document.getElementById('resultsBatchSelect');
+    
+    if (closeResultsBtn) {
+        closeResultsBtn.addEventListener('click', closeResultsModal);
+    }
+    if (resultsBatchSelect) {
+        resultsBatchSelect.addEventListener('change', loadSelectedBatchResult);
+    }
+    
+    // 模态框外部点击关闭
+    const groupMatchingModal = document.getElementById('groupMatchingModal');
+    const chatMatchingModal = document.getElementById('chatMatchingModal');
+    const matchingConfirmModal = document.getElementById('matchingConfirmModal');
+    const matchingResultsModal = document.getElementById('matchingResultsModal');
+    
+    if (groupMatchingModal) {
+        groupMatchingModal.addEventListener('click', (e) => {
+            if (e.target === groupMatchingModal) closeGroupMatchingModal();
+        });
+    }
+    if (chatMatchingModal) {
+        chatMatchingModal.addEventListener('click', (e) => {
+            if (e.target === chatMatchingModal) closeChatMatchingModal();
+        });
+    }
+    if (matchingConfirmModal) {
+        matchingConfirmModal.addEventListener('click', (e) => {
+            if (e.target === matchingConfirmModal) closeMatchingConfirmModal();
+        });
+    }
+    if (matchingResultsModal) {
+        matchingResultsModal.addEventListener('click', (e) => {
+            if (e.target === matchingResultsModal) closeResultsModal();
+        });
+    }
+}
+
+// 设置数字输入控件
+function setupNumberInputs() {
+    // 分组匹配 - 男性数量
+    const groupMaleDecBtn = document.getElementById('groupMaleDecBtn');
+    const groupMaleIncBtn = document.getElementById('groupMaleIncBtn');
+    const groupMaleSize = document.getElementById('groupMaleSize');
+    
+    if (groupMaleDecBtn && groupMaleIncBtn && groupMaleSize) {
+        groupMaleDecBtn.addEventListener('click', () => adjustNumber('groupMaleSize', -1));
+        groupMaleIncBtn.addEventListener('click', () => adjustNumber('groupMaleSize', 1));
+    }
+    
+    // 分组匹配 - 女性数量
+    const groupFemaleDecBtn = document.getElementById('groupFemaleDecBtn');
+    const groupFemaleIncBtn = document.getElementById('groupFemaleIncBtn');
+    const groupFemaleSize = document.getElementById('groupFemaleSize');
+    
+    if (groupFemaleDecBtn && groupFemaleIncBtn && groupFemaleSize) {
+        groupFemaleDecBtn.addEventListener('click', () => adjustNumber('groupFemaleSize', -1));
+        groupFemaleIncBtn.addEventListener('click', () => adjustNumber('groupFemaleSize', 1));
+    }
+    
+    // 聊天匹配 - 名单大小
+    const chatListDecBtn = document.getElementById('chatListDecBtn');
+    const chatListIncBtn = document.getElementById('chatListIncBtn');
+    const chatListSize = document.getElementById('chatListSize');
+    
+    if (chatListDecBtn && chatListIncBtn && chatListSize) {
+        chatListDecBtn.addEventListener('click', () => adjustNumber('chatListSize', -1));
+        chatListIncBtn.addEventListener('click', () => adjustNumber('chatListSize', 1));
+    }
+}
+
+// 调整数字输入值
+function adjustNumber(inputId, delta) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    const currentValue = parseInt(input.value) || 0;
+    const minValue = parseInt(input.min) || 1;
+    const maxValue = parseInt(input.max) || 20;
+    
+    const newValue = Math.max(minValue, Math.min(maxValue, currentValue + delta));
+    input.value = newValue;
+    
+    // 触发验证检查
+    if (inputId.startsWith('group')) {
+        validateGroupMatching();
+    } else if (inputId.startsWith('chat')) {
+        validateChatMatching();
+    }
+}
+
+// 打开分组匹配配置模态框
+async function openGroupMatchingModal() {
+    try {
+        // 检查功能开关
+        const response = await fetch('/api/admin/feature-flags', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('无法获取功能开关状态');
+        }
+        
+        const data = await response.json();
+        if (!data.success || !data.featureFlags.grouping_enabled) {
+            showToast('分组匹配功能未开启，请先在系统设置中开启该功能', 'error');
+            return;
+        }
+        
+        // 显示模态框
+        const modal = document.getElementById('groupMatchingModal');
+        if (modal) {
+            modal.style.display = 'block';
+            
+            // 重置配置值
+            document.getElementById('groupMaleSize').value = 3;
+            document.getElementById('groupFemaleSize').value = 3;
+            
+            // 开始验证
+            validateGroupMatching();
+        }
+        
+    } catch (error) {
+        console.error('打开分组匹配配置失败:', error);
+        showToast('打开分组匹配配置失败，请稍后重试', 'error');
+    }
+}
+
+// 关闭分组匹配配置模态框
+function closeGroupMatchingModal() {
+    const modal = document.getElementById('groupMatchingModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// 打开聊天匹配配置模态框
+async function openChatMatchingModal() {
+    try {
+        // 检查功能开关
+        const response = await fetch('/api/admin/feature-flags', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('无法获取功能开关状态');
+        }
+        
+        const data = await response.json();
+        if (!data.success || !data.featureFlags.chat_enabled) {
+            showToast('聊天匹配功能未开启，请先在系统设置中开启该功能', 'error');
+            return;
+        }
+        
+        // 显示模态框
+        const modal = document.getElementById('chatMatchingModal');
+        if (modal) {
+            modal.style.display = 'block';
+            
+            // 重置配置值
+            document.getElementById('chatListSize').value = 5;
+            
+            // 开始验证
+            validateChatMatching();
+        }
+        
+    } catch (error) {
+        console.error('打开聊天匹配配置失败:', error);
+        showToast('打开聊天匹配配置失败，请稍后重试', 'error');
+    }
+}
+
+// 关闭聊天匹配配置模态框
+function closeChatMatchingModal() {
+    const modal = document.getElementById('chatMatchingModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// 验证分组匹配配置
+async function validateGroupMatching() {
+    const statusDiv = document.getElementById('groupValidationStatus');
+    const executeBtn = document.getElementById('executeGroupMatchingConfirmBtn');
+    const loadingSpinner = statusDiv.querySelector('.loading-spinner');
+    const resultDiv = statusDiv.querySelector('.validation-result');
+    
+    // 显示加载状态
+    loadingSpinner.style.display = 'block';
+    resultDiv.innerHTML = '';
+    resultDiv.className = 'validation-result';
+    executeBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/admin/validate-selections', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('验证失败');
+        }
+        
+        const data = await response.json();
+        
+        loadingSpinner.style.display = 'none';
+        
+        if (data.success && data.data.isValid) {
+            resultDiv.className = 'validation-result success';
+            resultDiv.innerHTML = '<p>✅ 所有已签到用户都已完成选择，可以执行分组匹配</p>';
+            executeBtn.disabled = false;
+        } else {
+            resultDiv.className = 'validation-result error';
+            let html = '<p>❌ 存在未完成选择的用户，无法执行分组匹配</p>';
+            
+            if (data.data && data.data.missingUsers && data.data.missingUsers.length > 0) {
+                html += '<div class="missing-users-list">';
+                html += '<p><strong>未完成选择的用户：</strong></p>';
+                
+                data.data.missingUsers.forEach(user => {
+                    const genderText = user.gender === 'male' ? '男' : '女';
+                    html += `
+                        <div class="missing-user-item">
+                            <div>
+                                <div class="user-name">${user.baptismal_name || user.username}</div>
+                                <div class="user-details">${genderText} | 已选择: ${user.currentSelections}/5</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            }
+            
+            resultDiv.innerHTML = html;
+        }
+        
+    } catch (error) {
+        console.error('验证失败:', error);
+        loadingSpinner.style.display = 'none';
+        resultDiv.className = 'validation-result error';
+        resultDiv.innerHTML = '<p>验证失败，请稍后重试</p>';
+    }
+}
+
+// 验证聊天匹配配置
+async function validateChatMatching() {
+    const statusDiv = document.getElementById('chatValidationStatus');
+    const executeBtn = document.getElementById('executeChatMatchingConfirmBtn');
+    const loadingSpinner = statusDiv.querySelector('.loading-spinner');
+    const resultDiv = statusDiv.querySelector('.validation-result');
+    
+    // 显示加载状态
+    loadingSpinner.style.display = 'block';
+    resultDiv.innerHTML = '';
+    resultDiv.className = 'validation-result';
+    executeBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/admin/validate-selections', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('验证失败');
+        }
+        
+        const data = await response.json();
+        
+        loadingSpinner.style.display = 'none';
+        
+        if (data.success && data.data.isValid) {
+            resultDiv.className = 'validation-result success';
+            resultDiv.innerHTML = '<p>✅ 所有已签到用户都已完成选择，可以执行聊天匹配</p>';
+            executeBtn.disabled = false;
+        } else {
+            resultDiv.className = 'validation-result error';
+            let html = '<p>❌ 存在未完成选择的用户，无法执行聊天匹配</p>';
+            
+            if (data.data && data.data.missingUsers && data.data.missingUsers.length > 0) {
+                html += '<div class="missing-users-list">';
+                html += '<p><strong>未完成选择的用户：</strong></p>';
+                
+                data.data.missingUsers.forEach(user => {
+                    const genderText = user.gender === 'male' ? '男' : '女';
+                    html += `
+                        <div class="missing-user-item">
+                            <div>
+                                <div class="user-name">${user.baptismal_name || user.username}</div>
+                                <div class="user-details">${genderText} | 已选择: ${user.currentSelections}/5</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            }
+            
+            resultDiv.innerHTML = html;
+        }
+        
+    } catch (error) {
+        console.error('验证失败:', error);
+        loadingSpinner.style.display = 'none';
+        resultDiv.className = 'validation-result error';
+        resultDiv.innerHTML = '<p>验证失败，请稍后重试</p>';
+    }
+}
+
+// 分组匹配执行确认
+function executeGroupMatchingConfirm() {
+    const maleSize = parseInt(document.getElementById('groupMaleSize').value);
+    const femaleSize = parseInt(document.getElementById('groupFemaleSize').value);
+    
+    // 关闭配置模态框
+    closeGroupMatchingModal();
+    
+    // 显示确认模态框
+    const confirmModal = document.getElementById('matchingConfirmModal');
+    const titleEl = document.getElementById('matchingConfirmTitle');
+    const infoEl = document.getElementById('matchingConfirmInfo');
+    
+    titleEl.textContent = '确认执行分组匹配';
+    infoEl.innerHTML = `
+        <div style="margin-bottom: 15px;">
+            <strong>配置信息：</strong>
+        </div>
+        <div style="margin-bottom: 10px;">
+            📊 每组男性人数：<strong>${maleSize}</strong> 人
+        </div>
+        <div style="margin-bottom: 20px;">
+            👭 每组女性人数：<strong>${femaleSize}</strong> 人
+        </div>
+        <div style="color: #856404; background-color: #fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeaa7;">
+            <strong>⚠️ 注意：</strong>执行后将生成新的分组结果，请确认配置无误后再执行。
+        </div>
+    `;
+    
+    // 存储配置供执行时使用
+    confirmModal.dataset.type = 'grouping';
+    confirmModal.dataset.config = JSON.stringify({
+        group_size_male: maleSize,
+        group_size_female: femaleSize
+    });
+    
+    confirmModal.style.display = 'block';
+}
+
+// 聊天匹配执行确认
+function executeChatMatchingConfirm() {
+    const listSize = parseInt(document.getElementById('chatListSize').value);
+    
+    // 关闭配置模态框
+    closeChatMatchingModal();
+    
+    // 显示确认模态框
+    const confirmModal = document.getElementById('matchingConfirmModal');
+    const titleEl = document.getElementById('matchingConfirmTitle');
+    const infoEl = document.getElementById('matchingConfirmInfo');
+    
+    titleEl.textContent = '确认执行聊天匹配';
+    infoEl.innerHTML = `
+        <div style="margin-bottom: 15px;">
+            <strong>配置信息：</strong>
+        </div>
+        <div style="margin-bottom: 20px;">
+            💬 推荐名单人数：<strong>${listSize}</strong> 人
+        </div>
+        <div style="color: #856404; background-color: #fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeaa7;">
+            <strong>⚠️ 注意：</strong>执行后将生成新的聊天匹配结果，请确认配置无误后再执行。
+        </div>
+    `;
+    
+    // 存储配置供执行时使用
+    confirmModal.dataset.type = 'chat';
+    confirmModal.dataset.config = JSON.stringify({
+        list_size: listSize
+    });
+    
+    confirmModal.style.display = 'block';
+}
+
+// 关闭匹配确认模态框
+function closeMatchingConfirmModal() {
+    const modal = document.getElementById('matchingConfirmModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// 执行匹配算法
+async function executeMatching() {
+    const confirmModal = document.getElementById('matchingConfirmModal');
+    const type = confirmModal.dataset.type;
+    const config = JSON.parse(confirmModal.dataset.config);
+    
+    // 关闭确认模态框
+    closeMatchingConfirmModal();
+    
+    // 显示加载提示
+    showLoadingOverlay('正在执行匹配算法，请稍候...');
+    
+    try {
+        const endpoint = type === 'grouping' ? '/api/admin/execute-group-matching' : '/api/admin/execute-chat-matching';
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        hideLoadingOverlay();
+        
+        if (data.success) {
+            const typeName = type === 'grouping' ? '分组匹配' : '聊天匹配';
+            showToast(`${data.message}`, 'success');
+        } else {
+            throw new Error(data.message || '执行失败');
+        }
+        
+    } catch (error) {
+        console.error('执行匹配算法失败:', error);
+        hideLoadingOverlay();
+        showToast(error.message || '执行匹配算法失败，请稍后重试', 'error');
+    }
+}
+
+// 打开结果查看模态框
+async function openResultsModal(type) {
+    const modal = document.getElementById('matchingResultsModal');
+    const titleEl = document.getElementById('resultsTitle');
+    const batchSelect = document.getElementById('resultsBatchSelect');
+    const displayDiv = document.getElementById('resultsDisplay');
+    
+    // 设置标题
+    const typeName = type === 'grouping' ? '分组匹配' : '聊天匹配';
+    titleEl.textContent = `${typeName}结果`;
+    
+    // 存储类型
+    modal.dataset.type = type;
+    
+    // 显示模态框
+    modal.style.display = 'block';
+    
+    // 清空显示区域
+    displayDiv.querySelector('.results-content-area').innerHTML = '';
+    
+    // 加载历史轮次
+    await loadResultsBatches(type);
+}
+
+// 关闭结果查看模态框
+function closeResultsModal() {
+    const modal = document.getElementById('matchingResultsModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// 加载历史轮次
+async function loadResultsBatches(type) {
+    const batchSelect = document.getElementById('resultsBatchSelect');
+    const loadingDiv = document.getElementById('resultsDisplay').querySelector('.results-loading');
+    
+    try {
+        loadingDiv.style.display = 'block';
+        
+        const endpoint = type === 'grouping' ? '/api/admin/grouping-history' : '/api/admin/chat-history';
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('获取历史记录失败');
+        }
+        
+        const data = await response.json();
+        
+        loadingDiv.style.display = 'none';
+        
+        // 清空选项
+        batchSelect.innerHTML = '<option value="">请选择轮次</option>';
+        
+        if (data.success && data.data.length > 0) {
+            data.data.forEach(batch => {
+                const option = document.createElement('option');
+                option.value = batch.run_batch;
+                const countText = type === 'grouping' ? `${batch.groups_count}组` : `${batch.chat_items_count}条`;
+                const date = new Date(batch.created_at).toLocaleString();
+                option.textContent = `第 ${batch.run_batch} 轮 (${countText}, ${date})`;
+                batchSelect.appendChild(option);
+            });
+            
+            // 默认选中最新轮次
+            if (data.data.length > 0) {
+                batchSelect.value = data.data[0].run_batch;
+                await loadSelectedBatchResult();
+            }
+        } else {
+            batchSelect.innerHTML = '<option value="">暂无历史记录</option>';
+            document.getElementById('resultsDisplay').querySelector('.results-content-area').innerHTML = 
+                '<div style="text-align: center; padding: 40px; color: #666;">暂无匹配结果</div>';
+        }
+        
+    } catch (error) {
+        console.error('加载历史轮次失败:', error);
+        loadingDiv.style.display = 'none';
+        showToast('加载历史轮次失败，请稍后重试', 'error');
+    }
+}
+
+// 加载选中轮次的结果
+async function loadSelectedBatchResult() {
+    const modal = document.getElementById('matchingResultsModal');
+    const type = modal.dataset.type;
+    const batchSelect = document.getElementById('resultsBatchSelect');
+    const runBatch = batchSelect.value;
+    const contentArea = document.getElementById('resultsDisplay').querySelector('.results-content-area');
+    const loadingDiv = document.getElementById('resultsDisplay').querySelector('.results-loading');
+    
+    if (!runBatch) {
+        contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">请选择轮次</div>';
+        return;
+    }
+    
+    try {
+        loadingDiv.style.display = 'block';
+        contentArea.innerHTML = '';
+        
+        const endpoint = type === 'grouping' ? 
+            `/api/admin/grouping-result/${runBatch}` : 
+            `/api/admin/chat-result/${runBatch}`;
+            
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('获取结果失败');
+        }
+        
+        const data = await response.json();
+        
+        loadingDiv.style.display = 'none';
+        
+        if (data.success) {
+            if (type === 'grouping') {
+                renderGroupingResults(data.data);
+            } else {
+                renderChatResults(data.data);
+            }
+        } else {
+            throw new Error(data.message || '获取结果失败');
+        }
+        
+    } catch (error) {
+        console.error('加载结果失败:', error);
+        loadingDiv.style.display = 'none';
+        contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #dc3545;">加载失败，请稍后重试</div>';
+    }
+}
+
+// 渲染分组匹配结果
+function renderGroupingResults(resultData) {
+    const contentArea = document.getElementById('resultsDisplay').querySelector('.results-content-area');
+    const { runBatch, groups } = resultData;
+    
+    if (!groups || groups.length === 0) {
+        contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">该轮次暂无分组结果</div>';
+        return;
+    }
+    
+    let html = `<div style="margin-bottom: 20px; text-align: center;">
+        <h4>第 ${runBatch} 轮分组匹配结果（共 ${groups.length} 组）</h4>
+    </div>`;
+    
+    groups.forEach(group => {
+        html += `
+            <div class="group-result-item">
+                <div class="group-result-header">
+                    第 ${group.group_id} 组（男 ${group.male_ids.length} 人，女 ${group.female_ids.length} 人）
+                </div>
+                <div class="group-result-body">
+                    <div class="group-members">
+        `;
+        
+        // 显示男性成员
+        group.male_ids.forEach(username => {
+            html += `
+                <div class="member-card male">
+                    <div class="member-name">${username}</div>
+                    <div class="member-details">男</div>
+                </div>
+            `;
+        });
+        
+        // 显示女性成员
+        group.female_ids.forEach(username => {
+            html += `
+                <div class="member-card female">
+                    <div class="member-name">${username}</div>
+                    <div class="member-details">女</div>
+                </div>
+            `;
+        });
+        
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    contentArea.innerHTML = html;
+}
+
+// 渲染聊天匹配结果
+function renderChatResults(resultData) {
+    const contentArea = document.getElementById('resultsDisplay').querySelector('.results-content-area');
+    const { runBatch, chatLists } = resultData;
+    
+    if (!chatLists || chatLists.length === 0) {
+        contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">该轮次暂无聊天匹配结果</div>';
+        return;
+    }
+    
+    // 按用户分组
+    const userGroups = {};
+    chatLists.forEach(item => {
+        if (!userGroups[item.user_id]) {
+            userGroups[item.user_id] = [];
+        }
+        userGroups[item.user_id].push(item);
+    });
+    
+    let html = `<div style="margin-bottom: 20px; text-align: center;">
+        <h4>第 ${runBatch} 轮聊天匹配结果（共 ${Object.keys(userGroups).length} 人）</h4>
+    </div>`;
+    
+    Object.keys(userGroups).forEach(userId => {
+        const userTargets = userGroups[userId];
+        html += `
+            <div class="group-result-item">
+                <div class="group-result-header">
+                    ${userId} 的推荐名单（${userTargets.length} 人）
+                </div>
+                <div class="group-result-body">
+                    <div class="chat-result-grid">
+        `;
+        
+        userTargets.forEach(target => {
+            const statusClass = target.is_completed ? 'completed' : 'pending';
+            const statusText = target.is_completed ? '已聊' : '未聊';
+            
+            html += `
+                <div class="chat-target-card">
+                    <div class="member-name">${target.target_id}</div>
+                    <div class="chat-status ${statusClass}">${statusText}</div>
+                </div>
+            `;
+        });
+        
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    contentArea.innerHTML = html;
 }
