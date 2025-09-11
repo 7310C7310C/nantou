@@ -171,6 +171,16 @@ input, button, select, textarea {
     display: block;
 }
 
+.user-info-item {
+    padding: 8px 16px;
+    color: #888;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    margin-bottom: 4px;
+    font-weight: 500;
+    text-align: center;
+}
+
 .logout-btn {
     display: block;
     width: 100%;
@@ -178,7 +188,7 @@ input, button, select, textarea {
     background: none;
     border: none;
     color: #333;
-    text-align: left;
+    text-align: center;
     cursor: pointer;
     font-size: 14px;
     transition: background-color 0.2s;

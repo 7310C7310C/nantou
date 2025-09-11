@@ -286,6 +286,10 @@ async function checkAuthStatus() {
                 currentUser = user.data.user;
                 authToken = token; // 确保authToken被设置
                 
+                // 更新localStorage中的用户信息
+                localStorage.setItem('userRole', currentUser.role || '');
+                localStorage.setItem('username', currentUser.username || '');
+                
                 // 安全检查：验证用户角色权限
                 if (!isAuthorizedRole(currentUser.role)) {
                     showUnauthorizedMessage();
@@ -383,8 +387,20 @@ function showAuthenticatedUI() {
     userInfo.style.display = 'block';
     mainContent.style.display = 'block';
     
+    // 获取用户名
+    const username = localStorage.getItem('username') || (currentUser ? currentUser.username : '');
+    const role = currentUser ? currentUser.role : localStorage.getItem('userRole');
+    
     // 更新角色按钮文本
-    document.getElementById('roleBtn').textContent = getRoleDisplayName(currentUser ? currentUser.role : localStorage.getItem('userRole'));
+    const roleText = getRoleDisplayName(role);
+    document.getElementById('roleBtn').textContent = roleText;
+    
+    // 在下拉菜单中显示用户名
+    const userInfoItem = document.getElementById('userInfoItem');
+    if (userInfoItem && username) {
+        userInfoItem.textContent = `账号：${username}`;
+        userInfoItem.style.display = 'block';
+    }
 
     // 如果currentUser不存在，则从服务器获取
     if (!currentUser) {

@@ -225,6 +225,7 @@ async function refreshCurrentUserToLocalStorage() {
             localStorage.setItem('userRole', user.role || 'participant');
             localStorage.setItem('username', user.username || '');
             localStorage.setItem('userName', user.name || '');
+            localStorage.setItem('userId', user.id || '');
             if (user.gender) localStorage.setItem('userGender', user.gender);
             // store sign status
             localStorage.setItem('isSigned', user.is_checked_in ? '1' : '0');
@@ -1123,6 +1124,7 @@ function updateUserInterface(username, role, userName = '') {
     const roleBtn = document.getElementById('roleBtn');
     const adminPanelBtn = document.getElementById('adminPanelBtn');
     const searchInputEl = document.getElementById('searchInput');
+    const userInfoItem = document.getElementById('userInfoItem');
     
     // 隐藏登录按钮，显示用户信息
     loginBtn.style.display = 'none';
@@ -1147,6 +1149,13 @@ function updateUserInterface(username, role, userName = '') {
     
     // 设置角色按钮文本
     roleBtn.textContent = displayText;
+    
+    // 在下拉菜单中显示用户名
+    if (userInfoItem && username) {
+        userInfoItem.textContent = `账号：${username}`;
+        userInfoItem.style.display = 'block';
+    }
+    
     // 新增: 显示收藏按钮
     showFavoritesButtonIfParticipant(role);
     // 新增: 显示红娘功能按钮
