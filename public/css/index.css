@@ -203,7 +203,7 @@ body {
     justify-content: center;
     font-size: 20px;
     cursor: pointer;
-    border: 2px solid rgba(255, 255, 255, 0.3); /* 与收藏心形按钮一致 */
+    border: 2px solid rgba(255, 255, 255, 0.7); /* 增加不透明度让边框更亮 */
     z-index: 8;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* 与收藏心形按钮一致 */
 }
