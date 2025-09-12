@@ -3371,7 +3371,7 @@ async function validateGroupMatching() {
                     html += `
                         <div class="missing-user-item">
                             <div>
-                                <div class="user-name">${user.baptismal_name || user.username}</div>
+                                <div class="user-name">${user.name}（${user.username}）</div>
                                 <div class="user-details">${genderText} | 已选择: ${user.currentSelections}/5</div>
                             </div>
                         </div>
@@ -3439,7 +3439,7 @@ async function validateChatMatching() {
                     html += `
                         <div class="missing-user-item">
                             <div>
-                                <div class="user-name">${user.baptismal_name || user.username}</div>
+                                <div class="user-name">${user.name}（${user.username}）</div>
                                 <div class="user-details">${genderText} | 已选择: ${user.currentSelections}/5</div>
                             </div>
                         </div>

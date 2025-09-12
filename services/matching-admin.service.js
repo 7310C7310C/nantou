@@ -115,7 +115,7 @@ async function validateUserSelections() {
   
   // 获取用户ID到用户名的映射
   const [userMapping] = await pool.execute(`
-    SELECT id, username, baptismal_name, gender
+    SELECT id, username, name, baptismal_name, gender
     FROM participants 
     WHERE is_checked_in = 1
   `);
@@ -124,6 +124,7 @@ async function validateUserSelections() {
   userMapping.forEach(user => {
     userMap[user.id] = {
       username: user.username,
+      name: user.name,
       baptismal_name: user.baptismal_name,
       gender: user.gender
     };
@@ -137,6 +138,7 @@ async function validateUserSelections() {
       missingUsers.push({
         id: user.id,
         username: user.username,
+        name: user.name,
         baptismal_name: user.baptismal_name,
         gender: user.gender,
         currentSelections: userSelections.length
