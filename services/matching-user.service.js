@@ -77,11 +77,10 @@ async function getUserGroupingResult(username, runBatch = null) {
       };
     }
 
-    // 获取组员详细信息（排除自己）
+    // 获取组员详细信息（包含自己）
     const allMemberUsernames = [...userGroup.male_ids, ...userGroup.female_ids];
-    const otherMemberUsernames = allMemberUsernames.filter(u => u !== username);
 
-    if (otherMemberUsernames.length === 0) {
+    if (allMemberUsernames.length === 0) {
       return {
         success: true,
         data: {
@@ -93,13 +92,14 @@ async function getUserGroupingResult(username, runBatch = null) {
       };
     }
 
-    const placeholders = otherMemberUsernames.map(() => '?').join(',');
+    const placeholders = allMemberUsernames.map(() => '?').join(',');
     const [memberRows] = await pool.execute(`
-      SELECT id, username, baptismal_name, gender, photo_url
-      FROM participants 
-      WHERE username IN (${placeholders})
-      ORDER BY gender, baptismal_name
-    `, otherMemberUsernames);
+      SELECT p.id, p.username, p.name, p.baptismal_name, p.gender, ph.photo_url
+      FROM participants p
+      LEFT JOIN participant_photos ph ON p.id = ph.participant_id AND ph.is_primary = 1
+      WHERE p.username IN (${placeholders})
+      ORDER BY p.gender, p.name
+    `, allMemberUsernames);
 
     return {
       success: true,
@@ -178,10 +178,11 @@ async function getUserChatResult(username, runBatch = null) {
     const placeholders = targetUsernames.map(() => '?').join(',');
     
     const [targetRows] = await pool.execute(`
-      SELECT id, username, baptismal_name, gender, photo_url
-      FROM participants 
-      WHERE username IN (${placeholders})
-      ORDER BY FIELD(username, ${placeholders})
+      SELECT p.id, p.username, p.name, p.baptismal_name, p.gender, ph.photo_url
+      FROM participants p
+      LEFT JOIN participant_photos ph ON p.id = ph.participant_id AND ph.is_primary = 1
+      WHERE p.username IN (${placeholders})
+      ORDER BY FIELD(p.username, ${placeholders})
     `, [...targetUsernames, ...targetUsernames]);
 
     // 组合聊天结果

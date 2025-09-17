@@ -419,6 +419,44 @@ body {
 }
 @media (max-width: 480px) {
     .favorites-grid { grid-template-columns:repeat(2, 1fr); gap:10px; }
+    
+    /* 用户结果模态框优化 */
+    #userResultsModal .favorites-grid {
+        gap: 8px;
+        padding: 10px;
+    }
+    
+    /* 组信息卡片在小屏幕上的优化 */
+    .user-group-card {
+        min-height: 80px;
+        margin-bottom: 15px;
+    }
+    
+    .user-group-text {
+        font-size: 18px;
+    }
+}
+
+/* 额外的窄屏优化 */
+@media (max-width: 360px) {
+    .favorites-grid { 
+        grid-template-columns: repeat(2, 1fr); 
+        gap: 8px; 
+    }
+    
+    #userResultsModal .favorites-grid {
+        gap: 6px;
+        padding: 8px;
+    }
+    
+    .user-group-card {
+        min-height: 70px;
+        margin-bottom: 12px;
+    }
+    
+    .user-group-text {
+        font-size: 16px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -1996,7 +2034,6 @@ img, a, .user-photo {
 /* ==================== 用户结果查看样式 ==================== */
 .user-results-controls {
     padding: 15px 20px;
-    border-bottom: 1px solid #e0e0e0;
     display: flex;
     align-items: center;
     gap: 15px;
@@ -2096,5 +2133,213 @@ img, a, .user-photo {
     .user-group-info p,
     .user-chat-info p {
         font-size: 13px;
+    }
+}
+
+/* ==================== 用户结果卡片样式 ==================== */
+.favorites-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    cursor: pointer;
+    position: relative;
+}
+
+.favorites-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.favorites-card.male {
+    border-color: #e3f2fd;
+}
+
+.favorites-card.male:hover {
+    border-color: #2196F3;
+    box-shadow: 0 8px 25px rgba(33, 150, 243, 0.2);
+}
+
+.favorites-card.female {
+    border-color: #fce4ec;
+}
+
+.favorites-card.female:hover {
+    border-color: #E91E63;
+    box-shadow: 0 8px 25px rgba(233, 30, 99, 0.2);
+}
+
+.favorites-card-photo {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    position: relative;
+}
+
+.favorites-card-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.favorites-card:hover .favorites-card-photo img {
+    transform: scale(1.05);
+}
+
+.favorites-card-info {
+    padding: 16px;
+    text-align: left;
+}
+
+.favorites-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.favorites-card-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #212529;
+    flex: 1;
+}
+
+.favorites-card-username {
+    font-size: 14px;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+
+.favorites-card-gender {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    margin-left: 8px;
+}
+
+.favorites-card.male .favorites-card-gender {
+    background: linear-gradient(45deg, #2196F3, #64B5F6);
+}
+
+.favorites-card.female .favorites-card-gender {
+    background: linear-gradient(45deg, #E91E63, #F48FB1);
+}
+
+/* 用户组信息卡片 */
+.user-group-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+    margin-bottom: 20px;
+    grid-column: 1 / -1; /* 占据整行 */
+}
+
+.user-group-text {
+    font-size: 20px;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* 聊天状态徽章 */
+.chat-status-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.chat-status-badge.completed {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.chat-status-badge.pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* 聊天状态样式 */
+.chat-status {
+    margin-top: 8px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.chat-status.completed {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.chat-status.pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    #userResultsGrid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .favorites-card-photo {
+        height: 160px;
+    }
+    
+    .favorites-card-info {
+        padding: 12px;
+    }
+    
+    .favorites-card-name {
+        font-size: 16px;
+    }
+    
+    .favorites-card-username {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    #userResultsGrid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+        padding: 12px;
+    }
+    
+    .favorites-card-photo {
+        height: 140px;
+    }
+    
+    .favorites-card-info {
+        padding: 10px;
+    }
+    
+    .favorites-card-name {
+        font-size: 15px;
+    }
+    
+    .favorites-card-username {
+        font-size: 12px;
     }
 }

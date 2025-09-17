@@ -863,6 +863,9 @@ async function validateUserSelections(req, res) {
  */
 async function executeGroupMatching(req, res) {
   try {
+    logger.info('收到分组匹配执行请求', { body: req.body, user: req.user?.username });
+    logger.operation('执行分组匹配算法', req.user?.id, { operator: req.user?.username });
+    
     const { group_size_male = 3, group_size_female = 3 } = req.body;
 
     // 验证输入
@@ -916,6 +919,9 @@ async function executeGroupMatching(req, res) {
  */
 async function executeChatMatching(req, res) {
   try {
+    logger.info('收到聊天匹配执行请求', { body: req.body, user: req.user?.username });
+    logger.operation('执行聊天匹配算法', req.user?.id, { operator: req.user?.username });
+    
     const { list_size = 5 } = req.body;
 
     // 验证输入

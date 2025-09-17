@@ -3085,33 +3085,34 @@ function renderUserGroupingResult(resultData) {
         return;
     }
     
-    // 显示组信息
-    contentEl.innerHTML = `
-        <div class="user-group-info">
-            <h3>您在第 ${groupId} 组</h3>
-            <p>共有 ${members.length} 位其他组员</p>
+    // 清空内容区域
+    contentEl.innerHTML = '';
+    
+    // 创建组信息卡片和组员列表
+    const groupInfoCard = `
+        <div class="user-group-card">
+            <div class="user-group-text">您在第 ${groupId} 组</div>
         </div>
     `;
     
-    // 显示组员列表（使用收藏列表的样式）
-    gridEl.innerHTML = members.map(member => {
-        const genderClass = member.gender === 'male' ? 'male' : 'female';
+    const memberCards = members.map(member => {
         const photoUrl = member.photo_url || '/images/default-avatar.png';
+        const displayName = member.name || member.baptismal_name || member.username;
         
         return `
-            <div class="favorites-card ${genderClass}">
-                <div class="favorites-card-photo">
-                    <img src="${photoUrl}" alt="${member.baptismal_name}" loading="lazy"
-                         onerror="this.src='/images/default-avatar.png'">
-                </div>
-                <div class="favorites-card-info">
-                    <div class="favorites-card-name">${member.baptismal_name}</div>
-                    <div class="favorites-card-username">${member.username}</div>
-                    <div class="favorites-card-gender">${member.gender === 'male' ? '男' : '女'}</div>
+            <div class="user-card">
+                <img src="${photoUrl}" class="user-photo" alt="${displayName}" 
+                     onerror="this.src='/images/default-avatar.png'">
+                <div class="user-info">
+                    <div class="user-username">${member.username}</div>
+                    <div class="user-baptismal">${displayName}</div>
                 </div>
             </div>
         `;
     }).join('');
+    
+    // 将组信息卡片放在最前面，然后是组员卡片
+    gridEl.innerHTML = groupInfoCard + memberCards;
     
     gridEl.style.display = 'grid';
 }
@@ -3138,35 +3139,22 @@ function renderUserChatResult(resultData) {
         </div>
     `;
     
-    // 显示推荐对象列表（使用收藏列表的样式）
+    // 显示推荐对象列表（使用用户卡片样式）
     gridEl.innerHTML = targets.map(target => {
-        const genderClass = target.gender === 'male' ? 'male' : 'female';
         const photoUrl = target.photo_url || '/images/default-avatar.png';
         const statusText = target.is_completed ? '已聊' : '未聊';
         const statusClass = target.is_completed ? 'completed' : 'pending';
+        const displayName = target.name || target.baptismal_name || target.username;
         
         return `
-            <div class="favorites-card ${genderClass}">
-                <div class="favorites-card-photo">
-                    <img src="${photoUrl}" alt="${target.baptismal_name}" loading="lazy"
-                         onerror="this.src='/images/default-avatar.png'">
+            <div class="user-card ${statusClass}">
+                <img src="${photoUrl}" class="user-photo" alt="${displayName}" 
+                     onerror="this.src='/images/default-avatar.png'">
+                <div class="user-info">
+                    <div class="user-username">${target.username}</div>
+                    <div class="user-baptismal">${displayName}</div>
                 </div>
-                <div class="favorites-card-info">
-                    <div class="favorites-card-name">${target.baptismal_name}</div>
-                    <div class="favorites-card-username">${target.username}</div>
-                    <div class="favorites-card-gender">${target.gender === 'male' ? '男' : '女'}</div>
-                    <div class="chat-status ${statusClass}" style="
-                        margin-top: 8px; 
-                        padding: 4px 8px; 
-                        border-radius: 12px; 
-                        font-size: 12px; 
-                        font-weight: 600;
-                        ${target.is_completed ? 
-                            'background-color: #d4edda; color: #155724;' : 
-                            'background-color: #fff3cd; color: #856404;'
-                        }
-                    ">${statusText}</div>
-                </div>
+                <div class="chat-status-badge ${statusClass}">${statusText}</div>
             </div>
         `;
     }).join('');

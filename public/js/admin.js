@@ -3835,3 +3835,50 @@ function renderChatResults(resultData) {
     
     contentArea.innerHTML = html;
 }
+
+// 加载覆盖层函数
+function showLoadingOverlay(message) {
+    // 移除已存在的覆盖层
+    hideLoadingOverlay();
+    
+    // 创建覆盖层
+    const overlay = document.createElement('div');
+    overlay.id = 'loadingOverlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        color: white;
+        font-size: 18px;
+        font-family: Arial, sans-serif;
+    `;
+    
+    overlay.innerHTML = `
+        <div style="text-align: center;">
+            <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 2s linear infinite; margin: 0 auto 20px;"></div>
+            <div>${message}</div>
+        </div>
+        <style>
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+    `;
+    
+    document.body.appendChild(overlay);
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.remove();
+    }
+}
