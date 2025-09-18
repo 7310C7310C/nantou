@@ -30,9 +30,11 @@ app.use((req, res, next) => {
   
   // 允许的来源
   const allowedOrigins = [
-    'http://localhost:3001',
-    'http://127.0.0.1:3001',
-    'http://0.0.0.0:3001'
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://0.0.0.0:3000',
+    'https://nantou.love',
+    'http://nantou.love'
   ];
   
   // 如果请求来自允许的源或者是同源请求
