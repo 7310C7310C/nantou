@@ -79,6 +79,63 @@ function showConfirm(message, title = '确认') {
     return showMessageModal(message, title, true);
 }
 
+// 更新UI为登出状态
+function updateUIForLoggedOutState() {
+    const loginBtn = document.getElementById('loginBtn');
+    const userInfo = document.getElementById('userInfo');
+    const adminPanelBtn = document.getElementById('adminPanelBtn');
+    const favoritesBtn = document.getElementById('favoritesBtn');
+    const favoritesModal = document.getElementById('favoritesModal');
+    const searchInput = document.getElementById('searchInput');
+    
+    // 重置UI显示状态
+    if (loginBtn) loginBtn.style.display = 'block';
+    if (userInfo) userInfo.style.display = 'none';
+    if (adminPanelBtn) adminPanelBtn.style.display = 'none';
+    if (favoritesBtn) favoritesBtn.style.display = 'none';
+    
+    // 关闭收藏模态框
+    if (favoritesModal) favoritesModal.style.display = 'none';
+    
+    // 重置搜索框状态
+    if (searchInput) {
+        searchInput.placeholder = '输入编号…';
+        searchInput.setAttribute('pattern', '[0-9]*');
+        searchInput.setAttribute('inputmode', 'numeric');
+    }
+    
+    // 重新加载页面数据
+    loadUsers();
+}
+
+// 显示通知消息
+function showNotification(message, type = 'info') {
+    // 使用现有的 showAlert 功能
+    showAlert(message);
+}
+
+// 处理认证失败的通用函数
+function handleAuthError() {
+    console.log('认证失败，清理本地存储');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('username');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userGender');
+    localStorage.removeItem('isSigned');
+    
+    // 关闭可能打开的模态框
+    const favoritesModal = document.getElementById('favoritesModal');
+    if (favoritesModal) favoritesModal.style.display = 'none';
+    
+    // 更新UI状态
+    updateUIForLoggedOutState();
+    
+    // 提示用户重新登录
+    showNotification('登录已过期，请重新登录');
+}
+
 // 按性别缓存数据
 let genderCache = {
     female: {
@@ -218,7 +275,13 @@ async function refreshCurrentUserToLocalStorage() {
     if (!authToken) return null;
     try {
         const resp = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${authToken}` } });
-        if (!resp.ok) return null;
+        if (!resp.ok) {
+            // 如果认证失败（401），使用通用错误处理函数
+            if (resp.status === 401) {
+                handleAuthError();
+            }
+            return null;
+        }
         const json = await resp.json();
         const user = json.data && json.data.user;
         if (user) {
@@ -232,6 +295,7 @@ async function refreshCurrentUserToLocalStorage() {
             return user;
         }
     } catch (e) {
+        console.error('获取用户信息时发生错误:', e);
         return null;
     }
     return null;
@@ -1017,8 +1081,6 @@ function setupLoginEvents() {
 
             const data = await response.json();
             
-            // 调试信息
-            console.log('登录响应数据:', data);
 
             if (response.ok) {
                 // 登录成功
@@ -1338,6 +1400,11 @@ async function toggleFavorite(participantId, btnEl) {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
         if (!resp.ok) {
+            // 检查是否是认证错误
+            if (resp.status === 401) {
+                handleAuthError();
+                return; // 直接返回，不需要回滚
+            }
             throw new Error('请求失败');
         }
         const data = await resp.json();
@@ -1456,6 +1523,9 @@ async function loadFavoritesModal(forceReload = false) {
             }).join('');
             grid.insertAdjacentHTML('beforeend', cardsHtml);
             updateHeartIcons(grid);
+        } else if (resp.status === 401) {
+            // 认证失败，使用通用错误处理函数
+            handleAuthError();
         }
     } catch (e) {
         console.error('加载收藏列表失败', e);
@@ -3048,6 +3118,15 @@ async function loadSelectedUserBatchResult() {
         });
         
         if (!response.ok) {
+            // 如果是 404，尝试解析错误消息
+            if (response.status === 404) {
+                try {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || '未找到匹配结果');
+                } catch (parseError) {
+                    throw new Error('未找到匹配结果');
+                }
+            }
             throw new Error('获取结果失败');
         }
         
@@ -3067,7 +3146,8 @@ async function loadSelectedUserBatchResult() {
         
     } catch (error) {
         console.error('加载结果失败:', error);
-        showUserResultsEmpty('加载失败，请稍后重试');
+        // 显示具体的错误信息，而不是通用的"加载失败"
+        showUserResultsEmpty(error.message || '加载失败，请稍后重试');
     }
 }
 
