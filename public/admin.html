@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>管理后台</title>
-    <link rel="stylesheet" href="css/style.css?v=20250918">
-    <link rel="stylesheet" href="css/admin.css?v=20250918">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <script>
+        const v = Date.now();
+        document.write('<link rel="stylesheet" href="css/style.css?v=' + v + '">');
+        document.write('<link rel="stylesheet" href="css/admin.css?v=' + v + '">');
+    </script>
 </head>
-<body>
     <div class="admin-container">
         <!-- 返回首页按钮 - 固定在左上角 -->
         <button class="btn btn-primary" id="backHomeBtn">返回首页</button>
@@ -744,6 +747,9 @@
         </div>
     </div>
 
-    <script src="js/admin.js?v=20250918"></script>
+    <script>
+        const adminJsV = Date.now();
+        document.write(`<script src="js/admin.js?v=${adminJsV}"><\/script>`);
+    </script>
 </body>
 </html>
