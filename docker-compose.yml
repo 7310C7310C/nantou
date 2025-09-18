@@ -1,0 +1,61 @@
+# docker-compose.yml - 您本地开发环境的蓝图 (安全版本)
+
+version: '3.8'
+
+services:
+  # --- 1. 您的Node.js应用程序服务 ---
+  app:
+    image: node:18-alpine      # 使用一个轻量级的Node.js 18官方镜像
+    container_name: nantou_app # 生产环境容器名
+    working_dir: /app            # 设置容器内的工作目录
+    volumes:
+      - .:/app                  # 将您本地的项目文件夹同步到容器的/app目录
+    ports:
+      - "3000:3000"             # 将您本地电脑的3000端口映射到容器的3000端口
+    environment:
+      # --- 生产环境配置 ---
+      NODE_ENV: production
+      # 【关键】应用连接数据库时，主机名直接用下面的服务名'db'
+      DB_HOST: db               
+      # 从.env文件中读取敏感信息
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      - db                      # 告诉Docker，必须先启动数据库服务
+    # 生产环境启动命令：安装依赖后直接启动应用
+    command: sh -c "npm install --production && node server.js"
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s 
+
+  # --- 2. 您的MySQL数据库服务 ---
+  db:
+    image: mysql:8.0             # 使用MySQL 8.0官方镜像
+    container_name: nantou_db    # 生产环境容器名
+    restart: always
+    environment:
+      # 【关键】所有敏感信息都从 .env 文件中读取
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD} # 设置root密码
+      MYSQL_DATABASE: ${DB_NAME}               # 自动创建您指定的数据库
+      MYSQL_USER: ${DB_USER}                   # 自动创建您指定的用户
+      MYSQL_PASSWORD: ${DB_PASSWORD}             # 设置该用户的密码
+      # 生产环境安全配置
+      MYSQL_ROOT_HOST: 'localhost'             # 仅允许本地连接
+      # 设置时区为北京时间
+      TZ: Asia/Shanghai
+    command: --default-authentication-plugin=mysql_native_password --default-time-zone=+08:00
+    # 生产环境不暴露数据库端口
+    # ports:
+    #   - "3306:3306"             
+    volumes:
+      - db_data:/var/lib/mysql    # 将数据库文件持久化，防止重启容器后数据丢失
+      # 【新增】将您的SQL脚本挂载到MySQL容器的初始化目录中
+      # 容器首次启动时，会自动执行这个目录下的所有.sql文件
+      - ./sql:/docker-entrypoint-initdb.d
+volumes:
+  db_data:

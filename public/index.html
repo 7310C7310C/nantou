@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一线牵</title>
+    <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+    <!-- 登录按钮 - 固定在左上角 -->
+    <button class="login-btn" id="loginBtn">登录</button>
+
+    <div class="header">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <h1 class="title">一线牵</h1>
+        </div>
+        <!-- 用户信息 -->
+        <div class="user-dropdown" id="userInfo">
+            <button class="role-btn" id="roleBtn">角色名</button>
+            <div class="user-dropdown-menu" id="userDropdownMenu">
+                <div class="user-info-item" id="userInfoItem" style="display:none;">账号：</div>
+                <button class="logout-btn" id="logoutBtn">登出</button>
+            </div>
+        </div>
+    <!-- 我的喜欢按钮 -->
+    <button class="favorites-btn" id="favoritesBtn" style="display:none;">我的喜欢</button>
+    </div>
+
+    <!-- 管理后台按钮 - 固定在右上角 -->
+    <button id="adminPanelBtn">管理后台</button>
+
+    <div class="search-container">
+        <div class="search-wrapper">
+            <input type="text" class="search-input" id="searchInput" placeholder="输入编号……" pattern="[0-9]*" inputmode="numeric" oninput="handleSearchInput(this)">
+            <button class="clear-btn" id="clearBtn" onclick="clearSearch()" style="display: none;">×</button>
+        </div>
+    </div>
+
+    <div class="gender-toggle">
+        <button class="gender-btn" id="femaleBtn" onclick="switchGender('female')">女</button>
+        <button class="gender-btn" id="maleBtn" onclick="switchGender('male')">男</button>
+    </div>
+
+    <!-- 功能匹配按钮 - 根据功能开关显示/隐藏 -->
+    <div class="feature-matching-container">
+        <div class="matching-group">
+            <button class="feature-matching-btn" id="groupMatchingBtn" style="display:none;">分组匹配</button>
+            <button class="feature-matching-btn" id="viewGroupResultBtn" style="display:none;">查看结果</button>
+        </div>
+        <div class="matching-group">
+            <button class="feature-matching-btn" id="chatMatchingBtn" style="display:none;">聊天匹配</button>
+            <button class="feature-matching-btn" id="viewChatResultBtn" style="display:none;">查看结果</button>
+        </div>
+    </div>
+
+    <!-- 红娘配对管理按钮 - 放在性别选择下方居中 -->
+    <div class="manage-matches-container">
+        <button class="manage-matches-btn" id="manageMatchesBtn" style="display:none;">配对管理</button>
+    </div>
+
+    <div class="users-grid" id="usersGrid">
+    </div>
+
+    <!-- 全屏图片查看器 -->
+    <div class="fullscreen-viewer" id="fullscreenViewer">
+        <div class="viewer-content">
+            <div class="viewer-loading" id="viewerLoading" style="display: none;">
+                <div class="viewer-loading-spinner"></div>
+                加载中...
+            </div>
+            <img id="viewerImage" src="" alt="用户照片">
+            <div class="viewer-user-info">
+                <div class="viewer-username" id="viewerUsername"></div>
+                <div class="viewer-baptismal" id="viewerBaptismal"></div>
+            </div>
+            <div class="viewer-controls">
+                <button class="control-btn prev-btn" id="prevBtn">‹</button>
+                <span class="image-counter" id="imageCounter">1 / 1</span>
+                <button class="control-btn next-btn" id="nextBtn">›</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 喜欢列表全屏模态 -->
+    <div class="favorites-modal" id="favoritesModal">
+        <div class="favorites-modal-content">
+            <div class="favorites-modal-header">
+                <h2>我的喜欢</h2>
+                <button class="favorites-close" id="closeFavoritesModal">×</button>
+            </div>
+            <div class="favorites-modal-body">
+                <div class="favorites-grid" id="favoritesGrid"></div>
+                <div class="favorites-empty" id="favoritesEmptyModal" style="display:none;">暂无收藏</div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 登录模态框 -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-content">
+            <div class="login-header">
+                <h2>登录</h2>
+                <button class="close-btn" id="closeLoginBtn">&times;</button>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername">用户名</label>
+                    <input type="text" id="loginUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">密码</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <div class="error-message" id="loginError"></div>
+                <button type="submit" class="submit-btn">登录</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 配对界面模态框 -->
+    <div class="favorites-modal" id="matchingModal">
+        <div class="favorites-modal-content">
+            <div class="favorites-modal-header">
+                <h2>为 <span id="targetParticipantName"></span> 配对</h2>
+                <button class="favorites-close" id="closeMatchingModal">×</button>
+            </div>
+            <div class="matching-search-container">
+                <input type="text" class="matching-search" id="matchingSearch" placeholder="搜索ID或姓名..." autocomplete="off">
+                <button class="search-clear-btn" id="matchingSearchClear" style="display:none;" title="清除搜索">×</button>
+            </div>
+            <div class="favorites-modal-body">
+                <div class="favorites-loading" id="matchingLoading" style="display:none;">加载中...</div>
+                <div class="favorites-grid" id="matchingGrid"></div>
+                <div class="favorites-empty" id="matchingEmpty" style="display:none;">暂无可配对的参与者</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 配对管理模态框 -->
+    <div class="favorites-modal" id="manageMatchesModal">
+        <div class="favorites-modal-content">
+            <div class="favorites-modal-header">
+                <h2>配对管理</h2>
+                <button class="favorites-close" id="closeManageMatchesModal">×</button>
+            </div>
+            <div class="matching-search-container" style="padding:0 20px;">
+                <input type="text" class="matching-search" id="manageMatchesSearch" placeholder="搜索ID或姓名..." autocomplete="off">
+                <button class="search-clear-btn" id="manageMatchesSearchClear" style="display:none;" title="清除搜索">×</button>
+            </div>
+            <div class="favorites-modal-body">
+                <div class="favorites-loading" id="manageMatchesLoading" style="display:none;">加载中...</div>
+                <div class="manage-matches-grid" id="manageMatchesGrid"></div>
+                <div class="favorites-empty" id="manageMatchesEmpty" style="display:none;">暂无配对记录</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 选择最喜欢的五人模态（分组匹配/聊天匹配调用） -->
+    <div class="favorites-modal" id="selectionsModal">
+        <div class="favorites-modal-content">
+            <div class="favorites-modal-header">
+                <h2>选择最喜欢的人（拖动排序）</h2>
+                <button class="favorites-close" id="closeSelectionsModal">×</button>
+            </div>
+            <div class="favorites-modal-body">
+                <div class="selections-top" id="selectionsTop">
+                    <!-- 5 个空白卡位 -->
+                </div>
+                <div class="selections-note">从下面的“我的喜欢”中选择，请选满 5 位</div>
+                <div class="favorites-grid" id="selectionsGrid"></div>
+                <div class="favorites-empty" id="selectionsEmptyModal" style="display:none;">暂无可选择的收藏</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 星级评分模态框 -->
+    <div class="star-rating-modal" id="starRatingModal">
+        <div class="star-rating-content">
+            <div class="star-rating-header">
+                <h3>设置推荐星级</h3>
+                <button class="star-rating-close" id="closeStarRatingModal">×</button>
+            </div>
+            <div class="star-rating-body">
+                <div class="star-rating-participants">
+                    <div class="participant-info" id="starRatingParticipant1"></div>
+                    <div class="match-arrow">⇄</div>
+                    <div class="participant-info" id="starRatingParticipant2"></div>
+                </div>
+                <div class="star-rating-stars">
+                    <span class="star" data-rating="1">★</span>
+                    <span class="star" data-rating="2">★</span>
+                    <span class="star" data-rating="3">★</span>
+                    <span class="star" data-rating="4">★</span>
+                    <span class="star" data-rating="5">★</span>
+                </div>
+                <div class="star-rating-actions">
+                    <button class="btn-remove" id="removeMatchBtn">清除配对</button>
+                    <button class="btn-confirm" id="confirmRatingBtn">确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用模态框 -->
+    <div class="message-modal" id="messageModal">
+        <div class="message-modal-content">
+            <div class="message-modal-header">
+                <h3 id="messageModalTitle">提示</h3>
+                <button class="message-modal-close" id="closeMessageModal">×</button>
+            </div>
+            <div class="message-modal-body">
+                <p id="messageModalText"></p>
+            </div>
+            <div class="message-modal-actions">
+                <button class="btn-cancel" id="messageModalCancel" style="display: none;">取消</button>
+                <button class="btn-confirm" id="messageModalConfirm">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 匹配结果查看模态框 -->
+    <div class="favorites-modal" id="userResultsModal">
+        <div class="favorites-modal-content">
+            <div class="favorites-modal-header">
+                <h2 id="userResultsTitle">匹配结果</h2>
+                <button class="favorites-close" id="closeUserResultsModal">×</button>
+            </div>
+            <div class="user-results-controls">
+                <select id="userResultsBatchSelect">
+                    <option value="">请选择轮次</option>
+                </select>
+            </div>
+            <div class="favorites-modal-body">
+                <div class="favorites-loading" id="userResultsLoading" style="display:none;">加载中...</div>
+                <div class="favorites-grid" id="userResultsGrid"></div>
+                <div class="user-results-content" id="userResultsContent"></div>
+                <div class="favorites-empty" id="userResultsEmpty" style="display:none;">暂无匹配结果</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+    <script src="js/Sortable.min.js"></script>
+    <script src="js/index.js"></script>
+</body>
+</html>

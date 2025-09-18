@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>管理后台</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- 返回首页按钮 - 固定在左上角 -->
+        <button class="btn btn-primary" id="backHomeBtn">返回首页</button>
+        
+        <!-- 头部 -->
+        <div class="header">
+            <div class="logo">管理后台</div>
+            <!-- 用户信息 -->
+            <div class="user-info" id="userInfo">
+                <div class="user-dropdown">
+                    <button class="role-btn" id="roleBtn">角色名</button>
+                    <div class="user-dropdown-menu" id="userDropdownMenu">
+                        <div class="user-info-item" id="userInfoItem" style="display:none;">账号：</div>
+                        <button class="logout-btn" id="logoutBtn">登出</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主要内容 -->
+        <div class="main-content" id="mainContent">
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <h3>👥 报名录入</h3>
+                    <button class="btn btn-primary" id="openRegistrationBtn">开始录入</button>
+                    <button class="btn btn-secondary" id="openManageBtn" style="margin-top: 10px;">管理已录入</button>
+                </div>
+
+                <div class="dashboard-card">
+                    <h3>✅ 现场签到</h3>
+                    <button class="btn btn-primary" id="openCheckinBtn">开始签到</button>
+                    <button class="btn btn-secondary" id="clearCheckinBtn" style="margin-top: 10px;">清空签到</button>
+                </div>
+
+                <div class="dashboard-card">
+                    <h3>🧮 算法操作</h3>
+                    <button class="btn btn-primary" id="executeGroupMatchingBtn">执行分组匹配</button>
+                    <button class="btn btn-primary" id="executeChatMatchingBtn" style="margin-top: 10px;">执行聊天匹配</button>
+                </div>
+
+                <div class="dashboard-card">
+                    <h3>💕 红娘操作</h3>
+                    <button class="btn btn-primary" id="startMatchmakingBtn">开始配对</button>
+                </div>
+
+                <div class="dashboard-card">
+                    <h3>📊 数据统计</h3>
+                    <button class="btn btn-primary" id="openSelectionsBtn">互选情况</button>
+                    <button class="btn btn-secondary" id="viewGroupingResultsBtn" style="margin-top: 10px;">分组匹配结果</button>
+                    <button class="btn btn-secondary" id="viewChatResultsBtn" style="margin-top: 10px;">聊天匹配结果</button>
+                </div>
+
+                <div class="dashboard-card">
+                    <h3>📋 系统日志</h3>
+                    <button class="btn btn-primary" id="openLogsBtn">查看日志</button>
+                </div>
+
+                <div class="dashboard-card">
+                    <h3>⚙️ 系统设置</h3>
+                    <button class="btn btn-primary" id="openStaffManagementBtn">工作人员管理</button>
+                    <button class="btn btn-secondary" id="openFeatureFlagsBtn" style="margin-top: 10px;">功能开关</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 录入界面模态框 -->
+    <div class="registration-modal" id="registrationModal">
+        <div class="registration-content">
+            <div class="registration-header">
+                <h2>📝 报名录入</h2>
+                <button class="close-btn" id="closeRegistrationBtn">&times;</button>
+            </div>
+            
+            <form id="registrationForm">
+                <div class="form-group">
+                    <label for="name">姓名 *</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="baptismal_name">圣名 *</label>
+                    <input type="text" id="baptismal_name" name="baptismal_name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="gender">性别 *</label>
+                    <select id="gender" name="gender" required>
+                        <option value="">请选择性别</option>
+                        <option value="male">男</option>
+                        <option value="female">女</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">手机号 *</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>照片 * (最多5张，每张不超过15MB)</label>
+                    <div class="photo-upload" id="photoUpload">
+                        <p>点击选择或拖拽照片到此处</p>
+                        <p style="font-size: 12px; color: #666; margin-top: 5px;">💡 提示：第一张照片将作为主图，可点击"设为主图"按钮调整</p>
+                        <p style="font-size: 11px; color: #999; margin-top: 3px;">📁 支持JPG、PNG、GIF等图片格式，单张照片大小不超过15MB</p>
+                        <input type="file" id="photoInput" multiple accept="image/*" style="display: none;">
+                    </div>
+                    <div class="photo-preview" id="photoPreview"></div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">取消</button>
+                    <button type="submit" class="btn btn-primary">创建账号</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 确认弹窗 -->
+    <div class="confirm-modal" id="confirmModal">
+        <div class="confirm-content">
+            <h3>确认信息</h3>
+            <div class="confirm-info" id="confirmInfo">
+                <!-- 确认信息将在这里显示 -->
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelConfirmBtn">取消</button>
+                <button type="button" class="btn btn-success" id="confirmSubmitBtn">确认提交</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 结果弹窗 -->
+    <div class="result-modal" id="resultModal">
+        <div class="result-content">
+            <h3>✅ 账号创建成功</h3>
+            <div class="account-info" id="accountInfo">
+                <!-- 账号信息将在这里显示 -->
+            </div>
+            <button type="button" class="btn btn-primary" id="closeResultBtn">继续录入</button>
+        </div>
+    </div>
+
+    <!-- 错误提示弹窗 -->
+    <div class="error-modal" id="errorModal">
+        <div class="error-content">
+            <h3>⚠️ 上传错误</h3>
+            <div class="error-info" id="errorInfo">
+                <!-- 错误信息将在这里显示 -->
+            </div>
+            <button type="button" class="btn btn-primary" id="closeErrorBtn">确定</button>
+        </div>
+    </div>
+
+    <!-- 管理界面模态框 -->
+    <div class="manage-modal" id="manageModal">
+        <div class="manage-content">
+            <div class="manage-header">
+                <h2>📋 管理已录入人员</h2>
+                <button class="close-btn" id="closeManageBtn">&times;</button>
+            </div>
+            
+            <div class="manage-filters">
+                <input type="text" id="searchInput" placeholder="搜索姓名、用户名或手机号..." class="search-input">
+                <select id="genderFilter" class="filter-select">
+                    <option value="">所有性别</option>
+                    <option value="male">男</option>
+                    <option value="female">女</option>
+                </select>
+            </div>
+            
+            <div class="participants-list" id="participantsList">
+                <!-- 参与者列表将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认弹窗 -->
+    <div class="delete-modal" id="deleteModal">
+        <div class="delete-content">
+            <h3>⚠️ 删除账号确认</h3>
+            
+            <!-- 用户信息显示区域 -->
+            <div class="delete-user-info" id="deleteUserInfo">
+                <!-- 用户信息将在这里显示 -->
+            </div>
+            
+            <div class="delete-warning">
+                <p><strong>警告：</strong>此操作将永久删除该账号的所有数据，包括：</p>
+                <ul>
+                    <li>参与者基本信息</li>
+                    <li>所有上传的照片</li>
+                    <li>相关匹配记录</li>
+                </ul>
+                <p>此操作不可撤销！</p>
+            </div>
+            <div class="delete-confirm">
+                <p>请输入"<strong>确定</strong>"二字以确认删除：</p>
+                <input type="text" id="deleteConfirmInput" placeholder="请输入：确定" class="confirm-input">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelDeleteBtn">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重设密码确认弹窗 -->
+    <div class="reset-password-modal" id="resetPasswordModal">
+        <div class="reset-password-content">
+            <h3>🔑 重设密码确认</h3>
+            
+            <!-- 用户信息显示区域 -->
+            <div class="reset-password-user-info" id="resetPasswordUserInfo">
+                <!-- 用户信息将在这里显示 -->
+            </div>
+            
+            <div class="reset-password-warning">
+                <p><strong>注意：</strong>重设密码后，用户需要使用新密码登录。</p>
+                <p>新密码将显示在结果页面，请及时告知用户。</p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelResetPasswordBtn">取消</button>
+                <button type="button" class="btn btn-warning" id="confirmResetPasswordBtn">确认重设</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重设密码结果弹窗 -->
+    <div class="reset-password-result-modal" id="resetPasswordResultModal">
+        <div class="reset-password-result-content">
+            <h3>✅ 密码重设成功</h3>
+            <div class="new-password-info" id="newPasswordInfo">
+                <!-- 新密码信息将在这里显示 -->
+            </div>
+            <button type="button" class="btn btn-primary" id="closeResetPasswordResultBtn">确定</button>
+        </div>
+    </div>
+
+    <!-- 日志查看模态框 -->
+    <div class="logs-modal" id="logsModal">
+        <div class="logs-content">
+            <div class="logs-header">
+                <h2>📊 系统日志</h2>
+                <button class="close-btn" id="closeLogsBtn">&times;</button>
+            </div>
+            
+            <div class="logs-controls">
+                <input type="date" id="logDate" onchange="loadLogs()">
+                <select id="logLevel" onchange="loadLogs()">
+                    <option value="all">所有级别</option>
+                    <option value="error">错误</option>
+                    <option value="warn">警告</option>
+                    <option value="operation">操作</option>
+                    <option value="success">成功</option>
+                    <option value="info">信息</option>
+                </select>
+                <button onclick="loadLogs()">刷新</button>
+            </div>
+
+            <div class="search-box">
+                <input type="text" id="searchKeyword" placeholder="搜索日志关键词..." oninput="searchLogs()">
+            </div>
+
+            <div class="logs-display" id="logsDisplay">
+                <div class="log-entry"><div class="log-timestamp">-</div><div class="log-level info">-</div><div class="log-message">正在加载日志...</div><div class="log-data-column"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 现场签到模态框 -->
+    <div class="checkin-modal" id="checkinModal">
+        <div class="checkin-content">
+            <button class="close-btn-floating" id="closeCheckinBtn">&times;</button>
+            
+            <!-- 实时数据看板 -->
+            <div class="checkin-dashboard">
+                <div class="stat-card">
+                    <h3>已签到</h3>
+                    <div class="stat-number">
+                        <span id="checkedInCount">0</span> / <span id="totalCount">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>男生</h3>
+                    <div class="stat-number">
+                        <span id="maleCheckedCount">0</span> / <span id="maleTotalCount">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>女生</h3>
+                    <div class="stat-number">
+                        <span id="femaleCheckedCount">0</span> / <span id="femaleTotalCount">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 搜索和过滤器 -->
+            <div class="checkin-filters">
+                <div class="search-container">
+                    <input type="text" id="checkinSearchInput" placeholder="搜索用户ID或姓名..." class="search-input">
+                    <button class="clear-search-btn" id="clearCheckinSearchBtn" style="display: none;">&times;</button>
+                </div>
+                <div class="filter-row">
+                    <div class="gender-toggle">
+                        <input type="radio" id="genderFemale" name="checkinGender" value="female" checked>
+                        <label for="genderFemale" class="gender-btn">女</label>
+                        <input type="radio" id="genderMale" name="checkinGender" value="male">
+                        <label for="genderMale" class="gender-btn">男</label>
+                    </div>
+                    <div class="checkbox-center">
+                        <label class="checkbox-option-center">
+                            <input type="checkbox" id="uncheckedOnlyCheckbox">
+                            <span>只看未签到</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 参与者签到列表 -->
+            <div class="checkin-list" id="checkinList">
+                <!-- 签到列表将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 签到确认弹窗 -->
+    <div class="checkin-confirm-modal" id="checkinConfirmModal">
+        <div class="checkin-confirm-content">
+            <h3 id="checkinConfirmTitle">确认签到</h3>
+            
+            <!-- 用户信息显示区域 -->
+            <div class="checkin-user-info" id="checkinUserInfo">
+                <!-- 用户信息将在这里显示 -->
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelCheckinConfirmBtn">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmCheckinBtn">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 签到成功提示弹窗 -->
+    <div class="checkin-success-modal" id="checkinSuccessModal">
+        <div class="checkin-success-content">
+            <h3 id="successTitle">✅ 操作成功</h3>
+            <div class="success-message" id="successMessage">
+                <!-- 成功消息将在这里显示 -->
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-primary" id="closeSuccessBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清空签到确认弹窗 -->
+    <div class="clear-checkin-modal" id="clearCheckinModal">
+        <div class="clear-checkin-content">
+            <h3>⚠️ 清空签到确认</h3>
+            <div class="clear-checkin-warning">
+                <p><strong>警告：</strong>此操作将重置所有人员的签到状态为"未签到"。</p>
+                <p>此操作不可撤销！</p>
+            </div>
+            <div class="clear-checkin-confirm">
+                <p>请输入"<strong>确定</strong>"二字以确认清空：</p>
+                <input type="text" id="clearCheckinConfirmInput" placeholder="请输入：确定" class="confirm-input">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelClearCheckinBtn">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmClearCheckinBtn" disabled>确认清空</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 大图查看 -->
+    <div class="fullscreen-image" id="fullscreenImage">
+        <img id="fullscreenImg" src="" alt="大图">
+    </div>
+
+    <!-- 进度提示 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h3>正在处理...</h3>
+            <p>请稍候</p>
+        </div>
+    </div>
+
+    <!-- 工作人员管理模态框 -->
+    <div class="staff-management-modal" id="staffManagementModal">
+        <div class="staff-management-content">
+            <div class="staff-management-header">
+                <h2>👥 工作人员管理</h2>
+                <button class="close-btn" id="closeStaffManagementBtn">&times;</button>
+            </div>
+            
+            <div class="staff-management-actions">
+                <button class="btn btn-success" id="createStaffBtn">新建工作人员</button>
+                <!-- 角色筛选 -->
+                <select id="staffRoleFilter" class="filter-select" style="margin-left:12px;min-width:140px;">
+                    <option value="">所有角色</option>
+                    <option value="admin">管理员</option>
+                    <option value="staff">工作人员</option>
+                    <option value="matchmaker">红娘</option>
+                </select>
+            </div>
+            
+            <div class="staff-list" id="staffList">
+                <!-- 工作人员列表将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建工作人员模态框 -->
+    <div class="create-staff-modal" id="createStaffModal">
+        <div class="create-staff-content">
+            <div class="create-staff-header">
+                <h2>➕ 新建工作人员</h2>
+                <button class="close-btn" id="closeCreateStaffBtn">&times;</button>
+            </div>
+            
+            <form id="createStaffForm">
+                <div class="form-group">
+                    <label for="staffRole">角色 *</label>
+                    <select id="staffRole" name="role" required>
+                        <option value="">请选择角色</option>
+                        <option value="admin">管理员 (admin)</option>
+                        <option value="staff">工作人员 (staff)</option>
+                        <option value="matchmaker">红娘 (matchmaker)</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelCreateStaffBtn">取消</button>
+                    <button type="submit" class="btn btn-success">创建账号</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 创建工作人员结果模态框 -->
+    <div class="create-staff-result-modal" id="createStaffResultModal">
+        <div class="create-staff-result-content">
+            <h3>✅ 工作人员账号创建成功</h3>
+            <div class="staff-account-info" id="staffAccountInfo">
+                <!-- 账号信息将在这里显示 -->
+            </div>
+            <button type="button" class="btn btn-primary" id="closeCreateStaffResultBtn">确定</button>
+        </div>
+    </div>
+
+    <!-- 重设工作人员密码确认弹窗 -->
+    <div class="reset-staff-password-modal" id="resetStaffPasswordModal">
+        <div class="reset-staff-password-content">
+            <h3>🔑 重设密码确认</h3>
+            
+            <!-- 工作人员信息显示区域 -->
+            <div class="reset-staff-password-user-info" id="resetStaffPasswordUserInfo">
+                <!-- 工作人员信息将在这里显示 -->
+            </div>
+            
+            <div class="reset-staff-password-warning">
+                <p><strong>注意：</strong>重设密码后，该工作人员需要使用新密码登录。</p>
+                <p>新密码将显示在结果页面，请及时告知该工作人员。</p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelResetStaffPasswordBtn">取消</button>
+                <button type="button" class="btn btn-warning" id="confirmResetStaffPasswordBtn">确认重设</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重设工作人员密码结果弹窗 -->
+    <div class="reset-staff-password-result-modal" id="resetStaffPasswordResultModal">
+        <div class="reset-staff-password-result-content">
+            <h3>✅ 密码重设成功</h3>
+            <div class="new-staff-password-info" id="newStaffPasswordInfo">
+                <!-- 新密码信息将在这里显示 -->
+            </div>
+            <button type="button" class="btn btn-primary" id="closeResetStaffPasswordResultBtn">确定</button>
+        </div>
+    </div>
+
+    <!-- 删除工作人员确认弹窗 -->
+    <div class="delete-staff-modal" id="deleteStaffModal">
+        <div class="delete-staff-content">
+            <h3>⚠️ 删除工作人员确认</h3>
+            
+            <!-- 工作人员信息显示区域 -->
+            <div class="delete-staff-user-info" id="deleteStaffUserInfo">
+                <!-- 工作人员信息将在这里显示 -->
+            </div>
+            
+            <div class="delete-staff-warning">
+                <p><strong>警告：</strong>此操作将永久删除该工作人员账号，包括：</p>
+                <ul>
+                    <li>账号基本信息</li>
+                    <li>相关操作记录</li>
+                </ul>
+                <p>此操作不可撤销！</p>
+            </div>
+            <div class="delete-staff-confirm">
+                <p>请输入"<strong>确定</strong>"二字以确认删除：</p>
+                <input type="text" id="deleteStaffConfirmInput" placeholder="请输入：确定" class="confirm-input">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelDeleteStaffBtn">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteStaffBtn" disabled>确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast提示容器 -->
+    <div id="toastContainer" class="toast-container">    </div>
+
+    <!-- 互选情况模态框 -->
+    <div class="selections-modal" id="selectionsModal">
+        <div class="selections-content">
+            <button class="close-btn-floating" id="closeSelectionsBtn">&times;</button>
+            
+            <!-- 实时数据看板 -->
+            <div class="selections-dashboard">
+                <div class="stat-card">
+                    <h3>总参与者</h3>
+                    <div class="stat-number">
+                        <span id="selectionsTotal">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>男生</h3>
+                    <div class="stat-number">
+                        <span id="selectionsMaleCount">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>女生</h3>
+                    <div class="stat-number">
+                        <span id="selectionsFemaleCount">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 搜索和过滤器 -->
+            <div class="selections-filters">
+                <div class="search-container">
+                    <input type="text" id="selectionsSearchInput" placeholder="搜索编号或姓名..." class="search-input">
+                    <button class="clear-search-btn" id="clearSelectionsSearchBtn" style="display: none;">&times;</button>
+                </div>
+                <div class="filter-row">
+                    <div class="gender-toggle">
+                        <input type="radio" id="selectionsGenderFemale" name="selectionsGender" value="female" checked>
+                        <label for="selectionsGenderFemale" class="gender-btn">女</label>
+                        <input type="radio" id="selectionsGenderMale" name="selectionsGender" value="male">
+                        <label for="selectionsGenderMale" class="gender-btn">男</label>
+                    </div>
+                    <div class="selections-filter-container">
+                        <div class="filter-group">
+                            <label class="radio-option">
+                                <input type="radio" name="selectionsFilter" id="allSelectionsFilter" checked>
+                                <span>全部</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="selectionsFilter" id="withSelectionsOnlyCheckbox">
+                                <span>只看有互选的</span>
+                            </label>
+                        </div>
+                        <div class="filter-group">
+                            <label class="radio-option">
+                                <input type="radio" name="selectionsFilter" id="notFullSelectionsCheckbox">
+                                <span>只看未选满的</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="selectionsFilter" id="fullSelectionsCheckbox">
+                                <span>只看选满的</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 参与者互选列表 -->
+            <div class="selections-list" id="selectionsList">
+                <!-- 互选列表将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 功能开关模态框 -->
+    <div class="feature-flags-modal" id="featureFlagsModal">
+        <div class="feature-flags-content">
+            <div class="feature-flags-header">
+                <h2>⚙️ 功能开关</h2>
+                <button class="close-btn" id="closeFeatureFlagsBtn">&times;</button>
+            </div>
+            
+            <div class="feature-flags-body">
+                <div class="feature-flag-item">
+                    <div class="feature-flag-info">
+                        <h3>📊 分组匹配功能</h3>
+                        <p>启用后可以对参与者进行分组匹配操作</p>
+                    </div>
+                    <div class="feature-flag-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="groupingToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="feature-flag-item">
+                    <div class="feature-flag-info">
+                        <h3>💬 聊天匹配功能</h3>
+                        <p>启用后可以进行聊天匹配相关操作</p>
+                    </div>
+                    <div class="feature-flag-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="chatToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-primary" id="closeFeatureFlagsConfirmBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分组匹配设置模态框 -->
+    <div class="matching-config-modal" id="groupMatchingModal">
+        <div class="matching-config-content">
+            <div class="matching-config-header">
+                <h3>🔥 分组匹配配置</h3>
+                <button class="close-btn" id="closeGroupMatchingBtn">&times;</button>
+            </div>
+            
+            <div class="matching-config-body">
+                <div class="config-group">
+                    <label>每组男性人数</label>
+                    <div class="number-input">
+                        <button type="button" class="number-btn" id="groupMaleDecBtn">-</button>
+                        <input type="number" id="groupMaleSize" value="3" min="1" max="10" readonly>
+                        <button type="button" class="number-btn" id="groupMaleIncBtn">+</button>
+                    </div>
+                </div>
+                
+                <div class="config-group">
+                    <label>每组女性人数</label>
+                    <div class="number-input">
+                        <button type="button" class="number-btn" id="groupFemaleDecBtn">-</button>
+                        <input type="number" id="groupFemaleSize" value="3" min="1" max="10" readonly>
+                        <button type="button" class="number-btn" id="groupFemaleIncBtn">+</button>
+                    </div>
+                </div>
+                
+                <div class="validation-status" id="groupValidationStatus">
+                    <div class="loading-spinner" style="display:none;">正在验证...</div>
+                    <div class="validation-result"></div>
+                </div>
+            </div>
+            
+            <div class="matching-config-actions">
+                <button type="button" class="btn btn-secondary" id="cancelGroupMatchingBtn">取消</button>
+                <button type="button" class="btn btn-primary" id="executeGroupMatchingConfirmBtn" disabled>执行分组匹配</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 聊天匹配设置模态框 -->
+    <div class="matching-config-modal" id="chatMatchingModal">
+        <div class="matching-config-content">
+            <div class="matching-config-header">
+                <h3>💬 聊天匹配配置</h3>
+                <button class="close-btn" id="closeChatMatchingBtn">&times;</button>
+            </div>
+            
+            <div class="matching-config-body">
+                <div class="config-group">
+                    <label>推荐名单人数</label>
+                    <div class="number-input">
+                        <button type="button" class="number-btn" id="chatListDecBtn">-</button>
+                        <input type="number" id="chatListSize" value="5" min="1" max="20" readonly>
+                        <button type="button" class="number-btn" id="chatListIncBtn">+</button>
+                    </div>
+                </div>
+                
+                <div class="validation-status" id="chatValidationStatus">
+                    <div class="loading-spinner" style="display:none;">正在验证...</div>
+                    <div class="validation-result"></div>
+                </div>
+            </div>
+            
+            <div class="matching-config-actions">
+                <button type="button" class="btn btn-secondary" id="cancelChatMatchingBtn">取消</button>
+                <button type="button" class="btn btn-primary" id="executeChatMatchingConfirmBtn" disabled>执行聊天匹配</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 匹配执行确认模态框 -->
+    <div class="confirm-modal" id="matchingConfirmModal">
+        <div class="confirm-content">
+            <h3 id="matchingConfirmTitle">确认执行</h3>
+            <div class="confirm-info" id="matchingConfirmInfo">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelMatchingConfirmBtn">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmMatchingExecuteBtn">确认执行</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 匹配结果查看模态框 -->
+    <div class="results-modal" id="matchingResultsModal">
+        <div class="results-content">
+            <div class="results-header">
+                <h3 id="resultsTitle">匹配结果</h3>
+                <button class="close-btn" id="closeResultsBtn">&times;</button>
+            </div>
+            
+            <div class="results-controls">
+                <label for="resultsBatchSelect">选择轮次：</label>
+                <select id="resultsBatchSelect">
+                    <option value="">请选择轮次</option>
+                </select>
+            </div>
+            
+            <div class="results-display" id="resultsDisplay">
+                <div class="results-loading" style="display:none;">加载中...</div>
+                <div class="results-content-area"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>
