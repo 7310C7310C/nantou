@@ -54,8 +54,17 @@ app.use((req, res, next) => {
   }
 });
 
-// 静态文件服务
-app.use(express.static(path.join(__dirname, 'public')));
+// 静态文件服务 - 添加缓存控制
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    // 对JS和CSS文件设置较短的缓存时间，便于开发
+    if (path.endsWith('.js') || path.endsWith('.css')) {
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 // 基础路由
 app.get('/', (req, res) => {
