@@ -3647,9 +3647,10 @@ async function loadResultsBatches(type) {
             data.data.forEach(batch => {
                 const option = document.createElement('option');
                 option.value = batch.run_batch;
-                const countText = type === 'grouping' ? `${batch.groups_count}组` : `${batch.chat_items_count}条`;
+                // 分组匹配显示组数，聊天匹配不显示统计数据
+                const countText = type === 'grouping' ? ` (${batch.groups_count}组)` : '';
                 const date = new Date(batch.created_at).toLocaleString();
-                option.textContent = `第 ${batch.run_batch} 轮 (${countText}, ${date})`;
+                option.textContent = `第 ${batch.run_batch} 轮${countText} - ${date}`;
                 batchSelect.appendChild(option);
             });
             
@@ -3744,27 +3745,27 @@ function renderGroupingResults(resultData) {
         html += `
             <div class="group-result-item">
                 <div class="group-result-header">
-                    第 ${group.group_id} 组（男 ${group.male_ids.length} 人，女 ${group.female_ids.length} 人）
+                    第 ${group.group_id} 组（男 ${group.male_members.length} 人，女 ${group.female_members.length} 人）
                 </div>
                 <div class="group-result-body">
-                    <div class="group-members">
+                    <div class="group-members-grid">
         `;
         
         // 显示男性成员
-        group.male_ids.forEach(username => {
+        group.male_members.forEach(member => {
             html += `
                 <div class="member-card male">
-                    <div class="member-name">${username}</div>
+                    <div class="member-name">${member.name}（${member.username}）</div>
                     <div class="member-details">男</div>
                 </div>
             `;
         });
         
         // 显示女性成员
-        group.female_ids.forEach(username => {
+        group.female_members.forEach(member => {
             html += `
                 <div class="member-card female">
-                    <div class="member-name">${username}</div>
+                    <div class="member-name">${member.name}（${member.username}）</div>
                     <div class="member-details">女</div>
                 </div>
             `;
@@ -3800,15 +3801,16 @@ function renderChatResults(resultData) {
     });
     
     let html = `<div style="margin-bottom: 20px; text-align: center;">
-        <h4>第 ${runBatch} 轮聊天匹配结果（共 ${Object.keys(userGroups).length} 人）</h4>
+        <h4>第 ${runBatch} 轮聊天匹配结果</h4>
     </div>`;
     
     Object.keys(userGroups).forEach(userId => {
         const userTargets = userGroups[userId];
+        const userName = userTargets[0].user_name;
         html += `
             <div class="group-result-item">
                 <div class="group-result-header">
-                    ${userId} 的推荐名单（${userTargets.length} 人）
+                    ${userName}（${userId}）的推荐名单（${userTargets.length} 人）
                 </div>
                 <div class="group-result-body">
                     <div class="chat-result-grid">
@@ -3820,7 +3822,7 @@ function renderChatResults(resultData) {
             
             html += `
                 <div class="chat-target-card">
-                    <div class="member-name">${target.target_id}</div>
+                    <div class="member-name">${target.target_name}（${target.target_id}）</div>
                     <div class="chat-status ${statusClass}">${statusText}</div>
                 </div>
             `;

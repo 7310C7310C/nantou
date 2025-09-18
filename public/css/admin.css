@@ -3513,8 +3513,14 @@ input[type="checkbox"]:checked + .toggle-slider:before {
 
 .group-members {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.group-members-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
 }
 
 .member-card {
@@ -3553,8 +3559,8 @@ input[type="checkbox"]:checked + .toggle-slider:before {
 /* 聊天结果样式 */
 .chat-result-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
 }
 
 .chat-target-card {
@@ -3623,12 +3629,14 @@ input[type="checkbox"]:checked + .toggle-slider:before {
         gap: 10px;
     }
     
-    .group-members {
-        grid-template-columns: 1fr;
+    .group-members, .group-members-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 8px;
     }
     
     .chat-result-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 10px;
     }
 }
 
@@ -3647,5 +3655,28 @@ input[type="checkbox"]:checked + .toggle-slider:before {
         width: 70px;
         height: 35px;
         font-size: 14px;
+    }
+    
+    /* 超窄屏更激进的设置 */
+    .group-members, .group-members-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 6px;
+    }
+    
+    .chat-result-grid {
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 8px;
+    }
+    
+    .member-card, .chat-target-card {
+        padding: 10px;
+    }
+    
+    .member-name {
+        font-size: 14px;
+    }
+    
+    .member-details {
+        font-size: 11px;
     }
 }

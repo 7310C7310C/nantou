@@ -3131,16 +3131,15 @@ function renderUserChatResult(resultData) {
         return;
     }
     
-    // 显示聊天信息
-    contentEl.innerHTML = `
+    // 创建聊天信息标题和推荐对象列表
+    const chatInfoTitle = `
         <div class="user-chat-info">
             <h3>您的推荐聊天名单</h3>
             <p>共推荐 ${targets.length} 位聊天对象</p>
         </div>
     `;
     
-    // 显示推荐对象列表（使用用户卡片样式）
-    gridEl.innerHTML = targets.map(target => {
+    const targetCards = targets.map(target => {
         const photoUrl = target.photo_url || '/images/default-avatar.png';
         const statusText = target.is_completed ? '已聊' : '未聊';
         const statusClass = target.is_completed ? 'completed' : 'pending';
@@ -3158,6 +3157,10 @@ function renderUserChatResult(resultData) {
             </div>
         `;
     }).join('');
+    
+    // 清空内容区域，将标题放在grid中的第一个位置
+    contentEl.innerHTML = '';
+    gridEl.innerHTML = chatInfoTitle + targetCards;
     
     gridEl.style.display = 'grid';
 }

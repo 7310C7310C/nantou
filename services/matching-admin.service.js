@@ -307,8 +307,19 @@ async function executeChatMatching(options) {
     // 获取轮次号
     const runBatch = await getNextChatBatch();
     
+    // 将chatLists对象转换为数组格式
+    const chatItemsArray = [];
+    for (const [userId, targetIds] of Object.entries(result.chatLists)) {
+      for (const targetId of targetIds) {
+        chatItemsArray.push({
+          user_id: userId,
+          target_id: targetId
+        });
+      }
+    }
+    
     // 保存结果到数据库
-    for (const chatItem of result.chatLists) {
+    for (const chatItem of chatItemsArray) {
       await pool.execute(`
         INSERT INTO chat_lists (run_batch, user_id, target_id)
         VALUES (?, ?, ?)
@@ -321,8 +332,8 @@ async function executeChatMatching(options) {
     
     logger.info('聊天匹配算法执行成功', { 
       run_batch: runBatch, 
-      chat_items_count: result.chatLists.length,
-      result: result
+      chat_items_count: chatItemsArray.length,
+      participants_count: participants.length
     });
     
     return {
@@ -386,10 +397,42 @@ async function getGroupingResult(runBatch) {
     ORDER BY group_id
   `, [runBatch]);
   
+  // 获取所有涉及的用户名
+  const allUsernames = new Set();
+  rows.forEach(row => {
+    const maleIds = JSON.parse(row.male_ids);
+    const femaleIds = JSON.parse(row.female_ids);
+    maleIds.forEach(username => allUsernames.add(username));
+    femaleIds.forEach(username => allUsernames.add(username));
+  });
+  
+  // 获取用户名到姓名的映射
+  const userNameMap = {};
+  if (allUsernames.size > 0) {
+    const placeholders = Array.from(allUsernames).map(() => '?').join(',');
+    const [userRows] = await pool.execute(`
+      SELECT username, name, baptismal_name
+      FROM participants 
+      WHERE username IN (${placeholders})
+    `, Array.from(allUsernames));
+    
+    userRows.forEach(user => {
+      userNameMap[user.username] = user.name || user.baptismal_name || user.username;
+    });
+  }
+  
   return rows.map(row => ({
     group_id: row.group_id,
     male_ids: JSON.parse(row.male_ids),
     female_ids: JSON.parse(row.female_ids),
+    male_members: JSON.parse(row.male_ids).map(username => ({
+      username,
+      name: userNameMap[username] || username
+    })),
+    female_members: JSON.parse(row.female_ids).map(username => ({
+      username,
+      name: userNameMap[username] || username
+    })),
     created_at: row.created_at
   }));
 }
@@ -407,7 +450,36 @@ async function getChatResult(runBatch) {
     ORDER BY user_id
   `, [runBatch]);
   
-  return rows;
+  // 获取所有涉及的用户名
+  const allUsernames = new Set();
+  rows.forEach(row => {
+    allUsernames.add(row.user_id);
+    allUsernames.add(row.target_id);
+  });
+  
+  // 获取用户名到姓名的映射
+  const userNameMap = {};
+  if (allUsernames.size > 0) {
+    const placeholders = Array.from(allUsernames).map(() => '?').join(',');
+    const [userRows] = await pool.execute(`
+      SELECT username, name, baptismal_name
+      FROM participants 
+      WHERE username IN (${placeholders})
+    `, Array.from(allUsernames));
+    
+    userRows.forEach(user => {
+      userNameMap[user.username] = user.name || user.baptismal_name || user.username;
+    });
+  }
+  
+  return rows.map(row => ({
+    user_id: row.user_id,
+    user_name: userNameMap[row.user_id] || row.user_id,
+    target_id: row.target_id,
+    target_name: userNameMap[row.target_id] || row.target_id,
+    is_completed: row.is_completed,
+    created_at: row.created_at
+  }));
 }
 
 module.exports = {
