@@ -423,10 +423,58 @@ function showAuthenticatedUI() {
         userInfoItem.style.display = 'block';
     }
 
+    // 根据角色控制功能模块显示
+    controlUIByRole(role);
+
     // 如果currentUser不存在，则从服务器获取
     if (!currentUser) {
         checkAuthStatus();
     }
+}
+
+// 根据角色控制UI显示
+function controlUIByRole(role) {
+    const dashboardCards = document.querySelectorAll('.dashboard-card');
+    
+    dashboardCards.forEach(card => {
+        const cardTitle = card.querySelector('h3').textContent;
+        let shouldShow = false;
+        
+        switch (cardTitle) {
+            case '👥 报名录入':
+                // 只有admin和staff能用
+                shouldShow = role === 'admin' || role === 'staff';
+                break;
+            case '✅ 现场签到':
+                // 只有admin和staff能用
+                shouldShow = role === 'admin' || role === 'staff';
+                break;
+            case '🧮 算法操作':
+                // 只有admin能用
+                shouldShow = role === 'admin';
+                break;
+            case '💕 红娘操作':
+                // 只有matchmaker能用
+                shouldShow = role === 'matchmaker';
+                break;
+            case '📊 数据统计':
+                // admin、staff和matchmaker都能用
+                shouldShow = role === 'admin' || role === 'staff' || role === 'matchmaker';
+                break;
+            case '📋 系统日志':
+                // 只有admin能用
+                shouldShow = role === 'admin';
+                break;
+            case '⚙️ 系统设置':
+                // 只有admin能用
+                shouldShow = role === 'admin';
+                break;
+            default:
+                shouldShow = true;
+        }
+        
+        card.style.display = shouldShow ? 'block' : 'none';
+    });
 }
 
 // 获取角色显示名称
