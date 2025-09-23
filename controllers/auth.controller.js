@@ -1,4 +1,5 @@
 const authService = require('../services/auth.service');
+const logger = require('../utils/logger');
 
 class AuthController {
   /**
@@ -20,6 +21,18 @@ class AuthController {
 
       // 调用认证服务
       const result = await authService.login(username, password);
+
+      // 记录登录成功日志
+      if (result.success) {
+        const user = result.data.user;
+        logger.success(`用户登录成功: ${user.username} (${user.userType})`, {
+          userId: user.id,
+          username: user.username,
+          userType: user.userType,
+          role: user.role,
+          loginTime: new Date().toISOString()
+        });
+      }
 
       // 返回成功响应
       res.status(200).json(result);
