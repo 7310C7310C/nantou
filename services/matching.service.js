@@ -109,10 +109,10 @@ function calculateMutualAffinityScore(person1Id, person2Id, selections, matchmak
 
     matchmakerPicks.forEach(pick => {
         if (pick.person1_id === person1Id && pick.person2_id === person2Id) {
-            matchmakerScore1to2 = MATCHMAKER_STAR_SCORES[pick.stars] || 0;
+            matchmakerScore1to2 = Math.max(matchmakerScore1to2, MATCHMAKER_STAR_SCORES[pick.stars] || 0);
         }
         if (pick.person1_id === person2Id && pick.person2_id === person1Id) {
-            matchmakerScore2to1 = MATCHMAKER_STAR_SCORES[pick.stars] || 0;
+            matchmakerScore2to1 = Math.max(matchmakerScore2to1, MATCHMAKER_STAR_SCORES[pick.stars] || 0);
         }
     });
 
