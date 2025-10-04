@@ -58,16 +58,16 @@ async function getValidSelections() {
     ORDER BY s.user_id, s.priority
   `, [...checkedInUserIds, ...checkedInUserIds]);
   
-  // 转换为算法需要的格式 {user_id: [{target_id, priority}, ...]}
+  // 转换为算法需要的格式 {user_username: [{id: target_username, priority}, ...]}
   const selectionsData = {};
   
   selections.forEach(row => {
-    const userId = row.user_id; // 使用数据库ID作为key
+    const userId = row.user_username; // 使用username作为key，与participants的id保持一致
     if (!selectionsData[userId]) {
       selectionsData[userId] = [];
     }
     selectionsData[userId].push({
-      target_id: row.target_id, // 使用数据库ID
+      id: row.target_username, // 使用target_username，保持与算法期望的格式一致
       priority: row.priority
     });
   });
@@ -133,7 +133,7 @@ async function validateUserSelections() {
   const missingUsers = [];
   
   userMapping.forEach(user => {
-    const userSelections = validSelections[user.id] || [];
+    const userSelections = validSelections[user.username] || [];
     if (userSelections.length < 5) {
       missingUsers.push({
         id: user.id,

@@ -88,7 +88,7 @@ function calculateMutualAffinityScore(person1Id, person2Id, selections, matchmak
     // 计算 person1 → person2 的用户选择分数
     let userScore1to2 = 0;
     if (selections[person1Id]) {
-        const selection = selections[person1Id].find(s => s.id === person2Id);
+        const selection = selections[person1Id].find(s => (s.id || s.target_id) === person2Id);
         if (selection) {
             userScore1to2 = calculateUserSelectionScore(selection.priority);
         }
@@ -97,7 +97,7 @@ function calculateMutualAffinityScore(person1Id, person2Id, selections, matchmak
     // 计算 person2 → person1 的用户选择分数
     let userScore2to1 = 0;
     if (selections[person2Id]) {
-        const selection = selections[person2Id].find(s => s.id === person1Id);
+        const selection = selections[person2Id].find(s => (s.id || s.target_id) === person1Id);
         if (selection) {
             userScore2to1 = calculateUserSelectionScore(selection.priority);
         }
@@ -109,10 +109,10 @@ function calculateMutualAffinityScore(person1Id, person2Id, selections, matchmak
 
     matchmakerPicks.forEach(pick => {
         if (pick.person1_id === person1Id && pick.person2_id === person2Id) {
-            matchmakerScore1to2 = MATCHMAKER_STAR_SCORES[pick.stars] || 0;
+            matchmakerScore1to2 = Math.max(matchmakerScore1to2, MATCHMAKER_STAR_SCORES[pick.stars] || 0);
         }
         if (pick.person1_id === person2Id && pick.person2_id === person1Id) {
-            matchmakerScore2to1 = MATCHMAKER_STAR_SCORES[pick.stars] || 0;
+            matchmakerScore2to1 = Math.max(matchmakerScore2to1, MATCHMAKER_STAR_SCORES[pick.stars] || 0);
         }
     });
 
@@ -426,6 +426,20 @@ function distributeRemainingParticipants(groups, allRemainingParticipants, males
  * @returns {Object} 分组结果
  */
 function generateGroups(participants, selections, matchmakerPicks, options) {
+    // 参数验证
+    if (!Array.isArray(participants)) {
+        throw new Error('participants 必须是数组');
+    }
+    if (!selections || typeof selections !== 'object') {
+        throw new Error('selections 必须是对象');
+    }
+    if (!Array.isArray(matchmakerPicks)) {
+        throw new Error('matchmakerPicks 必须是数组');
+    }
+    if (!options || typeof options !== 'object') {
+        throw new Error('options 必须是对象');
+    }
+    
     // 分离男女参与者
     const males = participants.filter(p => p.gender === 'male').map(p => p.id);
     const females = participants.filter(p => p.gender === 'female').map(p => p.id);
@@ -487,6 +501,20 @@ function generateGroups(participants, selections, matchmakerPicks, options) {
  * @returns {Object} 聊天名单结果
  */
 function generateChatLists(participants, selections, matchmakerPicks, options) {
+    // 参数验证
+    if (!Array.isArray(participants)) {
+        throw new Error('participants 必须是数组');
+    }
+    if (!selections || typeof selections !== 'object') {
+        throw new Error('selections 必须是对象');
+    }
+    if (!Array.isArray(matchmakerPicks)) {
+        throw new Error('matchmakerPicks 必须是数组');
+    }
+    if (!options || typeof options !== 'object') {
+        throw new Error('options 必须是对象');
+    }
+    
     const chatLists = {};
     const listSize = options.list_size || 5;
 
@@ -543,13 +571,19 @@ function generateChatLists(participants, selections, matchmakerPicks, options) {
                 } else {
                     // 如果对方名单已满，替换分数最低的
                     const matchScores = allScores[matchId];
-                    const lowestScoreMatch = matchList.reduce((lowest, id) => {
-                        return matchScores[id] < matchScores[lowest] ? id : lowest;
-                    });
+                    if (matchScores && matchList.length > 0) {
+                        const lowestScoreMatch = matchList.reduce((lowest, id) => {
+                            const currentScore = matchScores[id] || 0;
+                            const lowestScore = matchScores[lowest] || 0;
+                            return currentScore < lowestScore ? id : lowest;
+                        });
 
-                    if (matchScores[participantId] > matchScores[lowestScoreMatch]) {
-                        const index = matchList.indexOf(lowestScoreMatch);
-                        matchList[index] = participantId;
+                        const participantScore = matchScores[participantId] || 0;
+                        const lowestScore = matchScores[lowestScoreMatch] || 0;
+                        if (participantScore > lowestScore) {
+                            const index = matchList.indexOf(lowestScoreMatch);
+                            matchList[index] = participantId;
+                        }
                     }
                 }
                 chatLists[matchId] = matchList;
@@ -569,7 +603,7 @@ function generateChatLists(participants, selections, matchmakerPicks, options) {
 
         // 将双向匹配的人按分数排序，取前N个
         const bidirectionalScores = Array.from(bidirectionalMatches)
-            .map(id => ({ id, score: allScores[participantId][id] }))
+            .map(id => ({ id, score: allScores[participantId][id] || 0 }))
             .sort((a, b) => b.score - a.score);
 
         bidirectionalLists[participantId] = bidirectionalScores.slice(0, listSize).map(item => item.id);
@@ -580,7 +614,7 @@ function generateChatLists(participants, selections, matchmakerPicks, options) {
 
     // 统计双向匹配情况
     let totalMatches = 0;
-    let bidirectionalMatches = 0;
+    let bidirectionalMatchCount = 0;
 
     for (const participantId in bidirectionalLists) {
         const list = bidirectionalLists[participantId];
@@ -589,13 +623,13 @@ function generateChatLists(participants, selections, matchmakerPicks, options) {
         for (const matchId of list) {
             const matchList = bidirectionalLists[matchId] || [];
             if (matchList.includes(participantId)) {
-                bidirectionalMatches++;
+                bidirectionalMatchCount++;
             }
         }
     }
 
-    debugLog(`总推荐数: ${totalMatches}, 双向匹配数: ${bidirectionalMatches / 2}`);
-    debugLog(`双向匹配率: ${((bidirectionalMatches / 2) / (totalMatches / 2) * 100).toFixed(1)}%`);
+    debugLog(`总推荐数: ${totalMatches}, 双向匹配数: ${bidirectionalMatchCount / 2}`);
+    debugLog(`双向匹配率: ${((bidirectionalMatchCount / 2) / (totalMatches / 2) * 100).toFixed(1)}%`);
 
     return { chatLists: bidirectionalLists };
 }

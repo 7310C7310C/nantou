@@ -305,6 +305,16 @@ async function refreshCurrentUserToLocalStorage() {
 function switchGender(gender) {
     if (currentGender === gender) return;
     
+    // 禁用性别切换按钮，防止频繁点击
+    const femaleBtn = document.getElementById('femaleBtn');
+    const maleBtn = document.getElementById('maleBtn');
+    femaleBtn.disabled = true;
+    maleBtn.disabled = true;
+    
+    // 立即显示加载状态
+    const grid = document.getElementById('usersGrid');
+    grid.innerHTML = '<div class="loading-container"><div class="loading-spinner"></div><p>加载中……</p></div>';
+    
     // 保存当前性别的状态到缓存
     saveCurrentGenderState();
     
@@ -330,8 +340,8 @@ function switchGender(gender) {
     loadGenderState(gender);
     
     // 更新按钮状态
-    document.getElementById('femaleBtn').classList.toggle('active', gender === 'female');
-    document.getElementById('maleBtn').classList.toggle('active', gender === 'male');
+    femaleBtn.classList.toggle('active', gender === 'female');
+    maleBtn.classList.toggle('active', gender === 'male');
     
     // 由于我们清空了搜索状态，需要重新加载该性别的全部用户数据
     // 重置分页状态
@@ -340,7 +350,11 @@ function switchGender(gender) {
     allUsers = [];
     
     // 重新加载全部数据
-    loadUsers();
+    loadUsers().finally(() => {
+        // 无论成功还是失败，都重新启用按钮
+        femaleBtn.disabled = false;
+        maleBtn.disabled = false;
+    });
 }
 
 // (移除旧版带“加载中...”的搜索处理函数，避免主页搜索出现 loading 文案)
