@@ -240,6 +240,37 @@ class MatchmakerController {
       });
     }
   }
+
+  /**
+   * 获取所有红娘的配对统计
+   * 管理员可以查看所有红娘配对的汇总统计
+   */
+  static async getMatchmakingStats(req, res) {
+    try {
+      // 验证权限 - 只有管理员、工作人员和红娘可以访问
+      if (!['admin', 'staff', 'matchmaker'].includes(req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: '权限不足'
+        });
+      }
+
+      const stats = await MatchmakerService.getMatchmakingStats();
+
+      logger.info(`${req.user.username} (${req.user.role}) 查看配对统计`);
+
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      logger.error('获取配对统计失败:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || '获取配对统计失败'
+      });
+    }
+  }
 }
 
 module.exports = MatchmakerController;

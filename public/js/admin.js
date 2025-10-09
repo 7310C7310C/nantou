@@ -164,6 +164,20 @@ function setupEventListeners() {
     if (startMatchmakingBtn) {
         startMatchmakingBtn.addEventListener('click', handleStartMatchmaking);
     }
+    
+    // 配对统计
+    const viewMatchmakingStatsBtn = document.getElementById('viewMatchmakingStatsBtn');
+    const closeMatchmakingStatsBtn = document.getElementById('closeMatchmakingStatsBtn');
+    const showZeroStarsCheckbox = document.getElementById('showZeroStarsCheckbox');
+    if (viewMatchmakingStatsBtn) {
+        viewMatchmakingStatsBtn.addEventListener('click', openMatchmakingStatsModal);
+    }
+    if (closeMatchmakingStatsBtn) {
+        closeMatchmakingStatsBtn.addEventListener('click', closeMatchmakingStatsModal);
+    }
+    if (showZeroStarsCheckbox) {
+        showZeroStarsCheckbox.addEventListener('change', filterMatchmakingStats);
+    }
 
     // 删除功能
     cancelDeleteBtn.addEventListener('click', closeDeleteModal);
@@ -3931,4 +3945,133 @@ function hideLoadingOverlay() {
     if (overlay) {
         overlay.remove();
     }
+}
+
+// ============ 配对统计功能 ============
+
+let matchmakingStatsData = [];
+
+// 打开配对统计模态框
+async function openMatchmakingStatsModal() {
+    const modal = document.getElementById('matchmakingStatsModal');
+    const loadingEl = modal.querySelector('.stats-loading');
+    const tableContainer = modal.querySelector('.stats-table-container');
+    const emptyEl = modal.querySelector('.stats-empty');
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // 显示加载状态
+    loadingEl.style.display = 'flex';
+    tableContainer.style.display = 'none';
+    emptyEl.style.display = 'none';
+    
+    try {
+        const authToken = getAuthToken();
+        const response = await fetch('/api/matchmaker/stats', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            matchmakingStatsData = result.data || [];
+            renderMatchmakingStats();
+        } else {
+            const error = await response.json();
+            alert(error.message || '获取配对统计失败');
+            closeMatchmakingStatsModal();
+        }
+    } catch (error) {
+        console.error('获取配对统计失败:', error);
+        alert('网络错误，请重试');
+        closeMatchmakingStatsModal();
+    } finally {
+        loadingEl.style.display = 'none';
+    }
+}
+
+// 关闭配对统计模态框
+function closeMatchmakingStatsModal() {
+    const modal = document.getElementById('matchmakingStatsModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// 渲染配对统计
+function renderMatchmakingStats() {
+    const showZeroStars = document.getElementById('showZeroStarsCheckbox').checked;
+    const tableBody = document.getElementById('matchmakingStatsTableBody');
+    const tableContainer = document.querySelector('.stats-table-container');
+    const emptyEl = document.querySelector('.stats-empty');
+    const totalPairsCount = document.getElementById('totalPairsCount');
+    const totalStarsSum = document.getElementById('totalStarsSum');
+    
+    // 过滤数据
+    let filteredData = matchmakingStatsData;
+    if (!showZeroStars) {
+        filteredData = matchmakingStatsData.filter(item => item.total_stars > 0);
+    }
+    
+    // 更新汇总信息
+    totalPairsCount.textContent = filteredData.length;
+    const starsSum = filteredData.reduce((sum, item) => sum + Number(item.total_stars || 0), 0);
+    totalStarsSum.textContent = starsSum;
+    
+    if (filteredData.length === 0) {
+        tableContainer.style.display = 'none';
+        emptyEl.style.display = 'block';
+        return;
+    }
+    
+    tableContainer.style.display = 'block';
+    emptyEl.style.display = 'none';
+    
+    let html = '';
+    filteredData.forEach((item, index) => {
+        const starClass = item.total_stars === 0 ? 'zero' : '';
+        html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>
+                    <div class="participant-info">
+                        <div class="participant-name">${item.person1_name || '未知'}</div>
+                        <div class="participant-details">
+                            ${item.person1_baptismal_name ? `圣名：${item.person1_baptismal_name} | ` : ''}
+                            编号：${item.person1_id} | 
+                            性别：${item.person1_gender === 'male' ? '男' : '女'}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="participant-info">
+                        <div class="participant-name">${item.person2_name || '未知'}</div>
+                        <div class="participant-details">
+                            ${item.person2_baptismal_name ? `圣名：${item.person2_baptismal_name} | ` : ''}
+                            编号：${item.person2_id} | 
+                            性别：${item.person2_gender === 'male' ? '男' : '女'}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="star-count ${starClass}">
+                        ${item.total_stars} ⭐
+                    </div>
+                </td>
+                <td>
+                    <div class="matchmaker-count">
+                        ${item.matchmaker_count} 位红娘
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+}
+
+// 过滤配对统计（切换显示0星配对）
+function filterMatchmakingStats() {
+    renderMatchmakingStats();
 }

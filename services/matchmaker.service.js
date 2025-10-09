@@ -242,6 +242,15 @@ class MatchmakerService {
       throw error;
     }
   }
+
+  /**
+   * 获取所有红娘的配对统计
+   * 返回每一对参与者及其所有红娘配对的星数总和
+   */
+  static async getMatchmakingStats() {
+    const stats = await MatchmakerRecommendation.getAllMatchmakingStats();
+    return stats;
+  }
 }
 
 module.exports = MatchmakerService;

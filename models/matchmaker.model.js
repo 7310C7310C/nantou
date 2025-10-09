@@ -173,6 +173,42 @@ class MatchmakerRecommendation {
       connection.release();
     }
   }
+
+  /**
+   * 获取所有红娘的配对统计
+   * 返回每一对参与者及其所有红娘配对的星数总和、红娘人数
+   */
+  static async getAllMatchmakingStats() {
+    const connection = await pool.getConnection();
+    try {
+      const [rows] = await connection.execute(
+        `SELECT 
+          mr.person1_id,
+          mr.person2_id,
+          p1.id as person1_participant_id,
+          p1.name as person1_name,
+          p1.baptismal_name as person1_baptismal_name,
+          p1.gender as person1_gender,
+          p2.id as person2_participant_id,
+          p2.name as person2_name,
+          p2.baptismal_name as person2_baptismal_name,
+          p2.gender as person2_gender,
+          SUM(mr.stars) as total_stars,
+          COUNT(DISTINCT mr.matchmaker_id) as matchmaker_count,
+          GROUP_CONCAT(DISTINCT s.username ORDER BY s.username SEPARATOR ', ') as matchmakers
+        FROM matchmaker_recommendations mr
+        INNER JOIN participants p1 ON mr.person1_id = p1.username
+        INNER JOIN participants p2 ON mr.person2_id = p2.username
+        LEFT JOIN staff_users s ON mr.matchmaker_id = s.username
+        GROUP BY mr.person1_id, mr.person2_id, p1.id, p1.name, p1.baptismal_name, p1.gender,
+                 p2.id, p2.name, p2.baptismal_name, p2.gender
+        ORDER BY total_stars DESC, mr.person1_id, mr.person2_id`
+      );
+      return rows;
+    } finally {
+      connection.release();
+    }
+  }
 }
 
 module.exports = MatchmakerRecommendation;
