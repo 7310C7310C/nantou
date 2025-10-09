@@ -51,6 +51,7 @@
                 <div class="dashboard-card">
                     <h3>💕 红娘操作</h3>
                     <button class="btn btn-primary" id="startMatchmakingBtn">开始配对</button>
+                    <button class="btn btn-secondary" id="viewMatchmakingStatsBtn" style="margin-top: 10px;">配对统计</button>
                 </div>
 
                 <div class="dashboard-card">
@@ -740,6 +741,39 @@
             <div class="results-display" id="resultsDisplay">
                 <div class="results-loading" style="display:none;">加载中...</div>
                 <div class="results-content-area"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 配对统计模态框 -->
+    <div class="matchmaking-stats-modal" id="matchmakingStatsModal">
+        <div class="matchmaking-stats-content">
+            <div class="matchmaking-stats-header">
+                <h3>💕 配对统计</h3>
+                <button class="close-btn" id="closeMatchmakingStatsBtn">&times;</button>
+            </div>
+            
+            <div class="matchmaking-stats-body">
+                <div class="stats-loading" style="display:none;">
+                    <div class="loading-spinner"></div>
+                    <p>加载中...</p>
+                </div>
+                <div class="stats-table-container">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>编号</th>
+                                <th>男</th>
+                                <th>女</th>
+                                <th>总星数</th>
+                                <th>红娘人数</th>
+                            </tr>
+                        </thead>
+                        <tbody id="matchmakingStatsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="stats-empty" style="display:none;">暂无配对数据</div>
             </div>
         </div>
     </div>

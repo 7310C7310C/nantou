@@ -164,6 +164,16 @@ function setupEventListeners() {
     if (startMatchmakingBtn) {
         startMatchmakingBtn.addEventListener('click', handleStartMatchmaking);
     }
+    
+    // 配对统计
+    const viewMatchmakingStatsBtn = document.getElementById('viewMatchmakingStatsBtn');
+    const closeMatchmakingStatsBtn = document.getElementById('closeMatchmakingStatsBtn');
+    if (viewMatchmakingStatsBtn) {
+        viewMatchmakingStatsBtn.addEventListener('click', openMatchmakingStatsModal);
+    }
+    if (closeMatchmakingStatsBtn) {
+        closeMatchmakingStatsBtn.addEventListener('click', closeMatchmakingStatsModal);
+    }
 
     // 删除功能
     cancelDeleteBtn.addEventListener('click', closeDeleteModal);
@@ -3931,4 +3941,119 @@ function hideLoadingOverlay() {
     if (overlay) {
         overlay.remove();
     }
+}
+
+// ============ 配对统计功能 ============
+
+let matchmakingStatsData = [];
+
+// 打开配对统计模态框
+async function openMatchmakingStatsModal() {
+    const modal = document.getElementById('matchmakingStatsModal');
+    const loadingEl = modal.querySelector('.stats-loading');
+    const tableContainer = modal.querySelector('.stats-table-container');
+    const emptyEl = modal.querySelector('.stats-empty');
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // 显示加载状态
+    loadingEl.style.display = 'flex';
+    tableContainer.style.display = 'none';
+    emptyEl.style.display = 'none';
+    
+    try {
+        const authToken = getAuthToken();
+        const response = await fetch('/api/matchmaker/stats', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            matchmakingStatsData = result.data || [];
+            renderMatchmakingStats();
+        } else {
+            const error = await response.json();
+            alert(error.message || '获取配对统计失败');
+            closeMatchmakingStatsModal();
+        }
+    } catch (error) {
+        console.error('获取配对统计失败:', error);
+        alert('网络错误，请重试');
+        closeMatchmakingStatsModal();
+    } finally {
+        loadingEl.style.display = 'none';
+    }
+}
+
+// 关闭配对统计模态框
+function closeMatchmakingStatsModal() {
+    const modal = document.getElementById('matchmakingStatsModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// 渲染配对统计
+function renderMatchmakingStats() {
+    const tableBody = document.getElementById('matchmakingStatsTableBody');
+    const tableContainer = document.querySelector('.stats-table-container');
+    const emptyEl = document.querySelector('.stats-empty');
+    
+    if (matchmakingStatsData.length === 0) {
+        tableContainer.style.display = 'none';
+        emptyEl.style.display = 'block';
+        return;
+    }
+    
+    tableContainer.style.display = 'block';
+    emptyEl.style.display = 'none';
+    
+    let html = '';
+    matchmakingStatsData.forEach((item, index) => {
+        const starClass = item.total_stars === 0 ? 'zero' : '';
+        
+        // 确定男性和女性参与者
+        let malePerson, femalePerson;
+        if (item.person1_gender === 'male') {
+            malePerson = {
+                name: item.person1_name || '未知',
+                username: item.person1_id
+            };
+            femalePerson = {
+                name: item.person2_name || '未知',
+                username: item.person2_id
+            };
+        } else {
+            malePerson = {
+                name: item.person2_name || '未知',
+                username: item.person2_id
+            };
+            femalePerson = {
+                name: item.person1_name || '未知',
+                username: item.person1_id
+            };
+        }
+        
+        html += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${malePerson.name}（${malePerson.username}）</td>
+                <td>${femalePerson.name}（${femalePerson.username}）</td>
+                <td>
+                    <div class="star-count ${starClass}">
+                        ${item.total_stars} ⭐
+                    </div>
+                </td>
+                <td>
+                    <div class="matchmaker-count">
+                        ${item.matchmaker_count} 位红娘
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
 }

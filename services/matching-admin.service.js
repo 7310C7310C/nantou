@@ -120,6 +120,15 @@ async function validateUserSelections() {
     WHERE is_checked_in = 1
   `);
   
+  // 如果没有已签到的参与者，返回无效
+  if (userMapping.length === 0) {
+    return {
+      isValid: false,
+      missingUsers: [],
+      noCheckedInUsers: true
+    };
+  }
+  
   const userMap = {};
   userMapping.forEach(user => {
     userMap[user.id] = {
@@ -190,6 +199,14 @@ async function executeGroupMatching(options) {
     // 验证用户选择
     const validation = await validateUserSelections();
     if (!validation.isValid) {
+      // 如果没有已签到的用户
+      if (validation.noCheckedInUsers) {
+        return {
+          success: false,
+          message: '没有已签到的参与者'
+        };
+      }
+      // 如果有用户未完成选择
       return {
         success: false,
         message: '存在未完成选择的用户',
@@ -270,6 +287,14 @@ async function executeChatMatching(options) {
     // 验证用户选择
     const validation = await validateUserSelections();
     if (!validation.isValid) {
+      // 如果没有已签到的用户
+      if (validation.noCheckedInUsers) {
+        return {
+          success: false,
+          message: '没有已签到的参与者'
+        };
+      }
+      // 如果有用户未完成选择
       return {
         success: false,
         message: '存在未完成选择的用户',
