@@ -168,15 +168,11 @@ function setupEventListeners() {
     // 配对统计
     const viewMatchmakingStatsBtn = document.getElementById('viewMatchmakingStatsBtn');
     const closeMatchmakingStatsBtn = document.getElementById('closeMatchmakingStatsBtn');
-    const showZeroStarsCheckbox = document.getElementById('showZeroStarsCheckbox');
     if (viewMatchmakingStatsBtn) {
         viewMatchmakingStatsBtn.addEventListener('click', openMatchmakingStatsModal);
     }
     if (closeMatchmakingStatsBtn) {
         closeMatchmakingStatsBtn.addEventListener('click', closeMatchmakingStatsModal);
-    }
-    if (showZeroStarsCheckbox) {
-        showZeroStarsCheckbox.addEventListener('change', filterMatchmakingStats);
     }
 
     // 删除功能
@@ -4001,25 +3997,11 @@ function closeMatchmakingStatsModal() {
 
 // 渲染配对统计
 function renderMatchmakingStats() {
-    const showZeroStars = document.getElementById('showZeroStarsCheckbox').checked;
     const tableBody = document.getElementById('matchmakingStatsTableBody');
     const tableContainer = document.querySelector('.stats-table-container');
     const emptyEl = document.querySelector('.stats-empty');
-    const totalPairsCount = document.getElementById('totalPairsCount');
-    const totalStarsSum = document.getElementById('totalStarsSum');
     
-    // 过滤数据
-    let filteredData = matchmakingStatsData;
-    if (!showZeroStars) {
-        filteredData = matchmakingStatsData.filter(item => item.total_stars > 0);
-    }
-    
-    // 更新汇总信息
-    totalPairsCount.textContent = filteredData.length;
-    const starsSum = filteredData.reduce((sum, item) => sum + Number(item.total_stars || 0), 0);
-    totalStarsSum.textContent = starsSum;
-    
-    if (filteredData.length === 0) {
+    if (matchmakingStatsData.length === 0) {
         tableContainer.style.display = 'none';
         emptyEl.style.display = 'block';
         return;
@@ -4029,31 +4011,36 @@ function renderMatchmakingStats() {
     emptyEl.style.display = 'none';
     
     let html = '';
-    filteredData.forEach((item, index) => {
+    matchmakingStatsData.forEach((item, index) => {
         const starClass = item.total_stars === 0 ? 'zero' : '';
+        
+        // 确定男性和女性参与者
+        let malePerson, femalePerson;
+        if (item.person1_gender === 'male') {
+            malePerson = {
+                name: item.person1_name || '未知',
+                username: item.person1_id
+            };
+            femalePerson = {
+                name: item.person2_name || '未知',
+                username: item.person2_id
+            };
+        } else {
+            malePerson = {
+                name: item.person2_name || '未知',
+                username: item.person2_id
+            };
+            femalePerson = {
+                name: item.person1_name || '未知',
+                username: item.person1_id
+            };
+        }
+        
         html += `
             <tr>
                 <td>${index + 1}</td>
-                <td>
-                    <div class="participant-info">
-                        <div class="participant-name">${item.person1_name || '未知'}</div>
-                        <div class="participant-details">
-                            ${item.person1_baptismal_name ? `圣名：${item.person1_baptismal_name} | ` : ''}
-                            编号：${item.person1_id} | 
-                            性别：${item.person1_gender === 'male' ? '男' : '女'}
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div class="participant-info">
-                        <div class="participant-name">${item.person2_name || '未知'}</div>
-                        <div class="participant-details">
-                            ${item.person2_baptismal_name ? `圣名：${item.person2_baptismal_name} | ` : ''}
-                            编号：${item.person2_id} | 
-                            性别：${item.person2_gender === 'male' ? '男' : '女'}
-                        </div>
-                    </div>
-                </td>
+                <td>${malePerson.name}（${malePerson.username}）</td>
+                <td>${femalePerson.name}（${femalePerson.username}）</td>
                 <td>
                     <div class="star-count ${starClass}">
                         ${item.total_stars} ⭐
@@ -4069,9 +4056,4 @@ function renderMatchmakingStats() {
     });
     
     tableBody.innerHTML = html;
-}
-
-// 过滤配对统计（切换显示0星配对）
-function filterMatchmakingStats() {
-    renderMatchmakingStats();
 }
