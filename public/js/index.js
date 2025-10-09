@@ -104,6 +104,19 @@ function updateUIForLoggedOutState() {
         searchInput.setAttribute('inputmode', 'numeric');
     }
     
+    // 重置分页和缓存状态
+    currentPage = 0;
+    hasMore = true;
+    allUsers = [];
+    searchTerm = '';
+    preloadedImages.clear();
+    favoriteIds.clear();
+    favoritesLoaded = false;
+    genderCache = {
+        female: { users: [], page: 0, hasMore: true, searchTerm: '', preloadedImages: new Map() },
+        male: { users: [], page: 0, hasMore: true, searchTerm: '', preloadedImages: new Map() }
+    };
+    
     // 重新加载页面数据
     loadUsers();
 }
@@ -157,6 +170,12 @@ let genderCache = {
 // 页面加载时初始化
 document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('femaleBtn').classList.add('active');
+    
+    // 初始化时禁用性别按钮，直到首次加载完成
+    const femaleBtn = document.getElementById('femaleBtn');
+    const maleBtn = document.getElementById('maleBtn');
+    if (femaleBtn) femaleBtn.disabled = true;
+    if (maleBtn) maleBtn.disabled = true;
     
     document.addEventListener('contextmenu', function(e) {
         // 全局阻止长按弹出的原生菜单（Android Chrome 等），但允许在输入/可编辑元素上使用原生菜单
@@ -466,6 +485,18 @@ async function loadUsers() {
     
     isLoading = true;
     
+    // 如果是首页首次加载（第一页且没有已显示的用户），显示加载状态并禁用性别按钮
+    if (currentPage === 0 && allUsers.length === 0) {
+        const grid = document.getElementById('usersGrid');
+        grid.innerHTML = '<div class="loading-container"><div class="loading-spinner"></div><p>加载中……</p></div>';
+        
+        // 禁用性别选择按钮
+        const femaleBtn = document.getElementById('femaleBtn');
+        const maleBtn = document.getElementById('maleBtn');
+        if (femaleBtn) femaleBtn.disabled = true;
+        if (maleBtn) maleBtn.disabled = true;
+    }
+    
     try {
         // 首先刷新当前用户状态（包括签到状态），确保显示最新状态
         const authToken = localStorage.getItem('authToken');
@@ -538,6 +569,12 @@ async function loadUsers() {
         showError('网络错误');
     } finally {
         isLoading = false;
+        
+        // 重新启用性别选择按钮
+        const femaleBtn = document.getElementById('femaleBtn');
+        const maleBtn = document.getElementById('maleBtn');
+        if (femaleBtn) femaleBtn.disabled = false;
+        if (maleBtn) maleBtn.disabled = false;
     }
 }
 
