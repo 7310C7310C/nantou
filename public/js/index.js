@@ -86,6 +86,9 @@ function updateUIForLoggedOutState() {
     const adminPanelBtn = document.getElementById('adminPanelBtn');
     const favoritesBtn = document.getElementById('favoritesBtn');
     const favoritesModal = document.getElementById('favoritesModal');
+    const manageMatchesBtn = document.getElementById('manageMatchesBtn');
+    const groupMatchingBtn = document.getElementById('groupMatchingBtn');
+    const chatMatchingBtn = document.getElementById('chatMatchingBtn');
     const searchInput = document.getElementById('searchInput');
     
     // 重置UI显示状态
@@ -93,9 +96,22 @@ function updateUIForLoggedOutState() {
     if (userInfo) userInfo.style.display = 'none';
     if (adminPanelBtn) adminPanelBtn.style.display = 'none';
     if (favoritesBtn) favoritesBtn.style.display = 'none';
+    if (manageMatchesBtn) manageMatchesBtn.style.display = 'none';
+    if (groupMatchingBtn) groupMatchingBtn.style.display = 'none';
+    if (chatMatchingBtn) chatMatchingBtn.style.display = 'none';
     
-    // 关闭收藏模态框
-    if (favoritesModal) favoritesModal.style.display = 'none';
+    // 关闭所有模态框
+    if (favoritesModal) favoritesModal.classList.remove('active');
+    const matchingModal = document.getElementById('matchingModal');
+    const manageMatchesModal = document.getElementById('manageMatchesModal');
+    if (matchingModal) matchingModal.classList.remove('active');
+    if (manageMatchesModal) manageMatchesModal.classList.remove('active');
+    
+    // 重置 body overflow
+    document.body.style.overflow = 'auto';
+    
+    // 重置红娘模式状态
+    isMatchmakerMode = false;
     
     // 重置搜索框状态
     if (searchInput) {
@@ -140,7 +156,14 @@ function handleAuthError() {
     
     // 关闭可能打开的模态框
     const favoritesModal = document.getElementById('favoritesModal');
-    if (favoritesModal) favoritesModal.style.display = 'none';
+    const matchingModal = document.getElementById('matchingModal');
+    const manageMatchesModal = document.getElementById('manageMatchesModal');
+    if (favoritesModal) favoritesModal.classList.remove('active');
+    if (matchingModal) matchingModal.classList.remove('active');
+    if (manageMatchesModal) manageMatchesModal.classList.remove('active');
+    
+    // 重置 body overflow
+    document.body.style.overflow = 'auto';
     
     // 更新UI状态
     updateUIForLoggedOutState();
@@ -777,7 +800,12 @@ async function loadMatchPairsForMatchmaker() {
     const resp = await fetch('/api/matchmaker/my-recommendations', {
         headers: { 'Authorization': `Bearer ${authToken}` }
     });
-    if (!resp.ok) return;
+    if (!resp.ok) {
+        if (resp.status === 401) {
+            handleAuthError();
+        }
+        return;
+    }
     const data = await resp.json();
     if (!data.success) return;
     (data.data || []).forEach(rec => {
@@ -1326,22 +1354,33 @@ function setupUserDropdown() {
         const loginBtn = document.getElementById('loginBtn');
         const userInfo = document.getElementById('userInfo');
         const adminPanelBtn = document.getElementById('adminPanelBtn');
-    const favoritesBtn = document.getElementById('favoritesBtn');
-    const favoritesModal = document.getElementById('favoritesModal');
+        const favoritesBtn = document.getElementById('favoritesBtn');
+        const favoritesModal = document.getElementById('favoritesModal');
+        const manageMatchesBtn = document.getElementById('manageMatchesBtn');
+        const groupMatchingBtn = document.getElementById('groupMatchingBtn');
+        const chatMatchingBtn = document.getElementById('chatMatchingBtn');
+        const matchingModal = document.getElementById('matchingModal');
+        const manageMatchesModal = document.getElementById('manageMatchesModal');
         
         // 重置UI显示状态
         loginBtn.style.display = 'block';
         userInfo.style.display = 'none';
         adminPanelBtn.style.display = 'none';
-    favoritesBtn.style.display = 'none';
-    if (favoritesModal) favoritesModal.classList.remove('active');
-    // 立即隐藏分组/聊天匹配按钮，避免登出后仍显示
-    const groupMatchingBtn = document.getElementById('groupMatchingBtn');
-    const chatMatchingBtn = document.getElementById('chatMatchingBtn');
-    if (groupMatchingBtn) groupMatchingBtn.style.display = 'none';
-    if (chatMatchingBtn) chatMatchingBtn.style.display = 'none';
-    // 触发一次功能开关检查以同步状态（server side + local state）
-    try { checkFeatureFlags(); } catch(e) { /* ignore */ }
+        favoritesBtn.style.display = 'none';
+        if (manageMatchesBtn) manageMatchesBtn.style.display = 'none';
+        if (groupMatchingBtn) groupMatchingBtn.style.display = 'none';
+        if (chatMatchingBtn) chatMatchingBtn.style.display = 'none';
+        
+        // 关闭所有可能打开的模态框
+        if (favoritesModal) favoritesModal.classList.remove('active');
+        if (matchingModal) matchingModal.classList.remove('active');
+        if (manageMatchesModal) manageMatchesModal.classList.remove('active');
+        
+        // 重置红娘模式状态
+        isMatchmakerMode = false;
+        
+        // 触发一次功能开关检查以同步状态（server side + local state）
+        try { checkFeatureFlags(); } catch(e) { /* ignore */ }
         
         // 清除收藏相关状态
         favoriteIds.clear();
@@ -2132,6 +2171,9 @@ async function loadMatchingParticipants(searchQuery = '') {
             if (myToken !== matchingRequestToken) return;
             matchingParticipants = data.data;
             renderMatchingParticipants();
+        } else if (response.status === 401) {
+            handleAuthError();
+            return;
         } else {
             throw new Error('加载配对数据失败');
         }
@@ -2422,6 +2464,9 @@ async function confirmRating() {
                     loadManageMatches();
                 }
             }
+        } else if (response.status === 401) {
+            handleAuthError();
+            return;
         } else {
             const error = await response.json();
             throw new Error(error.message || '配对失败');
@@ -2464,6 +2509,9 @@ async function removeMatch() {
             showToast('配对已清除', 'success');
             closeStarRatingModal();
             loadMatchingParticipants(); // 重新加载配对列表
+        } else if (response.status === 401) {
+            handleAuthError();
+            return;
         } else {
             const error = await response.json();
             throw new Error(error.message || '清除配对失败');
@@ -2516,6 +2564,9 @@ async function loadManageMatches() {
         if (response.ok) {
             const data = await response.json();
             renderManageMatches(data.data);
+        } else if (response.status === 401) {
+            handleAuthError();
+            return;
         } else {
             throw new Error('加载配对管理数据失败');
         }
@@ -2838,6 +2889,10 @@ async function submitInlineRating(container, person1Id, person2Id, stars) {
             body: JSON.stringify({ person1_id: person1Id, person2_id: person2Id, stars })
         });
         if (!resp.ok) {
+            if (resp.status === 401) {
+                handleAuthError();
+                return;
+            }
             const err = await resp.json().catch(()=>({message:'提交失败'}));
             throw new Error(err.message || '提交失败');
         }
@@ -2893,6 +2948,9 @@ async function removeMatchById(matchId, person1Name, person2Name) {
         if (response.ok) {
             showToast('配对已删除', 'success');
             loadManageMatches(); // 重新加载配对列表
+        } else if (response.status === 401) {
+            handleAuthError();
+            return;
         } else {
             const error = await response.json();
             throw new Error(error.message || '删除配对失败');
