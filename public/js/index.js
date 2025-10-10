@@ -107,14 +107,6 @@ function updateUIForLoggedOutState() {
     if (matchingModal) matchingModal.classList.remove('active');
     if (manageMatchesModal) manageMatchesModal.classList.remove('active');
     
-    // 清空所有模态框内容，确保不会显示旧的姓名数据
-    const favoritesGrid = document.getElementById('favoritesGrid');
-    const matchingGrid = document.getElementById('matchingGrid');
-    const manageMatchesGrid = document.getElementById('manageMatchesGrid');
-    if (favoritesGrid) favoritesGrid.innerHTML = '';
-    if (matchingGrid) matchingGrid.innerHTML = '';
-    if (manageMatchesGrid) manageMatchesGrid.innerHTML = '';
-    
     // 重置 body overflow
     document.body.style.overflow = 'auto';
     
@@ -169,14 +161,6 @@ function handleAuthError() {
     if (favoritesModal) favoritesModal.classList.remove('active');
     if (matchingModal) matchingModal.classList.remove('active');
     if (manageMatchesModal) manageMatchesModal.classList.remove('active');
-    
-    // 清空所有模态框内容，确保不会显示旧的姓名数据
-    const favoritesGrid = document.getElementById('favoritesGrid');
-    const matchingGrid = document.getElementById('matchingGrid');
-    const manageMatchesGrid = document.getElementById('manageMatchesGrid');
-    if (favoritesGrid) favoritesGrid.innerHTML = '';
-    if (matchingGrid) matchingGrid.innerHTML = '';
-    if (manageMatchesGrid) manageMatchesGrid.innerHTML = '';
     
     // 重置 body overflow
     document.body.style.overflow = 'auto';
@@ -1391,14 +1375,6 @@ function setupUserDropdown() {
         if (favoritesModal) favoritesModal.classList.remove('active');
         if (matchingModal) matchingModal.classList.remove('active');
         if (manageMatchesModal) manageMatchesModal.classList.remove('active');
-        
-        // 清空所有模态框内容，确保不会显示旧的姓名数据
-        const favoritesGrid = document.getElementById('favoritesGrid');
-        const matchingGrid = document.getElementById('matchingGrid');
-        const manageMatchesGrid = document.getElementById('manageMatchesGrid');
-        if (favoritesGrid) favoritesGrid.innerHTML = '';
-        if (matchingGrid) matchingGrid.innerHTML = '';
-        if (manageMatchesGrid) manageMatchesGrid.innerHTML = '';
         
         // 重置红娘模式状态
         isMatchmakerMode = false;
