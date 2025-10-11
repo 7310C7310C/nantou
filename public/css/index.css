@@ -2276,12 +2276,23 @@ img, a, .user-photo {
     position: absolute;
     top: 8px;
     right: 8px;
-    padding: 4px 8px;
+    padding: 6px 10px;
     border-radius: 12px;
     font-size: 12px;
     font-weight: 600;
     z-index: 10;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.chat-status-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
 }
 
 .chat-status-badge.completed {
@@ -2292,6 +2303,81 @@ img, a, .user-photo {
 .chat-status-badge.pending {
     background-color: #fff3cd;
     color: #856404;
+}
+
+.chat-status-badge .expand-icon {
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+
+/* 聊天状态面板 */
+.chat-status-panel {
+    position: absolute;
+    top: 40px;
+    right: 8px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 20;
+    min-width: 140px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.chat-status-panel.open {
+    max-height: 200px;
+    opacity: 1;
+    pointer-events: all;
+}
+
+.status-option {
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #333;
+    user-select: none;
+}
+
+.status-option:first-child {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.status-option:last-child {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.status-option:hover {
+    background-color: #f5f5f5;
+}
+
+.status-option.active {
+    font-weight: 600;
+}
+
+/* 未聊状态（当前）- 浅黄色背景 */
+.status-option.active.pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* 已聊状态（当前）- 浅绿色背景 */
+.status-option.active.completed {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-option .radio-icon {
+    font-size: 14px;
+    line-height: 1;
 }
 
 /* 聊天状态样式 */

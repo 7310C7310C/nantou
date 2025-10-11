@@ -176,6 +176,7 @@ app.get('/api/user/grouping-result', protect, matchingUserController.getUserGrou
 app.get('/api/user/chat-result', protect, matchingUserController.getUserChatResult);
 app.get('/api/user/grouping-batches', protect, matchingUserController.getGroupingBatches);
 app.get('/api/user/chat-batches', protect, matchingUserController.getChatBatches);
+app.patch('/api/user/chat-status', protect, matchingUserController.updateChatStatus);
 
 // 管理后台页面路由 - 不需要服务器端认证，由客户端JavaScript处理
 app.get('/admin', (req, res) => {

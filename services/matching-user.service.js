@@ -240,9 +240,70 @@ async function getChatBatches() {
   return rows;
 }
 
+/**
+ * 更新聊天状态
+ * @param {string} username - 当前用户username
+ * @param {number} runBatch - 轮次号
+ * @param {string} targetId - 目标用户username
+ * @param {boolean} isCompleted - 是否已聊
+ * @returns {Object} 更新结果
+ */
+async function updateChatStatus(username, runBatch, targetId, isCompleted) {
+  try {
+    // 检查用户是否已签到
+    const [userRows] = await pool.execute(`
+      SELECT id, username, is_checked_in
+      FROM participants 
+      WHERE username = ?
+    `, [username]);
+
+    if (userRows.length === 0) {
+      throw new Error('用户不存在');
+    }
+
+    if (!userRows[0].is_checked_in) {
+      throw new Error('用户未签到，无法更新聊天状态');
+    }
+
+    // 检查记录是否存在
+    const [checkRows] = await pool.execute(`
+      SELECT id 
+      FROM chat_lists 
+      WHERE run_batch = ? AND user_id = ? AND target_id = ?
+    `, [runBatch, username, targetId]);
+
+    if (checkRows.length === 0) {
+      throw new Error('未找到对应的聊天记录');
+    }
+
+    // 更新状态
+    const [result] = await pool.execute(`
+      UPDATE chat_lists 
+      SET is_completed = ?
+      WHERE run_batch = ? AND user_id = ? AND target_id = ?
+    `, [isCompleted ? 1 : 0, runBatch, username, targetId]);
+
+    if (result.affectedRows === 0) {
+      throw new Error('更新失败');
+    }
+
+    logger.info('更新聊天状态成功', { username, runBatch, targetId, isCompleted });
+
+    return {
+      success: true,
+      message: '状态更新成功'
+    };
+
+  } catch (error) {
+    logger.error('更新聊天状态失败', { username, runBatch, targetId, isCompleted, error });
+    throw error;
+  }
+}
+
 module.exports = {
   getUserGroupingResult,
   getUserChatResult,
   getGroupingBatches,
-  getChatBatches
+  getChatBatches,
+  updateChatStatus
 };
