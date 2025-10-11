@@ -56,9 +56,15 @@
 
                 <div class="dashboard-card">
                     <h3>📊 数据统计</h3>
-                    <button class="btn btn-primary" id="openSelectionsBtn">互选情况</button>
-                    <button class="btn btn-secondary" id="viewGroupingResultsBtn" style="margin-top: 10px;">分组匹配结果</button>
-                    <button class="btn btn-secondary" id="viewChatResultsBtn" style="margin-top: 10px;">聊天匹配结果</button>
+                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                        <button class="btn btn-primary" id="viewFavoriteStatsBtn" style="flex: 1; margin: 0;">被收藏情况</button>
+                        <button class="btn btn-primary" id="viewParticipantStatsBtn" style="flex: 1; margin: 0;">被终选情况</button>
+                        <button class="btn btn-primary" id="openSelectionsBtn" style="flex: 1; margin: 0;">互选情况</button>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" id="viewGroupingResultsBtn" style="flex: 1; margin: 0;">分组匹配结果</button>
+                        <button class="btn btn-secondary" id="viewChatResultsBtn" style="flex: 1; margin: 0;">聊天匹配结果</button>
+                    </div>
                 </div>
 
                 <div class="dashboard-card">
@@ -774,6 +780,78 @@
                     </table>
                 </div>
                 <div class="stats-empty" style="display:none;">暂无配对数据</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 被收藏情况模态框 -->
+    <div class="participant-stats-modal" id="favoriteStatsModal">
+        <div class="participant-stats-content">
+            <div class="participant-stats-header">
+                <h3>💗 被收藏情况</h3>
+                <button class="close-btn" id="closeFavoriteStatsBtn">&times;</button>
+            </div>
+            
+            <div class="participant-stats-tabs">
+                <button class="tab-btn active" data-gender="female">女</button>
+                <button class="tab-btn" data-gender="male">男</button>
+            </div>
+            
+            <div class="participant-stats-body">
+                <div class="stats-loading" style="display:none;">
+                    <div class="loading-spinner"></div>
+                    <p>加载中...</p>
+                </div>
+                <div class="stats-table-container">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>账号</th>
+                                <th>姓名</th>
+                                <th>被多少人收藏</th>
+                            </tr>
+                        </thead>
+                        <tbody id="favoriteStatsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="stats-empty" style="display:none;">暂无数据</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 被终选情况模态框 -->
+    <div class="participant-stats-modal" id="participantStatsModal">
+        <div class="participant-stats-content">
+            <div class="participant-stats-header">
+                <h3>👥 被终选情况</h3>
+                <button class="close-btn" id="closeParticipantStatsBtn">&times;</button>
+            </div>
+            
+            <div class="participant-stats-tabs">
+                <button class="tab-btn active" data-gender="female">女</button>
+                <button class="tab-btn" data-gender="male">男</button>
+            </div>
+            
+            <div class="participant-stats-body">
+                <div class="stats-loading" style="display:none;">
+                    <div class="loading-spinner"></div>
+                    <p>加载中...</p>
+                </div>
+                <div class="stats-table-container">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>账号</th>
+                                <th>姓名</th>
+                                <th>被多少人选择</th>
+                            </tr>
+                        </thead>
+                        <tbody id="participantStatsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="stats-empty" style="display:none;">暂无数据</div>
             </div>
         </div>
     </div>

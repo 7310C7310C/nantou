@@ -140,6 +140,10 @@ app.put('/api/admin/feature-flags', protect, restrictTo('admin'), adminControlle
 
 // 互选情况数据API路由（管理员、工作人员和红娘可访问）
 app.get('/api/admin/selections-data', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getSelectionsData);
+app.get('/api/admin/favorite-stats', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getFavoriteStats);
+app.get('/api/admin/participant-stats', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getParticipantStats);
+app.get('/api/admin/favorite-detail/:targetId', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getFavoriteDetail);
+app.get('/api/admin/selection-detail/:targetId', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getSelectionDetail);
 
 // 匹配算法管理API路由（仅管理员可访问）
 app.get('/api/admin/validate-selections', protect, restrictTo('admin'), adminController.validateUserSelections);
@@ -178,6 +182,7 @@ app.get('/api/user/grouping-result', protect, matchingUserController.getUserGrou
 app.get('/api/user/chat-result', protect, matchingUserController.getUserChatResult);
 app.get('/api/user/grouping-batches', protect, matchingUserController.getGroupingBatches);
 app.get('/api/user/chat-batches', protect, matchingUserController.getChatBatches);
+app.patch('/api/user/chat-status', protect, matchingUserController.updateChatStatus);
 
 // 管理后台页面路由 - 不需要服务器端认证，由客户端JavaScript处理
 app.get('/admin', (req, res) => {

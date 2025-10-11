@@ -117,9 +117,53 @@ async function getChatBatches(req, res) {
   }
 }
 
+/**
+ * 更新聊天状态
+ */
+async function updateChatStatus(req, res) {
+  try {
+    const username = req.user.username;
+    const { runBatch, targetId, isCompleted } = req.body;
+
+    // 验证参数
+    if (!runBatch || !targetId || isCompleted === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少必要参数'
+      });
+    }
+
+    if (!Number.isInteger(runBatch) || runBatch < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '轮次号必须是大于等于1的整数'
+      });
+    }
+
+    if (typeof isCompleted !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'isCompleted必须是布尔值'
+      });
+    }
+
+    const result = await matchingUserService.updateChatStatus(username, runBatch, targetId, isCompleted);
+
+    res.json(result);
+
+  } catch (error) {
+    logger.error('更新聊天状态失败', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || '更新聊天状态失败，请稍后重试'
+    });
+  }
+}
+
 module.exports = {
   getUserGroupingResult,
   getUserChatResult,
   getGroupingBatches,
-  getChatBatches
+  getChatBatches,
+  updateChatStatus
 };

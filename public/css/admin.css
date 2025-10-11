@@ -3854,3 +3854,135 @@ input[type="checkbox"]:checked + .toggle-slider:before {
         font-size: 14px;
     }
 }
+
+/* ============ 人员情况模态框样式 ============ */
+.participant-stats-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    overflow-y: auto;
+}
+
+.participant-stats-modal.active {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+}
+
+.participant-stats-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 1000px;
+    margin: 20px auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.participant-stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.participant-stats-header h3 {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+}
+
+.participant-stats-tabs {
+    display: flex;
+    gap: 10px;
+    padding: 15px 24px;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #f9f9f9;
+}
+
+.participant-stats-tabs .tab-btn {
+    flex: 1;
+    padding: 10px 20px;
+    border: 2px solid #ddd;
+    background-color: white;
+    color: #666;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.participant-stats-tabs .tab-btn:hover {
+    border-color: #8b6f47;
+    color: #8b6f47;
+}
+
+.participant-stats-tabs .tab-btn.active {
+    background-color: #8b6f47;
+    border-color: #8b6f47;
+    color: white;
+}
+
+.participant-stats-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+}
+
+.participant-stats-body .stats-table .like-count {
+    font-size: 16px;
+    font-weight: bold;
+    color: #e91e63;
+}
+
+.participant-stats-body .stats-table .like-count.zero {
+    color: #999;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .participant-stats-modal.active {
+        padding: 0;
+        align-items: stretch;
+    }
+    
+    .participant-stats-content {
+        margin: 0;
+        border-radius: 0;
+        max-height: 100vh;
+        height: 100vh;
+    }
+    
+    .participant-stats-header {
+        padding: 15px;
+    }
+    
+    .participant-stats-header h3 {
+        font-size: 18px;
+    }
+    
+    .participant-stats-tabs {
+        padding: 10px 15px;
+    }
+    
+    .participant-stats-tabs .tab-btn {
+        padding: 12px 15px;
+        font-size: 14px;
+        min-height: 44px;
+    }
+    
+    .participant-stats-body {
+        padding: 15px;
+    }
+}
+

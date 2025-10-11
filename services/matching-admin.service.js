@@ -106,6 +106,20 @@ async function getValidMatchmakerPicks() {
 }
 
 /**
+ * 获取所有已完成聊天的历史记录
+ * @returns {Array} 已完成的聊天记录 [{user_id, target_id}, ...]
+ */
+async function getCompletedChatHistory() {
+  const [rows] = await pool.execute(`
+    SELECT user_id, target_id 
+    FROM chat_lists 
+    WHERE is_completed = 1
+  `);
+  
+  return rows;
+}
+
+/**
  * 检查所有已签到用户是否都有足够的选择记录
  * @returns {Object} {isValid: boolean, missingUsers: Array}
  */
@@ -314,6 +328,9 @@ async function executeChatMatching(options) {
       };
     }
     
+    // 获取已完成聊天的历史记录
+    const completedChatHistory = await getCompletedChatHistory();
+    
     // 记录输入信息到日志
     const inputInfo = {
       participants_count: participants.length,
@@ -321,13 +338,14 @@ async function executeChatMatching(options) {
       female_count: participants.filter(p => p.gender === 'female').length,
       selections_count: Object.keys(selections).length,
       matchmaker_picks_count: matchmakerPicks.length,
+      completed_chat_history_count: completedChatHistory.length,
       options: options
     };
     
     logger.info('执行聊天匹配算法', { input: inputInfo });
     
-    // 调用算法
-    const result = generateChatLists(participants, selections, matchmakerPicks, options);
+    // 调用算法，传入已完成聊天历史
+    const result = generateChatLists(participants, selections, matchmakerPicks, options, completedChatHistory);
     
     // 获取轮次号
     const runBatch = await getNextChatBatch();
@@ -511,6 +529,7 @@ module.exports = {
   getCheckedInParticipants,
   getValidSelections,
   getValidMatchmakerPicks,
+  getCompletedChatHistory,
   validateUserSelections,
   executeGroupMatching,
   executeChatMatching,

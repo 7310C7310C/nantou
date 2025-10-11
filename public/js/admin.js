@@ -174,6 +174,26 @@ function setupEventListeners() {
     if (closeMatchmakingStatsBtn) {
         closeMatchmakingStatsBtn.addEventListener('click', closeMatchmakingStatsModal);
     }
+    
+    // 收藏情况
+    const viewFavoriteStatsBtn = document.getElementById('viewFavoriteStatsBtn');
+    const closeFavoriteStatsBtn = document.getElementById('closeFavoriteStatsBtn');
+    if (viewFavoriteStatsBtn) {
+        viewFavoriteStatsBtn.addEventListener('click', openFavoriteStatsModal);
+    }
+    if (closeFavoriteStatsBtn) {
+        closeFavoriteStatsBtn.addEventListener('click', closeFavoriteStatsModal);
+    }
+    
+    // 人员情况
+    const viewParticipantStatsBtn = document.getElementById('viewParticipantStatsBtn');
+    const closeParticipantStatsBtn = document.getElementById('closeParticipantStatsBtn');
+    if (viewParticipantStatsBtn) {
+        viewParticipantStatsBtn.addEventListener('click', openParticipantStatsModal);
+    }
+    if (closeParticipantStatsBtn) {
+        closeParticipantStatsBtn.addEventListener('click', closeParticipantStatsModal);
+    }
 
     // 删除功能
     cancelDeleteBtn.addEventListener('click', closeDeleteModal);
@@ -4048,7 +4068,7 @@ function renderMatchmakingStats() {
                 </td>
                 <td>
                     <div class="matchmaker-count">
-                        ${item.matchmaker_count} 位红娘
+                        ${item.matchmaker_count}
                     </div>
                 </td>
             </tr>
@@ -4056,4 +4076,336 @@ function renderMatchmakingStats() {
     });
     
     tableBody.innerHTML = html;
+}
+
+// ============ 收藏情况功能 ============
+
+let favoriteStatsData = {
+    male: [],
+    female: []
+};
+let currentFavoriteGender = 'female';
+
+// 打开收藏情况模态框
+async function openFavoriteStatsModal() {
+    const modal = document.getElementById('favoriteStatsModal');
+    const loadingEl = modal.querySelector('.stats-loading');
+    const tableContainer = modal.querySelector('.stats-table-container');
+    const emptyEl = modal.querySelector('.stats-empty');
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // 显示加载状态
+    loadingEl.style.display = 'flex';
+    tableContainer.style.display = 'none';
+    emptyEl.style.display = 'none';
+    
+    // 设置选项卡点击事件
+    const tabBtns = modal.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentFavoriteGender = this.dataset.gender;
+            renderFavoriteStats();
+        });
+    });
+    
+    try {
+        const authToken = getAuthToken();
+        const response = await fetch('/api/admin/favorite-stats', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            favoriteStatsData = result.data || { male: [], female: [] };
+            renderFavoriteStats();
+        } else {
+            const error = await response.json();
+            alert(error.message || '获取收藏情况失败');
+            closeFavoriteStatsModal();
+        }
+    } catch (error) {
+        console.error('获取收藏情况失败:', error);
+        alert('网络错误，请重试');
+        closeFavoriteStatsModal();
+    } finally {
+        loadingEl.style.display = 'none';
+    }
+}
+
+// 关闭收藏情况模态框
+function closeFavoriteStatsModal() {
+    const modal = document.getElementById('favoriteStatsModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// 渲染收藏情况
+function renderFavoriteStats() {
+    const tableBody = document.getElementById('favoriteStatsTableBody');
+    const tableContainer = document.querySelector('#favoriteStatsModal .stats-table-container');
+    const emptyEl = document.querySelector('#favoriteStatsModal .stats-empty');
+    
+    const data = favoriteStatsData[currentFavoriteGender] || [];
+    
+    if (data.length === 0) {
+        tableContainer.style.display = 'none';
+        emptyEl.style.display = 'block';
+        return;
+    }
+    
+    tableContainer.style.display = 'block';
+    emptyEl.style.display = 'none';
+    
+    let html = '';
+    data.forEach((item, index) => {
+        const favoriteClass = item.favorite_count === 0 ? 'zero' : '';
+        const hasData = item.favorite_count > 0;
+        const rowId = `favorite-row-${item.id}`;
+        const detailId = `favorite-detail-${item.id}`;
+        
+        html += `
+            <tr id="${rowId}">
+                <td>${item.username}</td>
+                <td>${item.name || '未知'}</td>
+                <td>
+                    <div class="like-count ${favoriteClass}" style="display: flex; align-items: center; justify-content: space-between;">
+                        <span>${item.favorite_count} 💗</span>
+                        ${hasData ? `<button class="view-toggle-btn" onclick="toggleFavoriteDetail(${item.id}, '${item.name}', '${item.username}')" style="background: none; border: none; color: #007bff; cursor: pointer; padding: 4px 8px; font-size: 14px;">查看 ▼</button>` : ''}
+                    </div>
+                </td>
+            </tr>
+            ${hasData ? `
+            <tr id="${detailId}" class="detail-row" style="display: none;">
+                <td colspan="3" style="padding: 0;">
+                    <div class="detail-content" style="padding: 12px; background: #f8f9fa; border-top: 1px solid #dee2e6;">
+                        <div class="detail-loading" style="text-align: center; color: #666;">加载中...</div>
+                    </div>
+                </td>
+            </tr>
+            ` : ''}
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+}
+
+// ============ 人员情况功能 ============
+
+let participantStatsData = {
+    male: [],
+    female: []
+};
+let currentGender = 'female';
+
+// 打开人员情况模态框
+async function openParticipantStatsModal() {
+    const modal = document.getElementById('participantStatsModal');
+    const loadingEl = modal.querySelector('.stats-loading');
+    const tableContainer = modal.querySelector('.stats-table-container');
+    const emptyEl = modal.querySelector('.stats-empty');
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // 显示加载状态
+    loadingEl.style.display = 'flex';
+    tableContainer.style.display = 'none';
+    emptyEl.style.display = 'none';
+    
+    // 设置选项卡点击事件
+    const tabBtns = modal.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentGender = this.dataset.gender;
+            renderParticipantStats();
+        });
+    });
+    
+    try {
+        const authToken = getAuthToken();
+        const response = await fetch('/api/admin/participant-stats', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            participantStatsData = result.data || { male: [], female: [] };
+            renderParticipantStats();
+        } else {
+            const error = await response.json();
+            alert(error.message || '获取人员情况失败');
+            closeParticipantStatsModal();
+        }
+    } catch (error) {
+        console.error('获取人员情况失败:', error);
+        alert('网络错误，请重试');
+        closeParticipantStatsModal();
+    } finally {
+        loadingEl.style.display = 'none';
+    }
+}
+
+// 关闭人员情况模态框
+function closeParticipantStatsModal() {
+    const modal = document.getElementById('participantStatsModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// 渲染人员情况
+function renderParticipantStats() {
+    const tableBody = document.getElementById('participantStatsTableBody');
+    const tableContainer = document.querySelector('#participantStatsModal .stats-table-container');
+    const emptyEl = document.querySelector('#participantStatsModal .stats-empty');
+    
+    const data = participantStatsData[currentGender] || [];
+    
+    if (data.length === 0) {
+        tableContainer.style.display = 'none';
+        emptyEl.style.display = 'block';
+        return;
+    }
+    
+    tableContainer.style.display = 'block';
+    emptyEl.style.display = 'none';
+    
+    let html = '';
+    data.forEach((item, index) => {
+        const likeClass = item.liked_count === 0 ? 'zero' : '';
+        const hasData = item.liked_count > 0;
+        const rowId = `selection-row-${item.id}`;
+        const detailId = `selection-detail-${item.id}`;
+        
+        html += `
+            <tr id="${rowId}">
+                <td>${item.username}</td>
+                <td>${item.name || '未知'}</td>
+                <td>
+                    <div class="like-count ${likeClass}" style="display: flex; align-items: center; justify-content: space-between;">
+                        <span>${item.liked_count} ☑️</span>
+                        ${hasData ? `<button class="view-toggle-btn" onclick="toggleSelectionDetail(${item.id}, '${item.name}', '${item.username}')" style="background: none; border: none; color: #007bff; cursor: pointer; padding: 4px 8px; font-size: 14px;">查看 ▼</button>` : ''}
+                    </div>
+                </td>
+            </tr>
+            ${hasData ? `
+            <tr id="${detailId}" class="detail-row" style="display: none;">
+                <td colspan="3" style="padding: 0;">
+                    <div class="detail-content" style="padding: 12px; background: #f8f9fa; border-top: 1px solid #dee2e6;">
+                        <div class="detail-loading" style="text-align: center; color: #666;">加载中...</div>
+                    </div>
+                </td>
+            </tr>
+            ` : ''}
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+}
+
+// ==================== 查看收藏/选择详情 ====================
+
+// 切换收藏详情展开/折叠
+async function toggleFavoriteDetail(targetId, targetName, targetUsername) {
+    const detailRow = document.getElementById(`favorite-detail-${targetId}`);
+    const toggleBtn = event.target;
+    
+    if (detailRow.style.display === 'none') {
+        // 展开 - 加载数据
+        detailRow.style.display = '';
+        toggleBtn.innerHTML = '收起 ▲';
+        
+        const detailContent = detailRow.querySelector('.detail-content');
+        detailContent.innerHTML = '<div class="detail-loading" style="text-align: center; color: #666;">加载中...</div>';
+        
+        try {
+            const authToken = getAuthToken();
+            const response = await fetch(`/api/admin/favorite-detail/${targetId}`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                const users = result.data || [];
+                
+                if (users.length === 0) {
+                    detailContent.innerHTML = '<div style="color: #999; text-align: center;">暂无数据</div>';
+                } else {
+                    const userListHtml = users.map(u => 
+                        `<span style="display: inline-block; margin: 4px 8px; padding: 4px 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">${u.name || '未知'}（${u.username}）</span>`
+                    ).join('');
+                    detailContent.innerHTML = `<div style="line-height: 1.8;">${userListHtml}</div>`;
+                }
+            } else {
+                const error = await response.json();
+                detailContent.innerHTML = `<div style="color: #dc3545; text-align: center;">${error.message || '获取数据失败'}</div>`;
+            }
+        } catch (error) {
+            console.error('获取收藏详情失败:', error);
+            detailContent.innerHTML = '<div style="color: #dc3545; text-align: center;">网络错误，请重试</div>';
+        }
+    } else {
+        // 折叠
+        detailRow.style.display = 'none';
+        toggleBtn.innerHTML = '查看 ▼';
+    }
+}
+
+// 切换选择详情展开/折叠
+async function toggleSelectionDetail(targetId, targetName, targetUsername) {
+    const detailRow = document.getElementById(`selection-detail-${targetId}`);
+    const toggleBtn = event.target;
+    
+    if (detailRow.style.display === 'none') {
+        // 展开 - 加载数据
+        detailRow.style.display = '';
+        toggleBtn.innerHTML = '收起 ▲';
+        
+        const detailContent = detailRow.querySelector('.detail-content');
+        detailContent.innerHTML = '<div class="detail-loading" style="text-align: center; color: #666;">加载中...</div>';
+        
+        try {
+            const authToken = getAuthToken();
+            const response = await fetch(`/api/admin/selection-detail/${targetId}`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                const users = result.data || [];
+                
+                if (users.length === 0) {
+                    detailContent.innerHTML = '<div style="color: #999; text-align: center;">暂无数据</div>';
+                } else {
+                    const userListHtml = users.map(u => 
+                        `<span style="display: inline-block; margin: 4px 8px; padding: 4px 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">${u.name || '未知'}（${u.username}）</span>`
+                    ).join('');
+                    detailContent.innerHTML = `<div style="line-height: 1.8;">${userListHtml}</div>`;
+                }
+            } else {
+                const error = await response.json();
+                detailContent.innerHTML = `<div style="color: #dc3545; text-align: center;">${error.message || '获取数据失败'}</div>`;
+            }
+        } catch (error) {
+            console.error('获取选择详情失败:', error);
+            detailContent.innerHTML = '<div style="color: #dc3545; text-align: center;">网络错误，请重试</div>';
+        }
+    } else {
+        // 折叠
+        detailRow.style.display = 'none';
+        toggleBtn.innerHTML = '查看 ▼';
+    }
 }

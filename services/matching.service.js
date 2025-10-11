@@ -3,28 +3,6 @@
  * 实现核心-卫星滚动分组法
  */
 
-// 调试开关
-//TODO::  改为默认关闭
-let DEBUG_ENABLED = true;
-
-/**
- * 调试打印接口
- * @param {...any} args - 要打印的参数
- */
-function debugLog(...args) {
-    if (DEBUG_ENABLED) {
-        console.log(...args);
-    }
-}
-
-/**
- * 设置调试开关
- * @param {boolean} enabled - 是否启用调试
- */
-function setDebugEnabled(enabled) {
-    DEBUG_ENABLED = enabled;
-}
-
 // 用户互选打分映射表,最多选10个
 const USER_PRIORITY_SCORES = {
     1: 100, // 第1名：100分（最爱）
@@ -261,7 +239,6 @@ function expandGroupToFull(group, males, females, assignedParticipants, targetMa
         // 确定需要添加的性别
         const targetGender = determineTargetGender(group, targetMalePerGroup, targetFemalePerGroup);
         if (!targetGender) {
-            debugLog('error:', '分组算法错误：无法确定需要添加的性别');
             break;
         }
 
@@ -335,10 +312,8 @@ function createFullGroups(males, females, pairScores, assignedParticipants, full
         // 只有当小组达到满编时才添加到结果中
         if (group.male_ids.length >= targetMalePerGroup && group.female_ids.length >= targetFemalePerGroup) {
             groups.push(group);
-            debugLog(`创建满编第${groupIndex + 1}组: ${group.male_ids.length}男${group.female_ids.length}女`);
         } else {
             // 如果无法达到满编，将组员重新放回未分配池
-            debugLog(`第${groupIndex + 1}组无法满编，将组员重新分配`);
             for (const memberId of [...group.male_ids, ...group.female_ids]) {
                 assignedParticipants.delete(memberId);
             }
@@ -364,13 +339,9 @@ function distributeRemainingParticipants(groups, allRemainingParticipants, males
         return;
     }
 
-    debugLog(`将${allRemainingParticipants.length}个剩余人员分配到前${fullGroupsCount}个满编组中（优化性别平衡）`);
-
     // 分离剩余男性和女性
     const remainingMales = allRemainingParticipants.filter(id => males.includes(id));
     const remainingFemales = allRemainingParticipants.filter(id => females.includes(id));
-
-    debugLog(`剩余男性: ${remainingMales.length}人, 剩余女性: ${remainingFemales.length}人`);
 
     // 计算每个组应该分配的男性和女性数量
     const malesPerGroup = Math.floor(remainingMales.length / fullGroupsCount);
@@ -401,7 +372,6 @@ function distributeRemainingParticipants(groups, allRemainingParticipants, males
         for (let i = 0; i < currentGroupMales && maleIndex < remainingMales.length; i++) {
             const maleId = remainingMales[maleIndex];
             currentGroup.male_ids.push(maleId);
-            debugLog(`将男性${maleId}分配到第${groupIndex + 1}组`);
             maleIndex++;
         }
 
@@ -409,12 +379,9 @@ function distributeRemainingParticipants(groups, allRemainingParticipants, males
         for (let i = 0; i < currentGroupFemales && femaleIndex < remainingFemales.length; i++) {
             const femaleId = remainingFemales[femaleIndex];
             currentGroup.female_ids.push(femaleId);
-            debugLog(`将女性${femaleId}分配到第${groupIndex + 1}组`);
             femaleIndex++;
         }
     }
-
-    debugLog(`剩余人员分配完成，共分配${maleIndex}男${femaleIndex}女到前${fullGroupsCount}个组中`);
 }
 
 /**
@@ -444,8 +411,6 @@ function generateGroups(participants, selections, matchmakerPicks, options) {
     const males = participants.filter(p => p.gender === 'male').map(p => p.id);
     const females = participants.filter(p => p.gender === 'female').map(p => p.id);
 
-    debugLog('info:', `总参与者: ${participants.length}, 男性: ${males.length}, 女性: ${females.length}`);
-
     // 获取分组配置
     const targetMalePerGroup = options.group_size_male;
     const targetFemalePerGroup = options.group_size_female;
@@ -455,9 +420,6 @@ function generateGroups(participants, selections, matchmakerPicks, options) {
     const maxGroupsByMales = Math.floor(males.length / targetMalePerGroup);
     const maxGroupsByFemales = Math.floor(females.length / targetFemalePerGroup);
     const fullGroupsCount = Math.min(maxGroupsByMales, maxGroupsByFemales);
-
-    debugLog(`理论满编组数: ${fullGroupsCount}, 目标组大小: ${targetGroupSize}`);
-    debugLog(`按男性可组: ${maxGroupsByMales}组, 按女性可组: ${maxGroupsByFemales}组`);
 
     // 创建配对总表
     const pairScores = createPairScoresTable(males, females, selections, matchmakerPicks);
@@ -476,17 +438,9 @@ function generateGroups(participants, selections, matchmakerPicks, options) {
     const remainingFemales = females.filter(id => !assignedParticipants.has(id));
     allRemainingParticipants.push(...remainingMales, ...remainingFemales);
 
-    if (allRemainingParticipants.length > 0) {
-        debugLog(`总剩余人员: ${allRemainingParticipants.length}人`);
-
-        if (fullGroupsCount > 0) {
-            // 将剩余人员平均分配到前N个满编组中
-            distributeRemainingParticipants(groups, allRemainingParticipants, males, females, fullGroupsCount);
-        } else {
-            // 如果没有满编组，创建新组容纳剩余人员
-            debugLog('error:', `总人数太少或者一个组人数太多了!`);
-            debugLog('error:', `报名人太少了,凑不够一个组,别办活动了`);
-        }
+    if (allRemainingParticipants.length > 0 && fullGroupsCount > 0) {
+        // 将剩余人员平均分配到前N个满编组中
+        distributeRemainingParticipants(groups, allRemainingParticipants, males, females, fullGroupsCount);
     }
 
     return { groups };
@@ -498,9 +452,10 @@ function generateGroups(participants, selections, matchmakerPicks, options) {
  * @param {Object} selections - 用户选择数据
  * @param {Array} matchmakerPicks - 红娘推荐数据
  * @param {Object} options - 配置选项
+ * @param {Array} completedChatHistory - 已完成聊天的历史记录 [{user_id, target_id}, ...]
  * @returns {Object} 聊天名单结果
  */
-function generateChatLists(participants, selections, matchmakerPicks, options) {
+function generateChatLists(participants, selections, matchmakerPicks, options, completedChatHistory = []) {
     // 参数验证
     if (!Array.isArray(participants)) {
         throw new Error('participants 必须是数组');
@@ -514,11 +469,21 @@ function generateChatLists(participants, selections, matchmakerPicks, options) {
     if (!options || typeof options !== 'object') {
         throw new Error('options 必须是对象');
     }
+    if (!Array.isArray(completedChatHistory)) {
+        throw new Error('completedChatHistory 必须是数组');
+    }
     
     const chatLists = {};
     const listSize = options.list_size || 5;
 
-    debugLog('info:', `开始生成聊天名单，名单大小: ${listSize}`);
+    // 构建已完成聊天的映射表 {userId: Set([targetId1, targetId2, ...])}
+    const completedChatMap = {};
+    for (const record of completedChatHistory) {
+        if (!completedChatMap[record.user_id]) {
+            completedChatMap[record.user_id] = new Set();
+        }
+        completedChatMap[record.user_id].add(record.target_id);
+    }
 
     // 第一步：为每个参与者计算与所有异性的互有好感分数
     const allScores = {};
@@ -537,13 +502,17 @@ function generateChatLists(participants, selections, matchmakerPicks, options) {
         }
     }
 
-    // 第二步：生成初始聊天名单（按分数排序）
+    // 第二步：生成初始聊天名单（按分数排序，排除已完成聊天的人）
     for (const participant of participants) {
         const participantId = participant.id;
         const scores = allScores[participantId];
+        
+        // 获取该用户已完成聊天的对象集合
+        const completedSet = completedChatMap[participantId] || new Set();
 
-        // 按分数排序并取前N个
+        // 按分数排序，排除已完成聊天的人，并取前N个
         const sortedScores = Object.entries(scores)
+            .filter(([id, score]) => !completedSet.has(id))
             .map(([id, score]) => ({ id, score }))
             .sort((a, b) => b.score - a.score);
 
@@ -565,6 +534,13 @@ function generateChatLists(participants, selections, matchmakerPicks, options) {
             // 检查对方是否也将当前用户加入名单
             const matchList = chatLists[matchId] || [];
             if (!matchList.includes(participantId)) {
+                // 检查对方是否已经和当前用户完成聊天
+                const targetCompletedSet = completedChatMap[matchId] || new Set();
+                if (targetCompletedSet.has(participantId)) {
+                    // 对方已经和当前用户完成聊天，跳过
+                    continue;
+                }
+                
                 // 如果对方没有将当前用户加入名单，将当前用户加入对方的名单
                 if (matchList.length < listSize) {
                     matchList.push(participantId);
@@ -591,13 +567,17 @@ function generateChatLists(participants, selections, matchmakerPicks, options) {
         }
 
         // 检查哪些人将当前用户加入了名单，但当前用户没有将他们加入名单
+        const currentCompletedSet = completedChatMap[participantId] || new Set();
         for (const otherParticipant of participants) {
             const otherId = otherParticipant.id;
             if (otherId === participantId) continue;
 
             const otherList = chatLists[otherId] || [];
             if (otherList.includes(participantId) && !currentList.includes(otherId)) {
-                bidirectionalMatches.add(otherId);
+                // 检查当前用户是否已经和对方完成聊天
+                if (!currentCompletedSet.has(otherId)) {
+                    bidirectionalMatches.add(otherId);
+                }
             }
         }
 
@@ -609,34 +589,11 @@ function generateChatLists(participants, selections, matchmakerPicks, options) {
         bidirectionalLists[participantId] = bidirectionalScores.slice(0, listSize).map(item => item.id);
     }
 
-    // 第四步：输出调试信息
-    debugLog('info:', `聊天名单生成完成，共为${participants.length}人生成名单`);
-
-    // 统计双向匹配情况
-    let totalMatches = 0;
-    let bidirectionalMatchCount = 0;
-
-    for (const participantId in bidirectionalLists) {
-        const list = bidirectionalLists[participantId];
-        totalMatches += list.length;
-
-        for (const matchId of list) {
-            const matchList = bidirectionalLists[matchId] || [];
-            if (matchList.includes(participantId)) {
-                bidirectionalMatchCount++;
-            }
-        }
-    }
-
-    debugLog(`总推荐数: ${totalMatches}, 双向匹配数: ${bidirectionalMatchCount / 2}`);
-    debugLog(`双向匹配率: ${((bidirectionalMatchCount / 2) / (totalMatches / 2) * 100).toFixed(1)}%`);
-
     return { chatLists: bidirectionalLists };
 }
 
 // 导出函数
 module.exports = {
     generateGroups,
-    generateChatLists,
-    setDebugEnabled
+    generateChatLists
 };

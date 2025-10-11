@@ -391,6 +391,9 @@ function switchGender(gender) {
     hasMore = true;
     allUsers = [];
     
+    // 隐藏懒加载指示器
+    hideLazyLoadingIndicator();
+    
     // 重新加载全部数据
     loadUsers().finally(() => {
         // 无论成功还是失败，都重新启用按钮
@@ -461,6 +464,9 @@ function clearSearch() {
     searchInput.value = '';
     clearBtn.style.display = 'none';
     
+    // 隐藏懒加载指示器
+    hideLazyLoadingIndicator();
+    
     // 检查是否有该性别的原始缓存数据（无搜索条件的数据）
     const cache = genderCache[currentGender];
     if (cache.users.length > 0 && !cache.searchTerm) {
@@ -495,6 +501,9 @@ function searchUsers() {
     currentPage = 0;
     hasMore = true; // 重置分页状态
     allUsers = [];
+    
+    // 隐藏懒加载指示器
+    hideLazyLoadingIndicator();
     
     // 清空预加载的图片缓存
     preloadedImages.clear();
@@ -582,6 +591,11 @@ async function loadUsers() {
                 hasMore = data.data.pagination.hasMore;
             }
             
+            // 如果没有更多内容，确保隐藏懒加载指示器
+            if (!hasMore) {
+                hideLazyLoadingIndicator();
+            }
+            
             currentPage++;
         } else {
             console.error('加载用户失败');
@@ -592,6 +606,9 @@ async function loadUsers() {
         showError('网络错误');
     } finally {
         isLoading = false;
+        
+        // 隐藏懒加载指示器
+        hideLazyLoadingIndicator();
         
         // 重新启用性别选择按钮
         const femaleBtn = document.getElementById('femaleBtn');
@@ -883,7 +900,34 @@ function handleScroll() {
     const documentHeight = document.documentElement.scrollHeight;
     
     if (scrollTop + windowHeight >= documentHeight - 100) {
-        loadUsers();
+        // 再次检查是否有更多内容，避免显示不必要的加载指示器
+        if (hasMore) {
+            showLazyLoadingIndicator();
+            loadUsers();
+        }
+    }
+}
+
+// 显示懒加载指示器
+function showLazyLoadingIndicator() {
+    let lazyLoading = document.getElementById('lazyLoadingIndicator');
+    if (!lazyLoading) {
+        lazyLoading = document.createElement('div');
+        lazyLoading.id = 'lazyLoadingIndicator';
+        lazyLoading.className = 'loading-container lazy-load';
+        lazyLoading.innerHTML = '<div class="loading-spinner"></div><p>加载中……</p>';
+        
+        const usersGrid = document.getElementById('usersGrid');
+        usersGrid.parentNode.insertBefore(lazyLoading, usersGrid.nextSibling);
+    }
+    lazyLoading.style.display = 'flex';
+}
+
+// 隐藏懒加载指示器
+function hideLazyLoadingIndicator() {
+    const lazyLoading = document.getElementById('lazyLoadingIndicator');
+    if (lazyLoading) {
+        lazyLoading.style.display = 'none';
     }
 }
 
@@ -3164,9 +3208,10 @@ async function loadUserResultsBatches(type) {
         const data = await response.json();
         
         // 清空选项
-        batchSelect.innerHTML = '<option value="">请选择轮次</option>';
+        batchSelect.innerHTML = '';
         
         if (data.success && data.data.length > 0) {
+            // 有结果时，不添加"请选择轮次"选项，直接添加实际轮次
             data.data.forEach(batch => {
                 const option = document.createElement('option');
                 option.value = batch.run_batch;
@@ -3181,6 +3226,7 @@ async function loadUserResultsBatches(type) {
                 await loadSelectedUserBatchResult();
             }
         } else {
+            // 无结果时，显示"暂无匹配结果"
             batchSelect.innerHTML = '<option value="">暂无匹配结果</option>';
             showUserResultsEmpty('暂无匹配结果');
         }
@@ -3320,6 +3366,10 @@ function renderUserChatResult(resultData) {
         return;
     }
     
+    // 存储当前轮次到 modal dataset
+    const modal = document.getElementById('userResultsModal');
+    modal.dataset.runBatch = runBatch;
+    
     // 创建聊天信息标题和推荐对象列表
     const chatInfoTitle = `
         <div class="user-chat-info">
@@ -3328,21 +3378,32 @@ function renderUserChatResult(resultData) {
         </div>
     `;
     
-    const targetCards = targets.map(target => {
+    const targetCards = targets.map((target, index) => {
         const photoUrl = target.photo_url || '/images/default-avatar.png';
         const statusText = target.is_completed ? '已聊' : '未聊';
         const statusClass = target.is_completed ? 'completed' : 'pending';
         const displayName = target.name || target.baptismal_name || target.username;
+        const cardId = `chat-card-${index}`;
         
         return `
-            <div class="user-card ${statusClass}">
+            <div class="user-card ${statusClass}" id="${cardId}" data-target-id="${target.username}" data-is-completed="${target.is_completed}">
                 <img src="${photoUrl}" class="user-photo" alt="${displayName}" 
                      onerror="this.src='/images/default-avatar.png'">
                 <div class="user-info">
                     <div class="user-username">${target.username}</div>
                     <div class="user-baptismal">${displayName}</div>
                 </div>
-                <div class="chat-status-badge ${statusClass}">${statusText}</div>
+                <div class="chat-status-badge ${statusClass}" onclick="toggleChatStatusPanel('${cardId}')">
+                    ${statusText} <span class="expand-icon">▼</span>
+                </div>
+                <div class="chat-status-panel" id="${cardId}-panel">
+                    <div class="status-option ${!target.is_completed ? 'active pending' : ''}" onclick="updateChatStatus('${cardId}', '${target.username}', false)">
+                        <span class="radio-icon">${!target.is_completed ? '●' : '○'}</span> 未聊
+                    </div>
+                    <div class="status-option ${target.is_completed ? 'active completed' : ''}" onclick="updateChatStatus('${cardId}', '${target.username}', true)">
+                        <span class="radio-icon">${target.is_completed ? '●' : '○'}</span> 已聊
+                    </div>
+                </div>
             </div>
         `;
     }).join('');
@@ -3352,6 +3413,155 @@ function renderUserChatResult(resultData) {
     gridEl.innerHTML = chatInfoTitle + targetCards;
     
     gridEl.style.display = 'grid';
+}
+
+/**
+ * 切换聊天状态面板展开/收起
+ * @param {string} cardId - 卡片ID
+ */
+function toggleChatStatusPanel(cardId) {
+    const card = document.getElementById(cardId);
+    const panel = document.getElementById(`${cardId}-panel`);
+    const badge = card.querySelector('.chat-status-badge');
+    const expandIcon = badge.querySelector('.expand-icon');
+    
+    // 关闭其他所有展开的面板
+    document.querySelectorAll('.chat-status-panel.open').forEach(p => {
+        if (p.id !== `${cardId}-panel`) {
+            p.classList.remove('open');
+            const otherCard = p.closest('.user-card');
+            const otherBadge = otherCard.querySelector('.chat-status-badge');
+            const otherIcon = otherBadge.querySelector('.expand-icon');
+            if (otherIcon) {
+                otherIcon.textContent = '▼';
+            }
+        }
+    });
+    
+    // 切换当前面板
+    const isOpen = panel.classList.toggle('open');
+    expandIcon.textContent = isOpen ? '▲' : '▼';
+}
+
+/**
+ * 更新聊天状态
+ * @param {string} cardId - 卡片ID
+ * @param {string} targetId - 目标用户username
+ * @param {boolean} isCompleted - 是否已聊
+ */
+async function updateChatStatus(cardId, targetId, isCompleted) {
+    const card = document.getElementById(cardId);
+    // 将数据集中的值转换为布尔值（可能是 "true"/"false" 或 "1"/"0"）
+    const currentStatus = card.dataset.isCompleted === 'true' || card.dataset.isCompleted === '1';
+    
+    // 如果点击的是当前状态，不做任何操作
+    if (currentStatus === isCompleted) {
+        return;
+    }
+    
+    // ========== 乐观更新：立即更新UI ==========
+    // 保存原始状态以便回滚
+    const originalStatus = currentStatus;
+    
+    // 立即更新数据集
+    card.dataset.isCompleted = isCompleted;
+    
+    // 立即更新卡片样式
+    if (isCompleted) {
+        card.classList.remove('pending');
+        card.classList.add('completed');
+    } else {
+        card.classList.remove('completed');
+        card.classList.add('pending');
+    }
+    
+    // 立即更新徽章
+    const badge = card.querySelector('.chat-status-badge');
+    badge.textContent = isCompleted ? '已聊 ' : '未聊 ';
+    badge.className = `chat-status-badge ${isCompleted ? 'completed' : 'pending'}`;
+    
+    // 重新添加展开图标
+    let expandIcon = document.createElement('span');
+    expandIcon.className = 'expand-icon';
+    expandIcon.textContent = '▼'; // 收起状态
+    badge.appendChild(expandIcon);
+    
+    // 立即更新面板选项
+    const panel = document.getElementById(`${cardId}-panel`);
+    const options = panel.querySelectorAll('.status-option');
+    
+    // 更新"未聊"选项
+    options[0].className = `status-option ${!isCompleted ? 'active pending' : ''}`;
+    options[0].innerHTML = `<span class="radio-icon">${!isCompleted ? '●' : '○'}</span> 未聊`;
+    
+    // 更新"已聊"选项
+    options[1].className = `status-option ${isCompleted ? 'active completed' : ''}`;
+    options[1].innerHTML = `<span class="radio-icon">${isCompleted ? '●' : '○'}</span> 已聊`;
+    
+    // 自动收起面板
+    panel.classList.remove('open');
+    
+    // ========== 发送请求到服务器 ==========
+    const modal = document.getElementById('userResultsModal');
+    const runBatch = parseInt(modal.dataset.runBatch);
+    const authToken = localStorage.getItem('authToken');
+    
+    try {
+        const response = await fetch('/api/user/chat-status', {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                runBatch,
+                targetId,
+                isCompleted
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || '更新失败');
+        }
+        
+        // 显示成功提示
+        showToast(isCompleted ? '已标记为已聊' : '已标记为未聊', 'success');
+        
+    } catch (error) {
+        console.error('更新聊天状态失败:', error);
+        showToast(error.message || '更新失败，正在回滚', 'error');
+        
+        // ========== 回滚UI到原始状态 ==========
+        card.dataset.isCompleted = originalStatus;
+        
+        // 回滚卡片样式
+        if (originalStatus) {
+            card.classList.remove('pending');
+            card.classList.add('completed');
+        } else {
+            card.classList.remove('completed');
+            card.classList.add('pending');
+        }
+        
+        // 回滚徽章
+        badge.textContent = originalStatus ? '已聊 ' : '未聊 ';
+        badge.className = `chat-status-badge ${originalStatus ? 'completed' : 'pending'}`;
+        
+        // 重新添加展开图标
+        expandIcon = document.createElement('span');
+        expandIcon.className = 'expand-icon';
+        expandIcon.textContent = '▼';
+        badge.appendChild(expandIcon);
+        
+        // 回滚面板选项
+        options[0].className = `status-option ${!originalStatus ? 'active pending' : ''}`;
+        options[0].innerHTML = `<span class="radio-icon">${!originalStatus ? '●' : '○'}</span> 未聊`;
+        
+        options[1].className = `status-option ${originalStatus ? 'active completed' : ''}`;
+        options[1].innerHTML = `<span class="radio-icon">${originalStatus ? '●' : '○'}</span> 已聊`;
+    }
 }
 
 /**
