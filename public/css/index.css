@@ -596,6 +596,12 @@ img, a, .user-photo {
     to { transform: rotate(360deg); }
 }
 
+/* 懒加载指示器专用样式 */
+.loading-container.lazy-load {
+    grid-column: unset; /* 取消网格布局影响 */
+    margin: 20px 0; /* 添加上下边距 */
+}
+
 /* 全屏图片查看器 */
 .fullscreen-viewer {
     position: fixed;

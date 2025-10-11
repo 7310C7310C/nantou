@@ -391,6 +391,9 @@ function switchGender(gender) {
     hasMore = true;
     allUsers = [];
     
+    // 隐藏懒加载指示器
+    hideLazyLoadingIndicator();
+    
     // 重新加载全部数据
     loadUsers().finally(() => {
         // 无论成功还是失败，都重新启用按钮
@@ -461,6 +464,9 @@ function clearSearch() {
     searchInput.value = '';
     clearBtn.style.display = 'none';
     
+    // 隐藏懒加载指示器
+    hideLazyLoadingIndicator();
+    
     // 检查是否有该性别的原始缓存数据（无搜索条件的数据）
     const cache = genderCache[currentGender];
     if (cache.users.length > 0 && !cache.searchTerm) {
@@ -495,6 +501,9 @@ function searchUsers() {
     currentPage = 0;
     hasMore = true; // 重置分页状态
     allUsers = [];
+    
+    // 隐藏懒加载指示器
+    hideLazyLoadingIndicator();
     
     // 清空预加载的图片缓存
     preloadedImages.clear();
@@ -582,6 +591,11 @@ async function loadUsers() {
                 hasMore = data.data.pagination.hasMore;
             }
             
+            // 如果没有更多内容，确保隐藏懒加载指示器
+            if (!hasMore) {
+                hideLazyLoadingIndicator();
+            }
+            
             currentPage++;
         } else {
             console.error('加载用户失败');
@@ -592,6 +606,9 @@ async function loadUsers() {
         showError('网络错误');
     } finally {
         isLoading = false;
+        
+        // 隐藏懒加载指示器
+        hideLazyLoadingIndicator();
         
         // 重新启用性别选择按钮
         const femaleBtn = document.getElementById('femaleBtn');
@@ -883,7 +900,34 @@ function handleScroll() {
     const documentHeight = document.documentElement.scrollHeight;
     
     if (scrollTop + windowHeight >= documentHeight - 100) {
-        loadUsers();
+        // 再次检查是否有更多内容，避免显示不必要的加载指示器
+        if (hasMore) {
+            showLazyLoadingIndicator();
+            loadUsers();
+        }
+    }
+}
+
+// 显示懒加载指示器
+function showLazyLoadingIndicator() {
+    let lazyLoading = document.getElementById('lazyLoadingIndicator');
+    if (!lazyLoading) {
+        lazyLoading = document.createElement('div');
+        lazyLoading.id = 'lazyLoadingIndicator';
+        lazyLoading.className = 'loading-container lazy-load';
+        lazyLoading.innerHTML = '<div class="loading-spinner"></div><p>加载中……</p>';
+        
+        const usersGrid = document.getElementById('usersGrid');
+        usersGrid.parentNode.insertBefore(lazyLoading, usersGrid.nextSibling);
+    }
+    lazyLoading.style.display = 'flex';
+}
+
+// 隐藏懒加载指示器
+function hideLazyLoadingIndicator() {
+    const lazyLoading = document.getElementById('lazyLoadingIndicator');
+    if (lazyLoading) {
+        lazyLoading.style.display = 'none';
     }
 }
 
