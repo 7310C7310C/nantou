@@ -57,9 +57,9 @@
                 <div class="dashboard-card">
                     <h3>📊 数据统计</h3>
                     <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                        <button class="btn btn-primary" id="viewFavoriteStatsBtn" style="flex: 1; margin: 0;">被收藏情况</button>
+                        <button class="btn btn-primary" id="viewParticipantStatsBtn" style="flex: 1; margin: 0;">被终选情况</button>
                         <button class="btn btn-primary" id="openSelectionsBtn" style="flex: 1; margin: 0;">互选情况</button>
-                        <button class="btn btn-secondary" id="viewFavoriteStatsBtn" style="flex: 1; margin: 0;">收藏情况</button>
-                        <button class="btn btn-secondary" id="viewParticipantStatsBtn" style="flex: 1; margin: 0;">终选情况</button>
                     </div>
                     <div style="display: flex; gap: 8px;">
                         <button class="btn btn-secondary" id="viewGroupingResultsBtn" style="flex: 1; margin: 0;">分组匹配结果</button>
@@ -784,11 +784,11 @@
         </div>
     </div>
 
-    <!-- 收藏情况模态框 -->
+    <!-- 被收藏情况模态框 -->
     <div class="participant-stats-modal" id="favoriteStatsModal">
         <div class="participant-stats-content">
             <div class="participant-stats-header">
-                <h3>💗 收藏情况</h3>
+                <h3>💗 被收藏情况</h3>
                 <button class="close-btn" id="closeFavoriteStatsBtn">&times;</button>
             </div>
             
@@ -820,11 +820,11 @@
         </div>
     </div>
 
-    <!-- 终选情况模态框 -->
+    <!-- 被终选情况模态框 -->
     <div class="participant-stats-modal" id="participantStatsModal">
         <div class="participant-stats-content">
             <div class="participant-stats-header">
-                <h3>👥 终选情况</h3>
+                <h3>👥 被终选情况</h3>
                 <button class="close-btn" id="closeParticipantStatsBtn">&times;</button>
             </div>
             

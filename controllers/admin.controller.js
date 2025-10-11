@@ -1181,6 +1181,92 @@ async function getParticipantStats(req, res) {
   }
 }
 
+/**
+ * 获取收藏某人的详细人员列表
+ */
+async function getFavoriteDetail(req, res) {
+  try {
+    const { targetId } = req.params;
+    
+    const connection = await pool.getConnection();
+    
+    try {
+      // 获取收藏该目标用户的所有人员信息
+      const query = `
+        SELECT 
+          p.id,
+          p.username,
+          p.name
+        FROM favorites f
+        INNER JOIN participants p ON f.user_id = p.id
+        WHERE f.favorited_participant_id = ?
+        ORDER BY f.created_at DESC
+      `;
+      
+      const [rows] = await connection.query(query, [targetId]);
+      
+      res.json({
+        success: true,
+        data: rows
+      });
+      
+    } finally {
+      connection.release();
+    }
+    
+  } catch (error) {
+    logger.error('获取收藏详情失败', error);
+    res.status(500).json({
+      success: false,
+      message: '获取收藏详情失败，请稍后重试',
+      details: error.message
+    });
+  }
+}
+
+/**
+ * 获取选择某人的详细人员列表
+ */
+async function getSelectionDetail(req, res) {
+  try {
+    const { targetId } = req.params;
+    
+    const connection = await pool.getConnection();
+    
+    try {
+      // 获取选择该目标用户的所有人员信息
+      const query = `
+        SELECT 
+          p.id,
+          p.username,
+          p.name
+        FROM selections s
+        INNER JOIN participants p ON s.user_id = p.id
+        WHERE s.target_id = ?
+        ORDER BY s.created_at DESC
+      `;
+      
+      const [rows] = await connection.query(query, [targetId]);
+      
+      res.json({
+        success: true,
+        data: rows
+      });
+      
+    } finally {
+      connection.release();
+    }
+    
+  } catch (error) {
+    logger.error('获取选择详情失败', error);
+    res.status(500).json({
+      success: false,
+      message: '获取选择详情失败，请稍后重试',
+      details: error.message
+    });
+  }
+}
+
 module.exports = {
   registerParticipant,
   getAllParticipants,
@@ -1204,5 +1290,7 @@ module.exports = {
   getGroupingResult,
   getChatResult,
   getFavoriteStats,
-  getParticipantStats
+  getParticipantStats,
+  getFavoriteDetail,
+  getSelectionDetail
 };

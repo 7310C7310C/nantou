@@ -4165,17 +4165,30 @@ function renderFavoriteStats() {
     let html = '';
     data.forEach((item, index) => {
         const favoriteClass = item.favorite_count === 0 ? 'zero' : '';
+        const hasData = item.favorite_count > 0;
+        const rowId = `favorite-row-${item.id}`;
+        const detailId = `favorite-detail-${item.id}`;
         
         html += `
-            <tr>
+            <tr id="${rowId}">
                 <td>${item.username}</td>
                 <td>${item.name || '未知'}</td>
                 <td>
-                    <div class="like-count ${favoriteClass}">
-                        ${item.favorite_count} 💗
+                    <div class="like-count ${favoriteClass}" style="display: flex; align-items: center; justify-content: space-between;">
+                        <span>${item.favorite_count} 💗</span>
+                        ${hasData ? `<button class="view-toggle-btn" onclick="toggleFavoriteDetail(${item.id}, '${item.name}', '${item.username}')" style="background: none; border: none; color: #007bff; cursor: pointer; padding: 4px 8px; font-size: 14px;">查看 ▼</button>` : ''}
                     </div>
                 </td>
             </tr>
+            ${hasData ? `
+            <tr id="${detailId}" class="detail-row" style="display: none;">
+                <td colspan="3" style="padding: 0;">
+                    <div class="detail-content" style="padding: 12px; background: #f8f9fa; border-top: 1px solid #dee2e6;">
+                        <div class="detail-loading" style="text-align: center; color: #666;">加载中...</div>
+                    </div>
+                </td>
+            </tr>
+            ` : ''}
         `;
     });
     
@@ -4269,19 +4282,130 @@ function renderParticipantStats() {
     let html = '';
     data.forEach((item, index) => {
         const likeClass = item.liked_count === 0 ? 'zero' : '';
+        const hasData = item.liked_count > 0;
+        const rowId = `selection-row-${item.id}`;
+        const detailId = `selection-detail-${item.id}`;
         
         html += `
-            <tr>
+            <tr id="${rowId}">
                 <td>${item.username}</td>
                 <td>${item.name || '未知'}</td>
                 <td>
-                    <div class="like-count ${likeClass}">
-                        ${item.liked_count} ☑️
+                    <div class="like-count ${likeClass}" style="display: flex; align-items: center; justify-content: space-between;">
+                        <span>${item.liked_count} ☑️</span>
+                        ${hasData ? `<button class="view-toggle-btn" onclick="toggleSelectionDetail(${item.id}, '${item.name}', '${item.username}')" style="background: none; border: none; color: #007bff; cursor: pointer; padding: 4px 8px; font-size: 14px;">查看 ▼</button>` : ''}
                     </div>
                 </td>
             </tr>
+            ${hasData ? `
+            <tr id="${detailId}" class="detail-row" style="display: none;">
+                <td colspan="3" style="padding: 0;">
+                    <div class="detail-content" style="padding: 12px; background: #f8f9fa; border-top: 1px solid #dee2e6;">
+                        <div class="detail-loading" style="text-align: center; color: #666;">加载中...</div>
+                    </div>
+                </td>
+            </tr>
+            ` : ''}
         `;
     });
     
     tableBody.innerHTML = html;
+}
+
+// ==================== 查看收藏/选择详情 ====================
+
+// 切换收藏详情展开/折叠
+async function toggleFavoriteDetail(targetId, targetName, targetUsername) {
+    const detailRow = document.getElementById(`favorite-detail-${targetId}`);
+    const toggleBtn = event.target;
+    
+    if (detailRow.style.display === 'none') {
+        // 展开 - 加载数据
+        detailRow.style.display = '';
+        toggleBtn.innerHTML = '收起 ▲';
+        
+        const detailContent = detailRow.querySelector('.detail-content');
+        detailContent.innerHTML = '<div class="detail-loading" style="text-align: center; color: #666;">加载中...</div>';
+        
+        try {
+            const authToken = getAuthToken();
+            const response = await fetch(`/api/admin/favorite-detail/${targetId}`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                const users = result.data || [];
+                
+                if (users.length === 0) {
+                    detailContent.innerHTML = '<div style="color: #999; text-align: center;">暂无数据</div>';
+                } else {
+                    const userListHtml = users.map(u => 
+                        `<span style="display: inline-block; margin: 4px 8px; padding: 4px 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">${u.name || '未知'}（${u.username}）</span>`
+                    ).join('');
+                    detailContent.innerHTML = `<div style="line-height: 1.8;">${userListHtml}</div>`;
+                }
+            } else {
+                const error = await response.json();
+                detailContent.innerHTML = `<div style="color: #dc3545; text-align: center;">${error.message || '获取数据失败'}</div>`;
+            }
+        } catch (error) {
+            console.error('获取收藏详情失败:', error);
+            detailContent.innerHTML = '<div style="color: #dc3545; text-align: center;">网络错误，请重试</div>';
+        }
+    } else {
+        // 折叠
+        detailRow.style.display = 'none';
+        toggleBtn.innerHTML = '查看 ▼';
+    }
+}
+
+// 切换选择详情展开/折叠
+async function toggleSelectionDetail(targetId, targetName, targetUsername) {
+    const detailRow = document.getElementById(`selection-detail-${targetId}`);
+    const toggleBtn = event.target;
+    
+    if (detailRow.style.display === 'none') {
+        // 展开 - 加载数据
+        detailRow.style.display = '';
+        toggleBtn.innerHTML = '收起 ▲';
+        
+        const detailContent = detailRow.querySelector('.detail-content');
+        detailContent.innerHTML = '<div class="detail-loading" style="text-align: center; color: #666;">加载中...</div>';
+        
+        try {
+            const authToken = getAuthToken();
+            const response = await fetch(`/api/admin/selection-detail/${targetId}`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                const users = result.data || [];
+                
+                if (users.length === 0) {
+                    detailContent.innerHTML = '<div style="color: #999; text-align: center;">暂无数据</div>';
+                } else {
+                    const userListHtml = users.map(u => 
+                        `<span style="display: inline-block; margin: 4px 8px; padding: 4px 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">${u.name || '未知'}（${u.username}）</span>`
+                    ).join('');
+                    detailContent.innerHTML = `<div style="line-height: 1.8;">${userListHtml}</div>`;
+                }
+            } else {
+                const error = await response.json();
+                detailContent.innerHTML = `<div style="color: #dc3545; text-align: center;">${error.message || '获取数据失败'}</div>`;
+            }
+        } catch (error) {
+            console.error('获取选择详情失败:', error);
+            detailContent.innerHTML = '<div style="color: #dc3545; text-align: center;">网络错误，请重试</div>';
+        }
+    } else {
+        // 折叠
+        detailRow.style.display = 'none';
+        toggleBtn.innerHTML = '查看 ▼';
+    }
 }
