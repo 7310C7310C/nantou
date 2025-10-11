@@ -1075,6 +1075,112 @@ async function getChatResult(req, res) {
   }
 }
 
+/**
+ * 获取人员情况统计（基于selections表）
+ * 返回每个用户被多少人喜欢的统计
+ */
+/**
+ * 获取收藏情况统计
+ */
+async function getFavoriteStats(req, res) {
+  try {
+    const connection = await pool.getConnection();
+    
+    try {
+      // 获取所有已签到的参与者及其被收藏次数
+      const query = `
+        SELECT 
+          p.id,
+          p.username,
+          p.name,
+          p.gender,
+          COUNT(DISTINCT f.user_id) as favorite_count
+        FROM participants p
+        LEFT JOIN favorites f ON f.favorited_participant_id = p.id
+        WHERE p.is_checked_in = 1
+        GROUP BY p.id, p.username, p.name, p.gender
+        ORDER BY favorite_count DESC, p.id ASC
+      `;
+      
+      const [rows] = await connection.query(query);
+      
+      // 按性别分组
+      const maleParticipants = rows.filter(p => p.gender === 'male');
+      const femaleParticipants = rows.filter(p => p.gender === 'female');
+      
+      res.json({
+        success: true,
+        data: {
+          male: maleParticipants,
+          female: femaleParticipants
+        }
+      });
+      
+    } finally {
+      connection.release();
+    }
+    
+  } catch (error) {
+    logger.error('获取收藏情况统计失败', error);
+    res.status(500).json({
+      success: false,
+      message: '获取收藏情况统计失败，请稍后重试',
+      details: error.message
+    });
+  }
+}
+
+/**
+ * 获取终选情况统计
+ */
+async function getParticipantStats(req, res) {
+  try {
+    const connection = await pool.getConnection();
+    
+    try {
+      // 获取所有已签到的参与者及其被选择次数
+      const query = `
+        SELECT 
+          p.id,
+          p.username,
+          p.name,
+          p.gender,
+          COUNT(DISTINCT s.user_id) as liked_count
+        FROM participants p
+        LEFT JOIN selections s ON s.target_id = p.id
+        WHERE p.is_checked_in = 1
+        GROUP BY p.id, p.username, p.name, p.gender
+        ORDER BY liked_count DESC, p.id ASC
+      `;
+      
+      const [rows] = await connection.query(query);
+      
+      // 按性别分组
+      const maleParticipants = rows.filter(p => p.gender === 'male');
+      const femaleParticipants = rows.filter(p => p.gender === 'female');
+      
+      res.json({
+        success: true,
+        data: {
+          male: maleParticipants,
+          female: femaleParticipants
+        }
+      });
+      
+    } finally {
+      connection.release();
+    }
+    
+  } catch (error) {
+    logger.error('获取终选情况统计失败', error);
+    res.status(500).json({
+      success: false,
+      message: '获取终选情况统计失败，请稍后重试',
+      details: error.message
+    });
+  }
+}
+
 module.exports = {
   registerParticipant,
   getAllParticipants,
@@ -1096,5 +1202,7 @@ module.exports = {
   getGroupingHistory,
   getChatHistory,
   getGroupingResult,
-  getChatResult
+  getChatResult,
+  getFavoriteStats,
+  getParticipantStats
 };

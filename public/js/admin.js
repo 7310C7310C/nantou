@@ -174,6 +174,26 @@ function setupEventListeners() {
     if (closeMatchmakingStatsBtn) {
         closeMatchmakingStatsBtn.addEventListener('click', closeMatchmakingStatsModal);
     }
+    
+    // 收藏情况
+    const viewFavoriteStatsBtn = document.getElementById('viewFavoriteStatsBtn');
+    const closeFavoriteStatsBtn = document.getElementById('closeFavoriteStatsBtn');
+    if (viewFavoriteStatsBtn) {
+        viewFavoriteStatsBtn.addEventListener('click', openFavoriteStatsModal);
+    }
+    if (closeFavoriteStatsBtn) {
+        closeFavoriteStatsBtn.addEventListener('click', closeFavoriteStatsModal);
+    }
+    
+    // 人员情况
+    const viewParticipantStatsBtn = document.getElementById('viewParticipantStatsBtn');
+    const closeParticipantStatsBtn = document.getElementById('closeParticipantStatsBtn');
+    if (viewParticipantStatsBtn) {
+        viewParticipantStatsBtn.addEventListener('click', openParticipantStatsModal);
+    }
+    if (closeParticipantStatsBtn) {
+        closeParticipantStatsBtn.addEventListener('click', closeParticipantStatsModal);
+    }
 
     // 删除功能
     cancelDeleteBtn.addEventListener('click', closeDeleteModal);
@@ -4048,7 +4068,215 @@ function renderMatchmakingStats() {
                 </td>
                 <td>
                     <div class="matchmaker-count">
-                        ${item.matchmaker_count} 位红娘
+                        ${item.matchmaker_count}
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+}
+
+// ============ 收藏情况功能 ============
+
+let favoriteStatsData = {
+    male: [],
+    female: []
+};
+let currentFavoriteGender = 'female';
+
+// 打开收藏情况模态框
+async function openFavoriteStatsModal() {
+    const modal = document.getElementById('favoriteStatsModal');
+    const loadingEl = modal.querySelector('.stats-loading');
+    const tableContainer = modal.querySelector('.stats-table-container');
+    const emptyEl = modal.querySelector('.stats-empty');
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // 显示加载状态
+    loadingEl.style.display = 'flex';
+    tableContainer.style.display = 'none';
+    emptyEl.style.display = 'none';
+    
+    // 设置选项卡点击事件
+    const tabBtns = modal.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentFavoriteGender = this.dataset.gender;
+            renderFavoriteStats();
+        });
+    });
+    
+    try {
+        const authToken = getAuthToken();
+        const response = await fetch('/api/admin/favorite-stats', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            favoriteStatsData = result.data || { male: [], female: [] };
+            renderFavoriteStats();
+        } else {
+            const error = await response.json();
+            alert(error.message || '获取收藏情况失败');
+            closeFavoriteStatsModal();
+        }
+    } catch (error) {
+        console.error('获取收藏情况失败:', error);
+        alert('网络错误，请重试');
+        closeFavoriteStatsModal();
+    } finally {
+        loadingEl.style.display = 'none';
+    }
+}
+
+// 关闭收藏情况模态框
+function closeFavoriteStatsModal() {
+    const modal = document.getElementById('favoriteStatsModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// 渲染收藏情况
+function renderFavoriteStats() {
+    const tableBody = document.getElementById('favoriteStatsTableBody');
+    const tableContainer = document.querySelector('#favoriteStatsModal .stats-table-container');
+    const emptyEl = document.querySelector('#favoriteStatsModal .stats-empty');
+    
+    const data = favoriteStatsData[currentFavoriteGender] || [];
+    
+    if (data.length === 0) {
+        tableContainer.style.display = 'none';
+        emptyEl.style.display = 'block';
+        return;
+    }
+    
+    tableContainer.style.display = 'block';
+    emptyEl.style.display = 'none';
+    
+    let html = '';
+    data.forEach((item, index) => {
+        const favoriteClass = item.favorite_count === 0 ? 'zero' : '';
+        
+        html += `
+            <tr>
+                <td>${item.username}</td>
+                <td>${item.name || '未知'}</td>
+                <td>
+                    <div class="like-count ${favoriteClass}">
+                        ${item.favorite_count} 💗
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+}
+
+// ============ 人员情况功能 ============
+
+let participantStatsData = {
+    male: [],
+    female: []
+};
+let currentGender = 'female';
+
+// 打开人员情况模态框
+async function openParticipantStatsModal() {
+    const modal = document.getElementById('participantStatsModal');
+    const loadingEl = modal.querySelector('.stats-loading');
+    const tableContainer = modal.querySelector('.stats-table-container');
+    const emptyEl = modal.querySelector('.stats-empty');
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // 显示加载状态
+    loadingEl.style.display = 'flex';
+    tableContainer.style.display = 'none';
+    emptyEl.style.display = 'none';
+    
+    // 设置选项卡点击事件
+    const tabBtns = modal.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentGender = this.dataset.gender;
+            renderParticipantStats();
+        });
+    });
+    
+    try {
+        const authToken = getAuthToken();
+        const response = await fetch('/api/admin/participant-stats', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            participantStatsData = result.data || { male: [], female: [] };
+            renderParticipantStats();
+        } else {
+            const error = await response.json();
+            alert(error.message || '获取人员情况失败');
+            closeParticipantStatsModal();
+        }
+    } catch (error) {
+        console.error('获取人员情况失败:', error);
+        alert('网络错误，请重试');
+        closeParticipantStatsModal();
+    } finally {
+        loadingEl.style.display = 'none';
+    }
+}
+
+// 关闭人员情况模态框
+function closeParticipantStatsModal() {
+    const modal = document.getElementById('participantStatsModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// 渲染人员情况
+function renderParticipantStats() {
+    const tableBody = document.getElementById('participantStatsTableBody');
+    const tableContainer = document.querySelector('#participantStatsModal .stats-table-container');
+    const emptyEl = document.querySelector('#participantStatsModal .stats-empty');
+    
+    const data = participantStatsData[currentGender] || [];
+    
+    if (data.length === 0) {
+        tableContainer.style.display = 'none';
+        emptyEl.style.display = 'block';
+        return;
+    }
+    
+    tableContainer.style.display = 'block';
+    emptyEl.style.display = 'none';
+    
+    let html = '';
+    data.forEach((item, index) => {
+        const likeClass = item.liked_count === 0 ? 'zero' : '';
+        
+        html += `
+            <tr>
+                <td>${item.username}</td>
+                <td>${item.name || '未知'}</td>
+                <td>
+                    <div class="like-count ${likeClass}">
+                        ${item.liked_count} ☑️
                     </div>
                 </td>
             </tr>

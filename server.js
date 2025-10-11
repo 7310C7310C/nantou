@@ -138,6 +138,8 @@ app.put('/api/admin/feature-flags', protect, restrictTo('admin'), adminControlle
 
 // 互选情况数据API路由（管理员、工作人员和红娘可访问）
 app.get('/api/admin/selections-data', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getSelectionsData);
+app.get('/api/admin/favorite-stats', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getFavoriteStats);
+app.get('/api/admin/participant-stats', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getParticipantStats);
 
 // 匹配算法管理API路由（仅管理员可访问）
 app.get('/api/admin/validate-selections', protect, restrictTo('admin'), adminController.validateUserSelections);
