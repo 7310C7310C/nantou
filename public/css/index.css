@@ -2497,3 +2497,224 @@ img, a, .user-photo {
         margin-bottom: 12px;
     }
 }
+
+/* ==================== 资料按钮样式 ==================== */
+.profile-btn {
+    position: absolute;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 30px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #666;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+}
+
+.profile-btn:hover {
+    background: rgba(255, 255, 255, 1);
+    color: #333;
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.profile-btn:active {
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ==================== 资料模态框样式 ==================== */
+.profile-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 4000; /* 高于照片查看器(3000)，确保在最顶层 */
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.profile-modal-content {
+    background: white;
+    border-radius: 20px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.profile-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 2px solid #f0f0f0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px 20px 0 0;
+}
+
+.profile-modal-header h2 {
+    color: white;
+    font-size: 24px;
+    margin: 0;
+}
+
+.profile-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 32px;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    line-height: 1;
+}
+
+.profile-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.profile-modal-body {
+    padding: 25px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.profile-section {
+    margin-bottom: 25px;
+}
+
+.profile-section:last-child {
+    margin-bottom: 0;
+}
+
+.profile-section h3 {
+    color: #667eea;
+    font-size: 18px;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.profile-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.profile-table tr {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.profile-table tr:last-child {
+    border-bottom: none;
+}
+
+.profile-table td {
+    padding: 12px 8px;
+    vertical-align: top;
+}
+
+.profile-table td:first-child {
+    font-weight: 600;
+    color: #666;
+    width: 35%;
+    white-space: nowrap;
+}
+
+.profile-table td:last-child {
+    color: #333;
+    word-break: break-word;
+}
+
+.profile-empty {
+    text-align: center;
+    color: #999;
+    padding: 40px;
+    font-size: 16px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .profile-btn {
+        bottom: 110px;
+        padding: 8px 24px;
+        font-size: 14px;
+    }
+    
+    .profile-modal-content {
+        width: 95%;
+        max-height: 85vh;
+        border-radius: 15px;
+    }
+    
+    .profile-modal-header {
+        padding: 15px 20px;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .profile-modal-header h2 {
+        font-size: 20px;
+    }
+    
+    .profile-close {
+        width: 36px;
+        height: 36px;
+        font-size: 28px;
+    }
+    
+    .profile-modal-body {
+        padding: 20px;
+    }
+    
+    .profile-section h3 {
+        font-size: 16px;
+    }
+    
+    .profile-table td {
+        padding: 10px 6px;
+        font-size: 14px;
+    }
+    
+    .profile-table td:first-child {
+        width: 40%;
+    }
+}

@@ -4409,3 +4409,202 @@ async function toggleSelectionDetail(targetId, targetName, targetUsername) {
         toggleBtn.innerHTML = '查看 ▼';
     }
 }
+
+// ==================== 资料导入功能 ====================
+// DOM 元素
+const openProfileImportBtn = document.getElementById('openProfileImportBtn');
+const profileImportModal = document.getElementById('profileImportModal');
+const closeProfileImportBtn = document.getElementById('closeProfileImportBtn');
+const profileFileInput = document.getElementById('profileFileInput');
+const selectFileBtn = document.getElementById('selectFileBtn');
+const selectedFileName = document.getElementById('selectedFileName');
+const uploadFileBtn = document.getElementById('uploadFileBtn');
+const importProgress = document.getElementById('importProgress');
+const progressFill = document.getElementById('progressFill');
+const importResult = document.getElementById('importResult');
+const closeImportResultBtn = document.getElementById('closeImportResultBtn');
+
+// 存储选择的文件
+let selectedFile = null;
+
+// 打开资料导入模态框
+if (openProfileImportBtn) {
+    openProfileImportBtn.addEventListener('click', function() {
+        // 检查是否为 admin 角色
+        if (!currentUser || currentUser.role !== 'admin') {
+            alert('只有管理员可以使用资料导入功能');
+            return;
+        }
+        
+        // 重置状态
+        resetImportModal();
+        profileImportModal.style.display = 'flex';
+    });
+}
+
+// 关闭模态框
+if (closeProfileImportBtn) {
+    closeProfileImportBtn.addEventListener('click', function() {
+        profileImportModal.style.display = 'none';
+        resetImportModal();
+    });
+}
+
+// 点击背景关闭
+if (profileImportModal) {
+    profileImportModal.addEventListener('click', function(e) {
+        if (e.target === profileImportModal) {
+            profileImportModal.style.display = 'none';
+            resetImportModal();
+        }
+    });
+}
+
+// 选择文件按钮
+if (selectFileBtn) {
+    selectFileBtn.addEventListener('click', function() {
+        profileFileInput.click();
+    });
+}
+
+// 文件选择
+if (profileFileInput) {
+    profileFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        
+        if (file) {
+            // 验证文件类型
+            if (!file.name.endsWith('.xlsx')) {
+                alert('请选择 .xlsx 格式的 Excel 文件');
+                profileFileInput.value = '';
+                return;
+            }
+            
+            // 验证文件大小（10MB）
+            if (file.size > 10 * 1024 * 1024) {
+                alert('文件大小不能超过 10MB');
+                profileFileInput.value = '';
+                return;
+            }
+            
+            selectedFile = file;
+            selectedFileName.textContent = file.name;
+            uploadFileBtn.disabled = false;
+        }
+    });
+}
+
+// 开始导入
+if (uploadFileBtn) {
+    uploadFileBtn.addEventListener('click', async function() {
+        if (!selectedFile) {
+            alert('请先选择文件');
+            return;
+        }
+        
+        try {
+            // 显示进度
+            document.querySelector('.import-section').style.display = 'none';
+            importProgress.style.display = 'block';
+            progressFill.style.width = '30%';
+            
+            // 准备表单数据
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            // 发送请求
+            const response = await fetch('/api/admin/import-profiles', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
+                body: formData
+            });
+            
+            progressFill.style.width = '80%';
+            
+            const result = await response.json();
+            
+            progressFill.style.width = '100%';
+            
+            // 延迟显示结果
+            setTimeout(() => {
+                importProgress.style.display = 'none';
+                displayImportResult(result);
+            }, 500);
+            
+        } catch (error) {
+            console.error('导入失败:', error);
+            importProgress.style.display = 'none';
+            alert('导入失败: ' + error.message);
+            document.querySelector('.import-section').style.display = 'block';
+        }
+    });
+}
+
+// 显示导入结果
+function displayImportResult(result) {
+    if (!result.success) {
+        alert('导入失败: ' + (result.message || '未知错误'));
+        document.querySelector('.import-section').style.display = 'block';
+        return;
+    }
+    
+    const stats = result.stats;
+    
+    // 填充统计数据
+    document.getElementById('totalRecords').textContent = stats.total || 0;
+    document.getElementById('matchedRecords').textContent = stats.matched || 0;
+    document.getElementById('updatedRecords').textContent = stats.updated || 0;
+    document.getElementById('skippedRecords').textContent = stats.skipped || 0;
+    document.getElementById('unmatchedRecords').textContent = stats.unmatched || 0;
+    document.getElementById('errorRecords').textContent = stats.errors || 0;
+    
+    // 显示未匹配的手机号
+    if (result.unmatchedPhones && result.unmatchedPhones.length > 0) {
+        document.getElementById('unmatchedList').style.display = 'block';
+        document.getElementById('unmatchedPhones').innerHTML = 
+            result.unmatchedPhones.map(phone => `<div>• ${phone}</div>`).join('');
+    } else {
+        document.getElementById('unmatchedList').style.display = 'none';
+    }
+    
+    // 显示错误详情
+    if (result.errorDetails && result.errorDetails.length > 0) {
+        document.getElementById('errorList').style.display = 'block';
+        document.getElementById('errorDetails').innerHTML = 
+            result.errorDetails.map(err => 
+                `<div><strong>Excel 行号 ${err.rowNumber}</strong>：${err.errors.join('、')}</div>`
+            ).join('');
+    } else {
+        document.getElementById('errorList').style.display = 'none';
+    }
+    
+    // 显示结果区域
+    importResult.style.display = 'block';
+}
+
+// 完成按钮
+if (closeImportResultBtn) {
+    closeImportResultBtn.addEventListener('click', function() {
+        profileImportModal.style.display = 'none';
+        resetImportModal();
+    });
+}
+
+// 重置导入模态框
+function resetImportModal() {
+    selectedFile = null;
+    profileFileInput.value = '';
+    selectedFileName.textContent = '';
+    uploadFileBtn.disabled = true;
+    
+    document.querySelector('.import-section').style.display = 'block';
+    importProgress.style.display = 'none';
+    importResult.style.display = 'none';
+    progressFill.style.width = '0%';
+    
+    // 清空结果
+    document.getElementById('unmatchedList').style.display = 'none';
+    document.getElementById('errorList').style.display = 'none';
+}

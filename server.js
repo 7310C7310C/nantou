@@ -15,6 +15,8 @@ const favoriteController = require('./controllers/favorite.controller');
 const matchmakerController = require('./controllers/matchmaker.controller');
 const selectionsController = require('./controllers/selections.controller');
 const matchingUserController = require('./controllers/matching-user.controller');
+const profileImportController = require('./controllers/profile-import.controller');
+const participantProfileController = require('./controllers/participant-profile.controller');
 const { protect, restrictTo, optionalAuth } = require('./middleware/auth.middleware');
 
 const app = express();
@@ -124,6 +126,10 @@ app.post('/api/admin/participants/:participant_id/reset-password', protect, rest
 app.post('/api/admin/photos/primary', protect, restrictTo('admin', 'staff'), adminController.setPrimaryPhoto);
 app.delete('/api/admin/photos/:photo_id', protect, restrictTo('admin', 'staff'), adminController.deletePhoto);
 
+// 资料导入API路由（仅管理员可访问）
+app.post('/api/admin/import-profiles', protect, restrictTo('admin'), profileImportController.getUploadMiddleware(), profileImportController.importProfiles);
+app.get('/api/admin/profile-stats', protect, restrictTo('admin'), profileImportController.getImportStats);
+
 // 日志管理API路由
 app.get('/api/admin/logs', protect, restrictTo('admin'), logController.getRecentLogs);
 app.get('/api/admin/logs/search', protect, restrictTo('admin'), logController.searchLogs);
@@ -164,6 +170,8 @@ app.get('/api/matchmaker/stats', protect, restrictTo('admin', 'staff', 'matchmak
 
 // 公开API路由
 app.get('/api/participants', optionalAuth, participantsController.getParticipants);
+// 参与者详细资料（可选认证，未登录和普通用户可查看基础信息，工作人员可查看全部）
+app.get('/api/participants/:id/profile', optionalAuth, participantProfileController.getProfile);
 // 功能开关状态查询（公开访问）
 app.get('/api/feature-flags', adminController.getFeatureFlags);
 // 收藏相关路由（参与者登录）
