@@ -4422,7 +4422,7 @@ const uploadFileBtn = document.getElementById('uploadFileBtn');
 const importProgress = document.getElementById('importProgress');
 const progressFill = document.getElementById('progressFill');
 const importResult = document.getElementById('importResult');
-const closeResultBtn2 = document.getElementById('closeResultBtn');
+const closeImportResultBtn = document.getElementById('closeImportResultBtn');
 
 // 存储选择的文件
 let selectedFile = null;
@@ -4556,6 +4556,7 @@ function displayImportResult(result) {
     document.getElementById('totalRecords').textContent = stats.total || 0;
     document.getElementById('matchedRecords').textContent = stats.matched || 0;
     document.getElementById('updatedRecords').textContent = stats.updated || 0;
+    document.getElementById('skippedRecords').textContent = stats.skipped || 0;
     document.getElementById('unmatchedRecords').textContent = stats.unmatched || 0;
     document.getElementById('errorRecords').textContent = stats.errors || 0;
     
@@ -4573,7 +4574,7 @@ function displayImportResult(result) {
         document.getElementById('errorList').style.display = 'block';
         document.getElementById('errorDetails').innerHTML = 
             result.errorDetails.map(err => 
-                `<div><strong>行 ${err.rowNumber}</strong> (${err.phone}): ${err.errors.join(', ')}</div>`
+                `<div><strong>Excel 行号 ${err.rowNumber}</strong>：${err.errors.join('、')}</div>`
             ).join('');
     } else {
         document.getElementById('errorList').style.display = 'none';
@@ -4584,8 +4585,8 @@ function displayImportResult(result) {
 }
 
 // 完成按钮
-if (closeResultBtn2) {
-    closeResultBtn2.addEventListener('click', function() {
+if (closeImportResultBtn) {
+    closeImportResultBtn.addEventListener('click', function() {
         profileImportModal.style.display = 'none';
         resetImportModal();
     });

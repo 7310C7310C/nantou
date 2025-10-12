@@ -34,7 +34,7 @@
                     <h3>👥 报名录入</h3>
                     <button class="btn btn-primary" id="openRegistrationBtn">开始录入</button>
                     <button class="btn btn-secondary" id="openManageBtn" style="margin-top: 10px;">管理已录入</button>
-                    <button class="btn btn-secondary" id="openProfileImportBtn" style="margin-top: 10px;">📤 资料导入</button>
+                    <button class="btn btn-secondary" id="openProfileImportBtn" style="margin-top: 10px;">资料导入</button>
                 </div>
 
                 <div class="dashboard-card">
@@ -910,6 +910,10 @@
                             <span id="updatedRecords" class="success-text">0</span>
                         </div>
                         <div class="stat-item">
+                            <label>跳过记录：</label>
+                            <span id="skippedRecords" class="info-text">0</span>
+                        </div>
+                        <div class="stat-item">
                             <label>未匹配：</label>
                             <span id="unmatchedRecords" class="warning-text">0</span>
                         </div>
@@ -929,7 +933,7 @@
                         <div id="errorDetails" class="error-details"></div>
                     </div>
                     
-                    <button class="btn btn-primary" id="closeResultBtn" style="margin-top: 15px; width: 100%;">
+                    <button class="btn btn-primary" id="closeImportResultBtn" style="margin-top: 15px; width: 100%;">
                         完成
                     </button>
                 </div>

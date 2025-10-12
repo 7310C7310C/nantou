@@ -16,6 +16,7 @@ class ProfileImportService {
       matched: 0,
       created: 0,
       updated: 0,
+      skipped: 0,  // 新增：跳过的记录（数据无变化）
       unmatched: 0,
       errors: 0
     };
@@ -58,8 +59,8 @@ class ProfileImportService {
           await this.updateProfile(participant.id, row.profileData);
           stats.updated++;
         } else {
-          // 虽然匹配但无需更新（数据相同）
-          stats.created++;
+          // 数据完全相同，跳过更新
+          stats.skipped++;
         }
         
       } catch (error) {
@@ -121,8 +122,24 @@ class ProfileImportService {
       for (const [field, newValue] of Object.entries(newData)) {
         const currentValue = currentData[field];
         
-        // 如果新值和当前值不同，需要更新
-        if (newValue !== currentValue) {
+        // 特殊处理：日期字段需要格式化后比较
+        if (field === 'birthday' && currentValue && newValue) {
+          const currentDate = new Date(currentValue);
+          const currentDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+          if (currentDateStr !== newValue) {
+            return true;
+          }
+        }
+        // 其他字段直接比较
+        else if (newValue !== currentValue) {
+          // 处理 null 和空字符串的情况（都视为空）
+          const isCurrentEmpty = currentValue === null || currentValue === '';
+          const isNewEmpty = newValue === null || newValue === '';
+          
+          if (isCurrentEmpty && isNewEmpty) {
+            continue; // 都为空，视为相同
+          }
+          
           return true;
         }
       }
