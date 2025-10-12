@@ -15,6 +15,7 @@ const favoriteController = require('./controllers/favorite.controller');
 const matchmakerController = require('./controllers/matchmaker.controller');
 const selectionsController = require('./controllers/selections.controller');
 const matchingUserController = require('./controllers/matching-user.controller');
+const profileImportController = require('./controllers/profile-import.controller');
 const { protect, restrictTo, optionalAuth } = require('./middleware/auth.middleware');
 
 const app = express();
@@ -121,6 +122,10 @@ app.delete('/api/admin/participants/:participant_id', protect, restrictTo('admin
 app.post('/api/admin/participants/:participant_id/reset-password', protect, restrictTo('admin', 'staff'), adminController.resetParticipantPassword);
 app.post('/api/admin/photos/primary', protect, restrictTo('admin', 'staff'), adminController.setPrimaryPhoto);
 app.delete('/api/admin/photos/:photo_id', protect, restrictTo('admin', 'staff'), adminController.deletePhoto);
+
+// 资料导入API路由（仅管理员可访问）
+app.post('/api/admin/import-profiles', protect, restrictTo('admin'), profileImportController.getUploadMiddleware(), profileImportController.importProfiles);
+app.get('/api/admin/profile-stats', protect, restrictTo('admin'), profileImportController.getImportStats);
 
 // 日志管理API路由
 app.get('/api/admin/logs', protect, restrictTo('admin'), logController.getRecentLogs);

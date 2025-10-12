@@ -34,6 +34,7 @@
                     <h3>👥 报名录入</h3>
                     <button class="btn btn-primary" id="openRegistrationBtn">开始录入</button>
                     <button class="btn btn-secondary" id="openManageBtn" style="margin-top: 10px;">管理已录入</button>
+                    <button class="btn btn-secondary" id="openProfileImportBtn" style="margin-top: 10px;">📤 资料导入</button>
                 </div>
 
                 <div class="dashboard-card">
@@ -852,6 +853,86 @@
                     </table>
                 </div>
                 <div class="stats-empty" style="display:none;">暂无数据</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 资料导入模态框 -->
+    <div class="modal" id="profileImportModal" style="display:none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>📤 资料导入</h2>
+                <button class="close-btn" id="closeProfileImportBtn">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="import-section">
+                    <h3>上传 Excel 文件</h3>
+                    <p class="import-tip">
+                        <strong>注意事项：</strong><br>
+                        1. 仅支持 .xlsx 格式<br>
+                        2. 第一行必须包含"手机号"表头<br>
+                        3. 通过手机号匹配用户，未匹配的记录将被忽略<br>
+                        4. Excel 中的空值将清空数据库对应字段
+                    </p>
+                    
+                    <div class="file-upload-area">
+                        <input type="file" id="profileFileInput" accept=".xlsx" style="display:none;">
+                        <button class="btn btn-primary" id="selectFileBtn">选择文件</button>
+                        <span id="selectedFileName" style="margin-left: 10px; color: #666;"></span>
+                    </div>
+                    
+                    <button class="btn btn-success" id="uploadFileBtn" style="margin-top: 15px; width: 100%;" disabled>
+                        开始导入
+                    </button>
+                </div>
+                
+                <div class="import-progress" id="importProgress" style="display:none; margin-top: 20px;">
+                    <h4>导入中...</h4>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+                
+                <div class="import-result" id="importResult" style="display:none; margin-top: 20px;">
+                    <h3>导入结果</h3>
+                    <div class="result-stats">
+                        <div class="stat-item">
+                            <label>总记录数：</label>
+                            <span id="totalRecords">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <label>成功匹配：</label>
+                            <span id="matchedRecords" class="success-text">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <label>更新数据：</label>
+                            <span id="updatedRecords" class="success-text">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <label>未匹配：</label>
+                            <span id="unmatchedRecords" class="warning-text">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <label>错误记录：</label>
+                            <span id="errorRecords" class="error-text">0</span>
+                        </div>
+                    </div>
+                    
+                    <div id="unmatchedList" style="display:none; margin-top: 15px;">
+                        <h4>未匹配的手机号：</h4>
+                        <div id="unmatchedPhones" class="unmatched-phones"></div>
+                    </div>
+                    
+                    <div id="errorList" style="display:none; margin-top: 15px;">
+                        <h4>错误详情：</h4>
+                        <div id="errorDetails" class="error-details"></div>
+                    </div>
+                    
+                    <button class="btn btn-primary" id="closeResultBtn" style="margin-top: 15px; width: 100%;">
+                        完成
+                    </button>
+                </div>
             </div>
         </div>
     </div>
