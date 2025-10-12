@@ -831,6 +831,34 @@ async function loadMatchPairsForMatchmaker() {
     });
 }
 
+// 重新加载配对集合（用于配对操作后更新状态）
+async function reloadMatchedParticipantSet() {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) return;
+    try {
+        const resp = await fetch('/api/matchmaker/my-recommendations', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (!resp.ok) {
+            if (resp.status === 401) {
+                handleAuthError();
+            }
+            return;
+        }
+        const data = await resp.json();
+        if (!data.success) return;
+        
+        // 清空旧的集合并重新填充
+        matchedParticipantIdSet.clear();
+        (data.data || []).forEach(rec => {
+            if (rec.person1_internal_id) matchedParticipantIdSet.add(rec.person1_internal_id);
+            if (rec.person2_internal_id) matchedParticipantIdSet.add(rec.person2_internal_id);
+        });
+    } catch (error) {
+        console.error('重新加载配对集合失败:', error);
+    }
+}
+
 // 高亮搜索内容
 function highlightSearchTerm(text, searchTerm) {
     if (!searchTerm || searchTerm.length === 0) {
@@ -2498,6 +2526,11 @@ async function confirmRating() {
         
         if (response.ok) {
             showToast('配对成功！', 'success');
+            
+            // 更新首页配对状态集合
+            matchedParticipantIdSet.add(currentMatchPair.person1_id);
+            matchedParticipantIdSet.add(currentMatchPair.person2_id);
+            
             closeStarRatingModal();
             const matchingModalActive = document.getElementById('matchingModal') && document.getElementById('matchingModal').classList.contains('active');
             if (matchingModalActive) {
@@ -2507,6 +2540,11 @@ async function confirmRating() {
                 if (typeof loadManageMatches === 'function') {
                     loadManageMatches();
                 }
+            }
+            
+            // 刷新主页面的用户卡片，更新配对按钮颜色
+            if (allUsers.length > 0) {
+                displayUsers(allUsers);
             }
         } else if (response.status === 401) {
             handleAuthError();
@@ -2551,8 +2589,18 @@ async function removeMatch() {
         
         if (response.ok) {
             showToast('配对已清除', 'success');
+            
+            // 重新加载配对数据以更新matchedParticipantIdSet
+            // 因为参与者可能有多个配对，所以需要重新加载完整列表
+            await reloadMatchedParticipantSet();
+            
             closeStarRatingModal();
             loadMatchingParticipants(); // 重新加载配对列表
+            
+            // 刷新主页面的用户卡片，更新配对按钮颜色
+            if (allUsers.length > 0) {
+                displayUsers(allUsers);
+            }
         } else if (response.status === 401) {
             handleAuthError();
             return;
@@ -2991,7 +3039,16 @@ async function removeMatchById(matchId, person1Name, person2Name) {
         
         if (response.ok) {
             showToast('配对已删除', 'success');
+            
+            // 重新加载配对数据以更新matchedParticipantIdSet
+            await reloadMatchedParticipantSet();
+            
             loadManageMatches(); // 重新加载配对列表
+            
+            // 刷新主页面的用户卡片，更新配对按钮颜色
+            if (allUsers.length > 0) {
+                displayUsers(allUsers);
+            }
         } else if (response.status === 401) {
             handleAuthError();
             return;
