@@ -1013,9 +1013,12 @@ function openImageViewer(username, photos, baptismalName, participantId) {
     viewerBaptismal.textContent = currentBaptismalName;
     updateNavigationButtons();
 
-    // 检查是否显示资料按钮
+    // 显示资料按钮（不再检查，一律显示）
     if (participantId) {
-        checkAndShowProfileButton(participantId);
+        profileBtn.style.display = 'block';
+        profileBtn.onclick = function() {
+            openProfileModal(participantId);
+        };
     } else {
         profileBtn.style.display = 'none';
     }
@@ -3654,42 +3657,10 @@ function showUserResultsEmpty(message) {
 // ==================== 资料查看功能 ====================
 
 /**
- * 检查并显示资料按钮
- */
-async function checkAndShowProfileButton(participantId) {
-    const profileBtn = document.getElementById('profileBtn');
-    
-    if (!participantId) {
-        profileBtn.style.display = 'none';
-        return;
-    }
-    
-    try {
-        // 调用 API 检查是否有资料
-        const authToken = localStorage.getItem('authToken');
-        const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
-        const response = await fetch(`/api/participants/${participantId}/profile`, {
-            headers: headers
-        });
-        
-        const result = await response.json();
-        
-        if (result.success && result.hasProfile) {
-            profileBtn.style.display = 'block';
-        } else {
-            profileBtn.style.display = 'none';
-        }
-    } catch (error) {
-        console.error('检查资料失败:', error);
-        profileBtn.style.display = 'none';
-    }
-}
-
-/**
  * 打开资料模态框
  */
-async function openProfileModal() {
-    if (!currentParticipantId) {
+async function openProfileModal(participantId) {
+    if (!participantId) {
         showAlert('无法获取用户信息');
         return;
     }
@@ -3708,7 +3679,7 @@ async function openProfileModal() {
     try {
         const authToken = localStorage.getItem('authToken');
         const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
-        const response = await fetch(`/api/participants/${currentParticipantId}/profile`, {
+        const response = await fetch(`/api/participants/${participantId}/profile`, {
             headers: headers
         });
         
@@ -3770,14 +3741,7 @@ function closeProfileModal() {
 
 // 初始化资料相关事件监听
 (function initProfileEvents() {
-    // 资料按钮点击事件
-    const profileBtn = document.getElementById('profileBtn');
-    if (profileBtn) {
-        profileBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            openProfileModal();
-        });
-    }
+    // 注意：资料按钮的点击事件在 openImageViewer 函数中动态绑定，不在这里绑定
     
     // 关闭资料模态框
     const closeProfileModalBtn = document.getElementById('closeProfileModal');
