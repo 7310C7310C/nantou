@@ -3656,6 +3656,9 @@ function showUserResultsEmpty(message) {
 
 // ==================== 资料查看功能 ====================
 
+// 资料缓存
+const profileCache = {};
+
 /**
  * 打开资料模态框
  */
@@ -3673,8 +3676,18 @@ async function openProfileModal(participantId) {
     
     modal.style.display = 'flex';
     
-    // 显示加载状态
+    // 检查缓存
+    if (profileCache[participantId]) {
+        // 使用缓存数据，秒加载
+        renderProfile(profileCache[participantId]);
+        return;
+    }
+    
+    // 清空内容并显示加载状态
     basicTable.innerHTML = '<tr><td colspan="2" style="text-align:center;">加载中...</td></tr>';
+    staffSection.style.display = 'none';
+    staffTable.innerHTML = '';
+    emptyEl.style.display = 'none';
     
     try {
         const authToken = localStorage.getItem('authToken');
@@ -3685,49 +3698,64 @@ async function openProfileModal(participantId) {
         
         const result = await response.json();
         
-        if (!result.success || !result.hasProfile) {
-            emptyEl.style.display = 'block';
-            basicTable.innerHTML = '';
-            staffSection.style.display = 'none';
-            return;
-        }
+        // 缓存结果
+        profileCache[participantId] = result;
         
-        emptyEl.style.display = 'none';
-        const profile = result.profile;
-        const isStaff = result.isStaff;
-        
-        // 渲染基础资料（所有人可见）
-        basicTable.innerHTML = `
-            ${profile.birthday ? `<tr><td>生日</td><td>${profile.birthday}</td></tr>` : ''}
-            ${profile.hometown ? `<tr><td>籍贯</td><td>${profile.hometown}</td></tr>` : ''}
-            ${profile.current_city ? `<tr><td>现居/工作城市</td><td>${profile.current_city}</td></tr>` : ''}
-            ${profile.education ? `<tr><td>学历</td><td>${profile.education}</td></tr>` : ''}
-            ${profile.industry ? `<tr><td>行业</td><td>${profile.industry}</td></tr>` : ''}
-        `;
-        
-        // 如果是工作人员，显示详细资料
-        if (isStaff) {
-            staffSection.style.display = 'block';
-            staffTable.innerHTML = `
-                ${profile.family_members ? `<tr><td>家庭成员情况</td><td>${profile.family_members}</td></tr>` : ''}
-                ${profile.height ? `<tr><td>身高（cm）</td><td>${profile.height}</td></tr>` : ''}
-                ${profile.hobbies ? `<tr><td>兴趣爱好</td><td>${profile.hobbies}</td></tr>` : ''}
-                ${profile.personality ? `<tr><td>性格</td><td>${profile.personality}</td></tr>` : ''}
-                ${profile.position ? `<tr><td>职位</td><td>${profile.position}</td></tr>` : ''}
-                ${profile.property_status ? `<tr><td>房产状况</td><td>${profile.property_status}</td></tr>` : ''}
-                ${profile.annual_income ? `<tr><td>年收入</td><td>${profile.annual_income}</td></tr>` : ''}
-                ${profile.self_introduction ? `<tr><td>关于自己</td><td>${profile.self_introduction}</td></tr>` : ''}
-                ${profile.mate_selection_criteria ? `<tr><td>择偶标准</td><td>${profile.mate_selection_criteria}</td></tr>` : ''}
-                ${profile.live_with_parents ? `<tr><td>婚后是否与父母同住</td><td>${profile.live_with_parents}</td></tr>` : ''}
-            `;
-        } else {
-            staffSection.style.display = 'none';
-        }
+        renderProfile(result);
         
     } catch (error) {
         console.error('获取资料失败:', error);
         showAlert('获取资料失败，请重试');
         modal.style.display = 'none';
+    }
+}
+
+/**
+ * 渲染资料内容
+ */
+function renderProfile(result) {
+    const basicTable = document.getElementById('basicProfileTable');
+    const staffSection = document.getElementById('staffProfileSection');
+    const staffTable = document.getElementById('staffProfileTable');
+    const emptyEl = document.getElementById('profileEmpty');
+    
+    if (!result.success || !result.hasProfile) {
+        emptyEl.style.display = 'block';
+        basicTable.innerHTML = '';
+        staffSection.style.display = 'none';
+        return;
+    }
+    
+    emptyEl.style.display = 'none';
+    const profile = result.profile;
+    const isStaff = result.isStaff;
+    
+    // 渲染基础资料（所有人可见）
+    basicTable.innerHTML = `
+        ${profile.birthday ? `<tr><td>生日</td><td>${profile.birthday}</td></tr>` : ''}
+        ${profile.hometown ? `<tr><td>籍贯</td><td>${profile.hometown}</td></tr>` : ''}
+        ${profile.current_city ? `<tr><td>现居/工作城市</td><td>${profile.current_city}</td></tr>` : ''}
+        ${profile.education ? `<tr><td>学历</td><td>${profile.education}</td></tr>` : ''}
+        ${profile.industry ? `<tr><td>行业</td><td>${profile.industry}</td></tr>` : ''}
+    `;
+    
+    // 如果是工作人员，显示详细资料
+    if (isStaff) {
+        staffSection.style.display = 'block';
+        staffTable.innerHTML = `
+            ${profile.family_members ? `<tr><td>家庭成员情况</td><td>${profile.family_members}</td></tr>` : ''}
+            ${profile.height ? `<tr><td>身高（cm）</td><td>${profile.height}</td></tr>` : ''}
+            ${profile.hobbies ? `<tr><td>兴趣爱好</td><td>${profile.hobbies}</td></tr>` : ''}
+            ${profile.personality ? `<tr><td>性格</td><td>${profile.personality}</td></tr>` : ''}
+            ${profile.position ? `<tr><td>职位</td><td>${profile.position}</td></tr>` : ''}
+            ${profile.property_status ? `<tr><td>房产状况</td><td>${profile.property_status}</td></tr>` : ''}
+            ${profile.annual_income ? `<tr><td>年收入</td><td>${profile.annual_income}</td></tr>` : ''}
+            ${profile.self_introduction ? `<tr><td>关于自己</td><td>${profile.self_introduction}</td></tr>` : ''}
+            ${profile.mate_selection_criteria ? `<tr><td>择偶标准</td><td>${profile.mate_selection_criteria}</td></tr>` : ''}
+            ${profile.live_with_parents ? `<tr><td>婚后是否与父母同住</td><td>${profile.live_with_parents}</td></tr>` : ''}
+        `;
+    } else {
+        staffSection.style.display = 'none';
     }
 }
 
