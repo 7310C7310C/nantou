@@ -968,8 +968,11 @@ let currentImageIndex = 0;
 let currentUsername = '';
 let currentBaptismalName = '';
 
+// 当前查看的参与者ID
+let currentParticipantId = null;
+
 // 打开图片查看器
-function openImageViewer(username, photos, baptismalName) {
+function openImageViewer(username, photos, baptismalName, participantId) {
     if (!photos || photos.length === 0) {
     showAlert('该用户暂无照片');
         return;
@@ -979,6 +982,7 @@ function openImageViewer(username, photos, baptismalName) {
     currentImageIndex = 0;
     currentUsername = username;
     currentBaptismalName = baptismalName || '';
+    currentParticipantId = participantId || null;
 
     const viewer = document.getElementById('fullscreenViewer');
     const viewerImage = document.getElementById('viewerImage');
@@ -986,6 +990,7 @@ function openImageViewer(username, photos, baptismalName) {
     const viewerUsername = document.getElementById('viewerUsername');
     const viewerBaptismal = document.getElementById('viewerBaptismal');
     const viewerLoading = document.getElementById('viewerLoading');
+    const profileBtn = document.getElementById('profileBtn');
 
     // 检查第一张图片是否已预加载完成
     const firstPhoto = currentImages[0];
@@ -1007,6 +1012,13 @@ function openImageViewer(username, photos, baptismalName) {
     viewerUsername.textContent = username;
     viewerBaptismal.textContent = currentBaptismalName;
     updateNavigationButtons();
+
+    // 检查是否显示资料按钮
+    if (participantId) {
+        checkAndShowProfileButton(participantId);
+    } else {
+        profileBtn.style.display = 'none';
+    }
 
     viewer.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -1118,7 +1130,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const username = userCard.dataset.username;
             const photos = JSON.parse(userCard.dataset.photos || '[]');
             const baptismalName = userCard.querySelector('.user-baptismal').textContent;
-            openImageViewer(username, photos, baptismalName);
+            const participantId = userCard.dataset.id;
+            openImageViewer(username, photos, baptismalName, participantId);
         }
     });
 
@@ -1736,7 +1749,8 @@ function setupFavoritesModal() {
         const photos = JSON.parse(card.dataset.photos || '[]');
         const baptismalEl = card.querySelector('.user-baptismal');
         const baptismal = (baptismalEl && baptismalEl.textContent) || '';
-        openImageViewer(username, photos, baptismal);
+        const participantId = card.dataset.id;
+        openImageViewer(username, photos, baptismal, participantId);
     });
 }
 
@@ -2376,7 +2390,7 @@ function handleMatchingGridClick(e) {
         const participant = matchingParticipants.find(p => p.id === participantId);
         if (participant && participant.photos && participant.photos.length > 0) {
             // 使用现有的图片查看器函数
-            openImageViewer(participant.username, participant.photos, participant.baptismal_name);
+            openImageViewer(participant.username, participant.photos, participant.baptismal_name, participantId);
         }
     }
 }
@@ -3636,3 +3650,148 @@ function showUserResultsEmpty(message) {
     emptyEl.textContent = message;
     emptyEl.style.display = 'block';
 }
+
+// ==================== 资料查看功能 ====================
+
+/**
+ * 检查并显示资料按钮
+ */
+async function checkAndShowProfileButton(participantId) {
+    const profileBtn = document.getElementById('profileBtn');
+    
+    if (!participantId) {
+        profileBtn.style.display = 'none';
+        return;
+    }
+    
+    try {
+        // 调用 API 检查是否有资料
+        const authToken = localStorage.getItem('authToken');
+        const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+        const response = await fetch(`/api/participants/${participantId}/profile`, {
+            headers: headers
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.hasProfile) {
+            profileBtn.style.display = 'block';
+        } else {
+            profileBtn.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('检查资料失败:', error);
+        profileBtn.style.display = 'none';
+    }
+}
+
+/**
+ * 打开资料模态框
+ */
+async function openProfileModal() {
+    if (!currentParticipantId) {
+        showAlert('无法获取用户信息');
+        return;
+    }
+    
+    const modal = document.getElementById('profileModal');
+    const basicTable = document.getElementById('basicProfileTable');
+    const staffSection = document.getElementById('staffProfileSection');
+    const staffTable = document.getElementById('staffProfileTable');
+    const emptyEl = document.getElementById('profileEmpty');
+    
+    modal.style.display = 'flex';
+    
+    // 显示加载状态
+    basicTable.innerHTML = '<tr><td colspan="2" style="text-align:center;">加载中...</td></tr>';
+    
+    try {
+        const authToken = localStorage.getItem('authToken');
+        const headers = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+        const response = await fetch(`/api/participants/${currentParticipantId}/profile`, {
+            headers: headers
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success || !result.hasProfile) {
+            emptyEl.style.display = 'block';
+            basicTable.innerHTML = '';
+            staffSection.style.display = 'none';
+            return;
+        }
+        
+        emptyEl.style.display = 'none';
+        const profile = result.profile;
+        const isStaff = result.isStaff;
+        
+        // 渲染基础资料（所有人可见）
+        basicTable.innerHTML = `
+            ${profile.birthday ? `<tr><td>生日</td><td>${profile.birthday}</td></tr>` : ''}
+            ${profile.hometown ? `<tr><td>籍贯</td><td>${profile.hometown}</td></tr>` : ''}
+            ${profile.current_city ? `<tr><td>现居/工作城市</td><td>${profile.current_city}</td></tr>` : ''}
+            ${profile.education ? `<tr><td>学历</td><td>${profile.education}</td></tr>` : ''}
+            ${profile.industry ? `<tr><td>行业</td><td>${profile.industry}</td></tr>` : ''}
+        `;
+        
+        // 如果是工作人员，显示详细资料
+        if (isStaff) {
+            staffSection.style.display = 'block';
+            staffTable.innerHTML = `
+                ${profile.family_members ? `<tr><td>家庭成员情况</td><td>${profile.family_members}</td></tr>` : ''}
+                ${profile.height ? `<tr><td>身高（cm）</td><td>${profile.height}</td></tr>` : ''}
+                ${profile.hobbies ? `<tr><td>兴趣爱好</td><td>${profile.hobbies}</td></tr>` : ''}
+                ${profile.personality ? `<tr><td>性格</td><td>${profile.personality}</td></tr>` : ''}
+                ${profile.position ? `<tr><td>职位</td><td>${profile.position}</td></tr>` : ''}
+                ${profile.property_status ? `<tr><td>房产状况</td><td>${profile.property_status}</td></tr>` : ''}
+                ${profile.annual_income ? `<tr><td>年收入</td><td>${profile.annual_income}</td></tr>` : ''}
+                ${profile.self_introduction ? `<tr><td>关于自己</td><td>${profile.self_introduction}</td></tr>` : ''}
+                ${profile.mate_selection_criteria ? `<tr><td>择偶标准</td><td>${profile.mate_selection_criteria}</td></tr>` : ''}
+                ${profile.live_with_parents ? `<tr><td>婚后是否与父母同住</td><td>${profile.live_with_parents}</td></tr>` : ''}
+            `;
+        } else {
+            staffSection.style.display = 'none';
+        }
+        
+    } catch (error) {
+        console.error('获取资料失败:', error);
+        showAlert('获取资料失败，请重试');
+        modal.style.display = 'none';
+    }
+}
+
+/**
+ * 关闭资料模态框
+ */
+function closeProfileModal() {
+    const modal = document.getElementById('profileModal');
+    modal.style.display = 'none';
+}
+
+// 初始化资料相关事件监听
+(function initProfileEvents() {
+    // 资料按钮点击事件
+    const profileBtn = document.getElementById('profileBtn');
+    if (profileBtn) {
+        profileBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            openProfileModal();
+        });
+    }
+    
+    // 关闭资料模态框
+    const closeProfileModalBtn = document.getElementById('closeProfileModal');
+    if (closeProfileModalBtn) {
+        closeProfileModalBtn.addEventListener('click', closeProfileModal);
+    }
+    
+    // 点击背景关闭资料模态框
+    const profileModal = document.getElementById('profileModal');
+    if (profileModal) {
+        profileModal.addEventListener('click', function(e) {
+            if (e.target === profileModal) {
+                closeProfileModal();
+            }
+        });
+    }
+})();

@@ -16,6 +16,7 @@ const matchmakerController = require('./controllers/matchmaker.controller');
 const selectionsController = require('./controllers/selections.controller');
 const matchingUserController = require('./controllers/matching-user.controller');
 const profileImportController = require('./controllers/profile-import.controller');
+const participantProfileController = require('./controllers/participant-profile.controller');
 const { protect, restrictTo, optionalAuth } = require('./middleware/auth.middleware');
 
 const app = express();
@@ -167,6 +168,8 @@ app.get('/api/matchmaker/stats', protect, restrictTo('admin', 'staff', 'matchmak
 
 // 公开API路由
 app.get('/api/participants', optionalAuth, participantsController.getParticipants);
+// 参与者详细资料（可选认证，未登录和普通用户可查看基础信息，工作人员可查看全部）
+app.get('/api/participants/:id/profile', optionalAuth, participantProfileController.getProfile);
 // 功能开关状态查询（公开访问）
 app.get('/api/feature-flags', adminController.getFeatureFlags);
 // 收藏相关路由（参与者登录）
