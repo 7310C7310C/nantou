@@ -157,7 +157,7 @@ async function validateUserSelections() {
   
   userMapping.forEach(user => {
     const userSelections = validSelections[user.username] || [];
-    if (userSelections.length < 5) {
+    if (userSelections.length < 7) {
       missingUsers.push({
         id: user.id,
         username: user.username,

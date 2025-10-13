@@ -1773,7 +1773,7 @@ function setupFavoritesModal() {
     });
 }
 
-// ============ 选择最喜欢的五人（分组匹配 / 聊天匹配） ============
+// ============ 选择最喜欢的七人（分组匹配 / 聊天匹配） ============
 function openSelectionsModal() {
     const modal = document.getElementById('selectionsModal');
     if (!modal) return;
@@ -1835,7 +1835,7 @@ function renderSelectionsTop(selections) {
     const isSigned = localStorage.getItem('isSigned') === '1';
     const shouldShowRealName = ['matchmaker','admin','staff'].includes(userRole) || (userRole === 'participant' && isSigned);
     
-    for (let i = 1; i <=5; i++) {
+    for (let i = 1; i <=7; i++) {
         const sel = selections.find(s => Number(s.priority) === i);
         if (sel) {
             // 第一行始终显示账号，第二行根据权限显示真实姓名或圣名
@@ -1942,7 +1942,7 @@ async function onSelectAdd(e) {
     }
 
     const topEmpty = Array.from(document.querySelectorAll('#selectionsTop .selection-top-card.empty'))[0];
-    if (!topEmpty) { showToast('已选满 5 位', 'info'); return; }
+    if (!topEmpty) { showToast('已选满 7 位', 'info'); return; }
     const priority = Number(topEmpty.dataset.index);
 
     const authToken = localStorage.getItem('authToken');
@@ -2044,7 +2044,7 @@ function enableSelectionsDrag() {
         top.sortableInstance.destroy();
     }
 
-    // Helper: update dataset.index and visible index number for all top slots (ensure 1..N where N<=5)
+    // Helper: update dataset.index and visible index number for all top slots (ensure 1..N where N<=7)
     function refreshTopIndices() {
         const cards = Array.from(top.querySelectorAll('.selection-top-card'));
         cards.forEach((c, i) => {

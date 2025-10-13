@@ -39,10 +39,11 @@
 
 | 字段名 | 类型 | 备注 |
 | :--- | :--- | :--- |
-| `id` | `INT` | **主键**, 自动递增 |
-| `selector_id` | `INT` | 外键, 关联 `participants.id` |
-| `selected_id` | `INT` | 外键, 关联 `participants.id` |
-| `priority` | `INT` | 优先级, 1-5 |
+| `id` | `INT` | Primary Key, 自增 |
+| `user_id` | `INT` | 用户 ID (外键关联到 `participants` 表) |
+| `target_id` | `INT` | 被选中的对象 ID (关联到 `participants` 表) |
+| `priority` | `INT` | 优先级, 1-7 |
+| `created_at` | `TIMESTAMP` | 创建时间 |
 | `selection_type` | `VARCHAR` | 'GROUPING' 或 'CHATTING' |
 
 ## 5. `matchmaker_recommendations` - 红娘推荐表
