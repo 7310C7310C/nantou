@@ -712,17 +712,46 @@ function displayParticipants(participants) {
 
 // 过滤参与者
 function filterParticipants() {
-    const searchTerm = searchInput.value.toLowerCase();
+    const searchTerm = searchInput.value.toLowerCase().trim();
     const genderFilterValue = genderFilter.value;
+    
+    if (!searchTerm && !genderFilterValue) {
+        // 如果没有搜索条件，显示所有
+        const participantItems = participantsList.querySelectorAll('.participant-item');
+        participantItems.forEach(item => {
+            item.style.display = 'flex';
+        });
+        return;
+    }
     
     const participantItems = participantsList.querySelectorAll('.participant-item');
     
     participantItems.forEach(item => {
         const name = item.querySelector('.participant-name').textContent.toLowerCase();
-        const details = item.querySelector('.participant-details').textContent.toLowerCase();
+        const detailsElement = item.querySelector('.participant-details');
+        const details = detailsElement.textContent.toLowerCase();
         const gender = details.includes('性别：男') ? 'male' : 'female';
         
-        const matchesSearch = name.includes(searchTerm) || details.includes(searchTerm);
+        // 提取详细信息中的各个字段
+        const detailSpans = detailsElement.querySelectorAll('span');
+        let username = '';
+        let phone = '';
+        
+        detailSpans.forEach(span => {
+            const text = span.textContent;
+            if (text.startsWith('用户名：')) {
+                username = text.replace('用户名：', '').toLowerCase();
+            } else if (text.startsWith('手机：')) {
+                phone = text.replace('手机：', '').toLowerCase();
+            }
+        });
+        
+        // 精确匹配用户名或手机号的开头，姓名支持部分匹配
+        const matchesSearch = !searchTerm || 
+            username.startsWith(searchTerm) || 
+            phone.startsWith(searchTerm) || 
+            name.includes(searchTerm);
+            
         const matchesGender = !genderFilterValue || gender === genderFilterValue;
         
         item.style.display = matchesSearch && matchesGender ? 'flex' : 'none';
