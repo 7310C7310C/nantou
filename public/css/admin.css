@@ -2841,7 +2841,7 @@ input[type="checkbox"]:checked + .toggle-slider:before {
     top: 18px; 
     left: 50%; 
     transform: translateX(-50%); 
-    z-index: 4000; 
+    z-index: 10000; 
     display: flex; 
     flex-direction: column; 
     gap: 12px; 
@@ -4287,6 +4287,105 @@ input[type="checkbox"]:checked + .toggle-slider:before {
     #selectedFileName {
         margin-left: 0 !important;
         text-align: center;
+    }
+}
+
+/* ==================== 资料编辑样式 ==================== */
+.profile-edit-search {
+    margin-bottom: 20px;
+}
+
+.profile-edit-search input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.profile-edit-table-container {
+    max-height: calc(90vh - 200px);
+    overflow: auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+}
+
+.profile-edit-table-wrapper {
+    overflow-x: auto;
+}
+
+.profile-edit-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 2000px;
+}
+
+.profile-edit-table thead {
+    position: sticky;
+    top: 0;
+    background: #f5f5f5;
+    z-index: 10;
+}
+
+.profile-edit-table th {
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+.profile-edit-table td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.profile-edit-table td:hover {
+    background: #f9f9f9;
+}
+
+.profile-edit-table tr:hover {
+    background: #fafafa;
+}
+
+.profile-edit-table td.editing {
+    padding: 0;
+    background: #fff3cd;
+}
+
+.profile-edit-table td.editing input,
+.profile-edit-table td.editing textarea {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #ffc107;
+    font-size: 13px;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.profile-edit-table td.editing textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.profile-edit-table .cell-readonly {
+    color: #999;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .profile-edit-table-container {
+        max-height: calc(90vh - 250px);
     }
 }
 

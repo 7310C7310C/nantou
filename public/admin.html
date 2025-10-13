@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>管理后台</title>
-    <link rel="stylesheet" href="css/style.css?v=20251013a">
-    <link rel="stylesheet" href="css/admin.css?v=20251013a">
+    <link rel="stylesheet" href="css/style.css?v=20251013b">
+    <link rel="stylesheet" href="css/admin.css?v=20251013b">
 </head>
 <body>
     <div class="admin-container">
@@ -34,7 +34,10 @@
                     <h3>👥 报名录入</h3>
                     <button class="btn btn-primary" id="openRegistrationBtn">开始录入</button>
                     <button class="btn btn-secondary" id="openManageBtn" style="margin-top: 10px;">管理已录入</button>
-                    <button class="btn btn-secondary" id="openProfileImportBtn" style="margin-top: 10px;">资料导入</button>
+                    <div style="display: flex; gap: 8px; margin-top: 10px;">
+                        <button class="btn btn-secondary" id="openProfileImportBtn" style="flex: 1; margin: 0;">资料导入</button>
+                        <button class="btn btn-secondary" id="openProfileEditBtn" style="flex: 1; margin: 0;">资料编辑</button>
+                    </div>
                 </div>
 
                 <div class="dashboard-card">
@@ -955,6 +958,61 @@
         </div>
     </div>
 
-    <script src="js/admin.js?v=20251013a"></script>
+    <!-- 资料编辑模态框 -->
+    <div class="modal" id="profileEditModal" style="display:none;">
+        <div class="modal-content" style="max-width: 95%; max-height: 90vh;">
+            <div class="modal-header">
+                <h2>✏️ 资料编辑</h2>
+                <button class="close-btn" id="closeProfileEditBtn">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- 搜索筛选区域 -->
+                <div class="profile-edit-search">
+                    <input type="text" id="profileEditSearchInput" placeholder="输入账号 (username) 筛选..." />
+                </div>
+                
+                <!-- 表格容器 -->
+                <div class="profile-edit-table-container">
+                    <div class="loading-text" id="profileEditLoading">加载中...</div>
+                    <div class="profile-edit-table-wrapper" id="profileEditTableWrapper" style="display:none;">
+                        <table class="profile-edit-table" id="profileEditTable">
+                            <thead>
+                                <tr>
+                                    <th>账号</th>
+                                    <th>姓名</th>
+                                    <th>圣名</th>
+                                    <th>性别</th>
+                                    <th>手机号</th>
+                                    <th>生日</th>
+                                    <th>籍贯</th>
+                                    <th>现居城市</th>
+                                    <th>学历</th>
+                                    <th>行业</th>
+                                    <th>职位</th>
+                                    <th>身高</th>
+                                    <th>家庭成员</th>
+                                    <th>房产状况</th>
+                                    <th>年收入</th>
+                                    <th>兴趣爱好</th>
+                                    <th>性格</th>
+                                    <th>自我介绍</th>
+                                    <th>择偶标准</th>
+                                    <th>婚后与父母同住</th>
+                                </tr>
+                            </thead>
+                            <tbody id="profileEditTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 提示容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="js/admin.js?v=20251013b"></script>
 </body>
 </html>

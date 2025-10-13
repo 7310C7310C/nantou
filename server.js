@@ -113,10 +113,16 @@ app.post('/api/auth/logout', protect, authController.logout);
 
 // 管理后台API路由
 app.post('/api/admin/participants', protect, restrictTo('admin', 'staff'), adminController.registerParticipant);
-app.get('/api/admin/participants', protect, restrictTo('admin', 'staff'), adminController.getAllParticipants);
 app.get('/api/admin/participants-for-checkin', protect, restrictTo('admin', 'staff'), adminController.getParticipantsForCheckin);
-app.patch('/api/admin/participants/:id/checkin', protect, restrictTo('admin', 'staff'), adminController.updateParticipantCheckin);
 app.post('/api/admin/clear-all-checkins', protect, restrictTo('admin', 'staff'), adminController.clearAllCheckins);
+
+// 资料编辑API路由（仅管理员可访问） - 放在 /api/admin/participants/:id 之前
+app.get('/api/admin/participants/profiles', protect, restrictTo('admin'), participantProfileController.getAllProfiles);
+app.patch('/api/admin/participants/:id/field', protect, restrictTo('admin'), participantProfileController.updateField);
+
+// 继续其他 participants 路由
+app.get('/api/admin/participants', protect, restrictTo('admin', 'staff'), adminController.getAllParticipants);
+app.patch('/api/admin/participants/:id/checkin', protect, restrictTo('admin', 'staff'), adminController.updateParticipantCheckin);
 app.get('/api/admin/participants/:participant_id/photos', protect, restrictTo('admin', 'staff'), adminController.getParticipantPhotos);
 app.get('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.getParticipantById);
 app.delete('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.deleteParticipant);
