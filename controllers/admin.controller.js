@@ -380,6 +380,164 @@ async function deletePhoto(req, res) {
 }
 
 /**
+ * 更新参与者信息
+ */
+async function updateParticipant(req, res) {
+  uploadPhotos(req, res, async (err) => {
+    try {
+      if (err) {
+        logger.error('文件上传错误', err);
+        return res.status(400).json({
+          success: false,
+          message: err.message || '文件上传失败'
+        });
+      }
+
+      const { participant_id } = req.params;
+      const { name, baptismal_name, gender, phone, deletedPhotoIds, photoOrder } = req.body;
+      
+      logger.operation('更新参与者信息', req.user?.id, { participant_id });
+
+      // 验证必填字段
+      if (!name || !baptismal_name || !gender || !phone) {
+        return res.status(400).json({
+          success: false,
+          message: '请填写所有必填字段'
+        });
+      }
+
+      // 验证性别
+      if (!['male', 'female'].includes(gender)) {
+        return res.status(400).json({
+          success: false,
+          message: '性别必须是 male 或 female'
+        });
+      }
+
+      const connection = await pool.getConnection();
+      
+      try {
+        await connection.beginTransaction();
+
+        // 1. 更新基本信息
+        await connection.execute(
+          `UPDATE participants 
+           SET name = ?, baptismal_name = ?, gender = ?, phone = ?
+           WHERE id = ?`,
+          [name, baptismal_name, gender, phone, participant_id]
+        );
+
+        // 2. 处理删除的照片
+        if (deletedPhotoIds) {
+          const idsToDelete = JSON.parse(deletedPhotoIds);
+          if (idsToDelete.length > 0) {
+            const placeholders = idsToDelete.map(() => '?').join(',');
+            await connection.execute(
+              `DELETE FROM participant_photos WHERE id IN (${placeholders}) AND participant_id = ?`,
+              [...idsToDelete, participant_id]
+            );
+          }
+        }
+
+        // 3. 更新现有照片的顺序和主图状态
+        if (photoOrder) {
+          const orderData = JSON.parse(photoOrder);
+          for (const item of orderData) {
+            await connection.execute(
+              `UPDATE participant_photos 
+               SET sort_order = ?, is_primary = ?
+               WHERE id = ? AND participant_id = ?`,
+              [item.sort_order, item.is_primary, item.id, participant_id]
+            );
+          }
+        }
+
+        // 4. 上传新照片
+        if (req.files && req.files.length > 0) {
+          const ossService = require('../services/oss.service');
+          
+          // 获取当前照片数量
+          const [photoCountResult] = await connection.execute(
+            'SELECT COUNT(*) as count FROM participant_photos WHERE participant_id = ?',
+            [participant_id]
+          );
+          let currentPhotoCount = photoCountResult[0].count;
+
+          // 确定新照片的起始sort_order
+          const [maxSortResult] = await connection.execute(
+            'SELECT MAX(sort_order) as max_sort FROM participant_photos WHERE participant_id = ?',
+            [participant_id]
+          );
+          let nextSortOrder = (maxSortResult[0].max_sort || 0) + 1;
+
+          for (const file of req.files) {
+            if (currentPhotoCount >= 5) {
+              break; // 最多5张照片
+            }
+
+            try {
+              const photoUrl = await ossService.uploadFile(file.buffer, file.originalname);
+              
+              await connection.execute(
+                `INSERT INTO participant_photos (participant_id, photo_url, is_primary, sort_order)
+                 VALUES (?, ?, ?, ?)`,
+                [participant_id, photoUrl, false, nextSortOrder]
+              );
+
+              currentPhotoCount++;
+              nextSortOrder++;
+            } catch (uploadError) {
+              logger.error('照片上传失败', uploadError);
+              // 继续处理其他照片
+            }
+          }
+        }
+
+        // 5. 确保至少有一张主图
+        const [primaryCheck] = await connection.execute(
+          'SELECT COUNT(*) as count FROM participant_photos WHERE participant_id = ? AND is_primary = TRUE',
+          [participant_id]
+        );
+
+        if (primaryCheck[0].count === 0) {
+          // 如果没有主图，将第一张照片设为主图
+          await connection.execute(
+            `UPDATE participant_photos 
+             SET is_primary = TRUE 
+             WHERE participant_id = ? 
+             ORDER BY sort_order ASC 
+             LIMIT 1`,
+            [participant_id]
+          );
+        }
+
+        await connection.commit();
+        
+        logger.success('参与者信息更新成功', { participant_id });
+        
+        res.json({
+          success: true,
+          message: '信息更新成功'
+        });
+
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
+      }
+
+    } catch (error) {
+      logger.error('更新参与者信息错误', error);
+      res.status(500).json({
+        success: false,
+        message: '服务器内部错误'
+      });
+    }
+  });
+}
+
+/**
  * 删除参与者（包括所有照片）
  */
 async function deleteParticipant(req, res) {
@@ -1341,6 +1499,7 @@ module.exports = {
   getParticipantPhotos,
   setPrimaryPhoto,
   deletePhoto,
+  updateParticipant,
   deleteParticipant,
   resetParticipantPassword,
   getParticipantsForCheckin,

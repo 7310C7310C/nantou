@@ -226,6 +226,60 @@
         </div>
     </div>
 
+    <!-- 修改信息界面模态框 -->
+    <div class="registration-modal" id="editParticipantModal">
+        <div class="registration-content">
+            <div class="registration-header">
+                <h2>✏️ 修改信息</h2>
+                <button class="close-btn" id="closeEditParticipantBtn">&times;</button>
+            </div>
+            
+            <form id="editParticipantForm">
+                <input type="hidden" id="editParticipantId" name="participantId">
+                
+                <div class="form-group">
+                    <label for="editName">姓名 *</label>
+                    <input type="text" id="editName" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editBaptismalName">圣名 *</label>
+                    <input type="text" id="editBaptismalName" name="baptismal_name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editGender">性别 *</label>
+                    <select id="editGender" name="gender" required>
+                        <option value="">请选择性别</option>
+                        <option value="male">男</option>
+                        <option value="female">女</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editPhone">手机号 *</label>
+                    <input type="tel" id="editPhone" name="phone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>照片管理 (最多5张，每张不超过15MB)</label>
+                    <div class="photo-upload" id="editPhotoUpload">
+                        <p>点击选择或拖拽照片到此处</p>
+                        <p style="font-size: 12px; color: #666; margin-top: 5px;">💡 提示：可拖动照片调整顺序，第一张照片将作为主图</p>
+                        <p style="font-size: 11px; color: #999; margin-top: 3px;">📁 支持JPG、PNG、GIF等图片格式，单张照片大小不超过15MB</p>
+                        <input type="file" id="editPhotoInput" multiple accept="image/*" style="display: none;">
+                    </div>
+                    <div class="photo-preview" id="editPhotoPreview"></div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelEditBtn">取消</button>
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- 重设密码确认弹窗 -->
     <div class="reset-password-modal" id="resetPasswordModal">
         <div class="reset-password-content">
@@ -1013,6 +1067,7 @@
     <!-- Toast 提示容器 -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <script src="js/Sortable.min.js?v=20251013c"></script>
     <script src="js/admin.js?v=20251013c"></script>
 </body>
 </html>
