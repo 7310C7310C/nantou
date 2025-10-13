@@ -124,6 +124,29 @@ class ProfileImportController {
       });
     }
   }
+  
+  /**
+   * 获取尚未完善资料的人员列表
+   */
+  static async getIncompleteProfiles(req, res) {
+    try {
+      const profiles = await ProfileImportService.getIncompleteProfiles();
+      
+      return res.json({
+        success: true,
+        data: profiles
+      });
+      
+    } catch (error) {
+      logger.error('获取未完善资料人员失败:', error);
+      
+      return res.status(500).json({
+        success: false,
+        message: '获取未完善资料人员失败',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = ProfileImportController;
