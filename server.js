@@ -128,6 +128,7 @@ app.patch('/api/admin/participants/:id/checkin', protect, restrictTo('admin', 's
 app.put('/api/admin/participants/:id/toggle-pin', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.toggleParticipantPin);
 app.get('/api/admin/participants/:participant_id/photos', protect, restrictTo('admin', 'staff'), adminController.getParticipantPhotos);
 app.get('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.getParticipantById);
+app.put('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.updateParticipant);
 app.delete('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.deleteParticipant);
 app.post('/api/admin/participants/:participant_id/reset-password', protect, restrictTo('admin', 'staff'), adminController.resetParticipantPassword);
 app.post('/api/admin/photos/primary', protect, restrictTo('admin', 'staff'), adminController.setPrimaryPhoto);

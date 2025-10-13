@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>管理后台</title>
-    <link rel="stylesheet" href="css/style.css?v=20251013c">
-    <link rel="stylesheet" href="css/admin.css?v=20251013c">
+    <link rel="stylesheet" href="css/style.css?v=20251013d">
+    <link rel="stylesheet" href="css/admin.css?v=20251013d">
 </head>
 <body>
     <div class="admin-container">
@@ -223,6 +223,60 @@
                 <button type="button" class="btn btn-secondary" id="cancelDeleteBtn">取消</button>
                 <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>确认删除</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 修改信息界面模态框 -->
+    <div class="registration-modal" id="editParticipantModal">
+        <div class="registration-content">
+            <div class="registration-header">
+                <h2>✏️ 修改信息</h2>
+                <button class="close-btn" id="closeEditParticipantBtn">&times;</button>
+            </div>
+            
+            <form id="editParticipantForm">
+                <input type="hidden" id="editParticipantId" name="participantId">
+                
+                <div class="form-group">
+                    <label for="editName">姓名 *</label>
+                    <input type="text" id="editName" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editBaptismalName">圣名 *</label>
+                    <input type="text" id="editBaptismalName" name="baptismal_name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editGender">性别 *</label>
+                    <select id="editGender" name="gender" required>
+                        <option value="">请选择性别</option>
+                        <option value="male">男</option>
+                        <option value="female">女</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editPhone">手机号 *</label>
+                    <input type="tel" id="editPhone" name="phone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>照片管理 (最多5张，每张不超过15MB)</label>
+                    <div class="photo-upload" id="editPhotoUpload">
+                        <p>点击选择或拖拽照片到此处</p>
+                        <p style="font-size: 12px; color: #666; margin-top: 5px;">💡 提示：可拖动照片调整顺序，第一张照片将作为主图</p>
+                        <p style="font-size: 11px; color: #999; margin-top: 3px;">📁 支持JPG、PNG、GIF等图片格式，单张照片大小不超过15MB</p>
+                        <input type="file" id="editPhotoInput" multiple accept="image/*" style="display: none;">
+                    </div>
+                    <div class="photo-preview" id="editPhotoPreview"></div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelEditBtn">取消</button>
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -1013,6 +1067,39 @@
     <!-- Toast 提示容器 -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="js/admin.js?v=20251013c"></script>
+    <!-- 禁用右键菜单和长按菜单 -->
+    <script>
+        // 禁用整个页面的右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        }, false);
+
+        // 禁用图片的长按菜单（移动端）
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // 禁用图片拖动
+        document.addEventListener('dragstart', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                return false;
+            }
+        }, false);
+
+        // 禁用图片选择
+        document.addEventListener('selectstart', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                return false;
+            }
+        }, false);
+    </script>
+
+    <script src="js/Sortable.min.js?v=20251013d"></script>
+    <script src="js/admin.js?v=20251013d"></script>
 </body>
 </html>

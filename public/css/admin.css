@@ -12,6 +12,20 @@ input, button, select, textarea {
     -webkit-tap-highlight-color: transparent;
 }
 
+/* 禁用图片的拖动、选择和右键菜单 */
+img {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+    pointer-events: auto;
+}
+
 /* 默认隐藏登录界面，避免刷新时闪现 */
 #loginSection {
     display: none;
@@ -464,6 +478,34 @@ input, button, select, textarea {
     border: 1px solid #ddd;
     border-radius: 4px;
     overflow: hidden;
+    cursor: move;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.photo-item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.photo-item.sortable-ghost {
+    opacity: 0.4;
+}
+
+.photo-item.sortable-chosen {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.photo-item .primary-badge {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background-color: rgba(40, 167, 69, 0.9);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    z-index: 10;
 }
 
 @media (max-width: 768px) {
@@ -1554,6 +1596,21 @@ input, button, select, textarea {
     }
 }
 
+.edit-btn {
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.edit-btn:hover {
+    background-color: #138496;
+}
+
 .reset-password-btn {
     background-color: #8b6f47;
     color: white;
@@ -1566,6 +1623,12 @@ input, button, select, textarea {
 }
 
 @media (max-width: 768px) {
+    .edit-btn {
+        padding: 12px 16px;
+        font-size: 16px;
+        min-height: 44px;
+    }
+    
     .reset-password-btn {
         padding: 12px 16px;
         font-size: 16px;

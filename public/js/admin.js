@@ -92,8 +92,24 @@ const logsDisplay = document.getElementById('logsDisplay');
 const fullscreenImage = document.getElementById('fullscreenImage');
 const fullscreenImg = document.getElementById('fullscreenImg');
 
+// 修改信息相关元素
+const editParticipantModal = document.getElementById('editParticipantModal');
+const closeEditParticipantBtn = document.getElementById('closeEditParticipantBtn');
+const editParticipantForm = document.getElementById('editParticipantForm');
+const editPhotoUpload = document.getElementById('editPhotoUpload');
+const editPhotoInput = document.getElementById('editPhotoInput');
+const editPhotoPreview = document.getElementById('editPhotoPreview');
+const cancelEditBtn = document.getElementById('cancelEditBtn');
+
 // 存储选择的照片
 let selectedPhotos = [];
+let editSelectedPhotos = []; // 用于修改界面的照片数组
+let editExistingPhotos = []; // 存储现有的照片（从服务器加载）
+let editDeletedPhotoIds = []; // 要删除的照片ID
+
+// Sortable实例
+let photoPreviewSortable = null;
+let editPhotoPreviewSortable = null;
 
 // 互选情况相关全局变量
 let selectionsData = {
@@ -144,6 +160,11 @@ function setupEventListeners() {
     closeManageBtn.addEventListener('click', closeManageModal);
     searchInput.addEventListener('input', filterParticipants);
     genderFilter.addEventListener('change', filterParticipants);
+
+    // 修改信息界面
+    closeEditParticipantBtn.addEventListener('click', closeEditParticipantModal);
+    cancelEditBtn.addEventListener('click', closeEditParticipantModal);
+    editParticipantForm.addEventListener('submit', handleEditParticipantSubmit);
 
     // 现场签到界面
     const openCheckinBtn = document.getElementById('openCheckinBtn');
@@ -219,11 +240,6 @@ function setupEventListeners() {
         clearCheckinConfirmInput.addEventListener('input', validateClearCheckinConfirm);
     }
 
-    // 照片上传
-    photoUpload.addEventListener('click', () => photoInput.click());
-    photoInput.addEventListener('change', handlePhotoSelect);
-    setupDragAndDrop();
-
     // 确认弹窗
     cancelConfirmBtn.addEventListener('click', closeConfirmModal);
     confirmSubmitBtn.addEventListener('click', submitRegistration);
@@ -277,6 +293,26 @@ function setupEventListeners() {
     
     setupMatchingEventListeners();
 
+    // 照片上传相关 - 录入界面
+    if (photoUpload && photoInput) {
+        console.log('Setting up photo upload listeners');
+        photoUpload.addEventListener('click', () => {
+            console.log('photoUpload clicked');
+            photoInput.click();
+        });
+        photoInput.addEventListener('change', handlePhotoSelect);
+        setupDragAndDrop();
+    } else {
+        console.error('photoUpload or photoInput not found!', photoUpload, photoInput);
+    }
+
+    // 照片上传相关 - 修改界面
+    if (editPhotoUpload && editPhotoInput) {
+        editPhotoUpload.addEventListener('click', () => editPhotoInput.click());
+        editPhotoInput.addEventListener('change', handleEditPhotoSelect);
+        setupEditDragAndDrop();
+    }
+
     // 大图查看功能
     fullscreenImage.addEventListener('click', closeFullscreenImage);
 
@@ -286,6 +322,9 @@ function setupEventListeners() {
     });
     manageModal.addEventListener('click', (e) => {
         if (e.target === manageModal) closeManageModal();
+    });
+    editParticipantModal.addEventListener('click', (e) => {
+        if (e.target === editParticipantModal) closeEditParticipantModal();
     });
     confirmModal.addEventListener('click', (e) => {
         if (e.target === confirmModal) closeConfirmModal();
@@ -663,6 +702,7 @@ function displayParticipants(participants) {
                 </div>
             </div>
             <div class="participant-actions">
+                <button class="edit-btn" onclick="openEditParticipant(${participant.id})">修改信息</button>
                 <button class="reset-password-btn" onclick="showResetPasswordConfirm(${participant.id}, '${participant.name}', '${participant.username}')">重设密码</button>
                 <button class="delete-btn" onclick="showDeleteConfirm(${participant.id}, '${participant.name}')">删除账号</button>
             </div>
@@ -717,13 +757,18 @@ function setupDragAndDrop() {
 
 // 处理照片选择
 function handlePhotoSelect(e) {
+    console.log('handlePhotoSelect called', e.target.files.length, 'files');
     const files = Array.from(e.target.files);
     handleFiles(files);
+    // 重置input的value，以便可以重复选择相同文件
+    e.target.value = '';
 }
 
 // 处理文件
 function handleFiles(files) {
+    console.log('handleFiles called with', files.length, 'files');
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    console.log('imageFiles:', imageFiles.length);
     
     // 检查文件数量限制
     if (selectedPhotos.length + imageFiles.length > 5) {
@@ -775,25 +820,119 @@ function handleFiles(files) {
 
 // 更新照片预览
 function updatePhotoPreview() {
+    // 先销毁现有的 Sortable 实例
+    if (photoPreviewSortable) {
+        photoPreviewSortable.destroy();
+        photoPreviewSortable = null;
+    }
+    
     photoPreview.innerHTML = '';
     
+    if (selectedPhotos.length === 0) {
+        return;
+    }
+    
+    // 创建占位符，确保照片按顺序显示
+    const photoElements = [];
+    selectedPhotos.forEach((file, index) => {
+        const photoItem = document.createElement('div');
+        photoItem.className = 'photo-item';
+        photoItem.dataset.index = index;
+        photoItem.innerHTML = `
+            <img src="" alt="加载中..." style="opacity: 0.5;">
+            <div class="photo-controls">
+                <button type="button" class="primary-btn ${index === 0 ? 'active' : ''}" onclick="setPrimaryPhoto(${index})">
+                    ${index === 0 ? '主图' : '设为主图'}
+                </button>
+                <button type="button" class="remove-btn" onclick="removePhoto(${index})">&times;</button>
+            </div>
+        `;
+        photoPreview.appendChild(photoItem);
+        photoElements.push(photoItem);
+    });
+    
+    // 异步加载图片
+    let loadedCount = 0;
     selectedPhotos.forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-            const photoItem = document.createElement('div');
-            photoItem.className = 'photo-item';
-            photoItem.innerHTML = `
-                <img src="${e.target.result}" alt="预览">
-                <div class="photo-controls">
-                    <button type="button" class="primary-btn ${index === 0 ? 'active' : ''}" onclick="setPrimaryPhoto(${index})">
-                        ${index === 0 ? '主图' : '设为主图'}
-                    </button>
-                    <button type="button" class="remove-btn" onclick="removePhoto(${index})">&times;</button>
-                </div>
-            `;
-            photoPreview.appendChild(photoItem);
+            const img = photoElements[index].querySelector('img');
+            img.src = e.target.result;
+            img.style.opacity = '1';
+            
+            loadedCount++;
+            // 当所有照片都加载完成后初始化Sortable
+            if (loadedCount === selectedPhotos.length) {
+                initPhotoPreviewSortable();
+            }
         };
         reader.readAsDataURL(file);
+    });
+}
+
+// 初始化录入界面的照片排序
+function initPhotoPreviewSortable() {
+    if (photoPreviewSortable) {
+        photoPreviewSortable.destroy();
+    }
+    
+    if (typeof Sortable !== 'undefined' && photoPreview.children.length > 0) {
+        photoPreviewSortable = new Sortable(photoPreview, {
+            animation: 150,
+            handle: '.photo-item',
+            draggable: '.photo-item',
+            filter: '.photo-item:has(.primary-btn.active)', // 主图不可拖动
+            onMove: function(evt) {
+                // 阻止主图被移动，主图永远在第一位
+                const isPrimaryDragged = evt.dragged.querySelector('.primary-btn.active');
+                const isPrimaryRelated = evt.related.querySelector('.primary-btn.active');
+                return !isPrimaryDragged && !isPrimaryRelated;
+            },
+            onEnd: function(evt) {
+                // 重新排序selectedPhotos数组
+                const items = Array.from(photoPreview.children);
+                const newOrder = [];
+                
+                items.forEach((item) => {
+                    const oldIndex = parseInt(item.dataset.index);
+                    newOrder.push(selectedPhotos[oldIndex]);
+                });
+                
+                selectedPhotos = newOrder;
+                
+                // 只更新按钮状态和索引，不重新加载图片
+                updatePhotoControls();
+            }
+        });
+    }
+}
+
+// 只更新照片控件（按钮状态和索引），不重新加载图片
+function updatePhotoControls() {
+    const items = Array.from(photoPreview.children);
+    
+    items.forEach((item, index) => {
+        // 更新 dataset.index
+        item.dataset.index = index;
+        
+        // 更新按钮
+        const primaryBtn = item.querySelector('.primary-btn');
+        const removeBtn = item.querySelector('.remove-btn');
+        
+        if (primaryBtn) {
+            if (index === 0) {
+                primaryBtn.classList.add('active');
+                primaryBtn.textContent = '主图';
+            } else {
+                primaryBtn.classList.remove('active');
+                primaryBtn.textContent = '设为主图';
+            }
+            primaryBtn.onclick = function() { setPrimaryPhoto(index); };
+        }
+        
+        if (removeBtn) {
+            removeBtn.onclick = function() { removePhoto(index); };
+        }
     });
 }
 
@@ -814,6 +953,432 @@ function setPrimaryPhoto(index) {
     
     // 重新更新预览
     updatePhotoPreview();
+}
+
+// ===== 修改信息界面相关函数 =====
+
+// 设置修改界面的拖拽上传
+function setupEditDragAndDrop() {
+    editPhotoUpload.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        editPhotoUpload.classList.add('dragover');
+    });
+
+    editPhotoUpload.addEventListener('dragleave', () => {
+        editPhotoUpload.classList.remove('dragover');
+    });
+
+    editPhotoUpload.addEventListener('drop', (e) => {
+        e.preventDefault();
+        editPhotoUpload.classList.remove('dragover');
+        const files = Array.from(e.dataTransfer.files);
+        handleEditFiles(files);
+    });
+}
+
+// 处理修改界面的照片选择
+function handleEditPhotoSelect(e) {
+    const files = Array.from(e.target.files);
+    handleEditFiles(files);
+    // 重置input的value，以便可以重复选择相同文件
+    e.target.value = '';
+}
+
+// 处理修改界面的文件
+function handleEditFiles(files) {
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    // 计算总照片数（现有 + 新上传）
+    const totalPhotos = editExistingPhotos.length + editSelectedPhotos.length + imageFiles.length;
+    
+    if (totalPhotos > 5) {
+        showErrorModal(
+            '照片数量限制',
+            '最多只能有5张照片',
+            `当前已有 ${editExistingPhotos.length + editSelectedPhotos.length} 张，尝试添加 ${imageFiles.length} 张，超出限制。`
+        );
+        return;
+    }
+
+    // 检查文件大小限制 (15MB)
+    const maxFileSize = 15 * 1024 * 1024;
+    const oversizedFiles = imageFiles.filter(file => file.size > maxFileSize);
+    
+    if (oversizedFiles.length > 0) {
+        const fileDetails = oversizedFiles.map(file => 
+            `${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`
+        );
+        
+        showErrorModal(
+            '文件大小超限',
+            '以下文件超过15MB限制，请压缩后重新上传：',
+            fileDetails
+        );
+        return;
+    }
+
+    imageFiles.forEach(file => {
+        editSelectedPhotos.push(file);
+    });
+
+    updateEditPhotoPreview();
+}
+
+// 更新修改界面的照片预览
+function updateEditPhotoPreview() {
+    // 先销毁现有的 Sortable 实例
+    if (editPhotoPreviewSortable) {
+        editPhotoPreviewSortable.destroy();
+        editPhotoPreviewSortable = null;
+    }
+    
+    editPhotoPreview.innerHTML = '';
+    
+    // 先显示现有照片
+    editExistingPhotos.forEach((photo, index) => {
+        const photoItem = document.createElement('div');
+        photoItem.className = 'photo-item existing-photo';
+        photoItem.dataset.photoId = photo.id;
+        photoItem.dataset.index = index;
+        photoItem.dataset.type = 'existing';
+        photoItem.innerHTML = `
+            <img src="${photo.photo_url}" alt="照片">
+            <div class="photo-controls">
+                <button type="button" class="primary-btn ${photo.is_primary ? 'active' : ''}" onclick="setEditPrimaryPhoto(${index}, 'existing')">
+                    ${photo.is_primary ? '主图' : '设为主图'}
+                </button>
+                <button type="button" class="remove-btn" onclick="removeEditPhoto(${index}, 'existing')">&times;</button>
+            </div>
+        `;
+        editPhotoPreview.appendChild(photoItem);
+    });
+    
+    // 再显示新上传的照片
+    editSelectedPhotos.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const photoItem = document.createElement('div');
+            photoItem.className = 'photo-item new-photo';
+            photoItem.dataset.index = index;
+            photoItem.dataset.type = 'new';
+            photoItem.innerHTML = `
+                <img src="${e.target.result}" alt="预览">
+                <div class="photo-controls">
+                    <button type="button" class="primary-btn" onclick="setEditPrimaryPhoto(${index}, 'new')">设为主图</button>
+                    <button type="button" class="remove-btn" onclick="removeEditPhoto(${index}, 'new')">&times;</button>
+                </div>
+            `;
+            editPhotoPreview.appendChild(photoItem);
+            
+            // 当所有照片都加载完成后初始化Sortable
+            if (index === editSelectedPhotos.length - 1) {
+                initEditPhotoPreviewSortable();
+            }
+        };
+        reader.readAsDataURL(file);
+    });
+    
+    // 如果没有新照片，直接初始化Sortable
+    if (editSelectedPhotos.length === 0) {
+        initEditPhotoPreviewSortable();
+    }
+}
+
+// 初始化修改界面的照片排序
+function initEditPhotoPreviewSortable() {
+    if (editPhotoPreviewSortable) {
+        editPhotoPreviewSortable.destroy();
+    }
+    
+    if (typeof Sortable !== 'undefined' && editPhotoPreview.children.length > 0) {
+        editPhotoPreviewSortable = new Sortable(editPhotoPreview, {
+            animation: 150,
+            handle: '.photo-item',
+            draggable: '.photo-item',
+            filter: '.photo-item:has(.primary-btn.active)', // 主图不可拖动
+            onMove: function(evt) {
+                // 阻止主图被移动，主图永远在第一位
+                const isPrimaryDragged = evt.dragged.querySelector('.primary-btn.active');
+                const isPrimaryRelated = evt.related.querySelector('.primary-btn.active');
+                return !isPrimaryDragged && !isPrimaryRelated;
+            },
+            onEnd: function(evt) {
+                // 重新排序数组
+                const items = Array.from(editPhotoPreview.children);
+                const newExistingPhotos = [];
+                const newSelectedPhotos = [];
+                
+                items.forEach((item) => {
+                    const type = item.dataset.type;
+                    const index = parseInt(item.dataset.index);
+                    
+                    if (type === 'existing') {
+                        newExistingPhotos.push(editExistingPhotos[index]);
+                    } else if (type === 'new') {
+                        newSelectedPhotos.push(editSelectedPhotos[index]);
+                    }
+                });
+                
+                editExistingPhotos = newExistingPhotos;
+                editSelectedPhotos = newSelectedPhotos;
+                
+                // 只更新按钮状态和索引，不重新加载图片
+                updateEditPhotoControls();
+            }
+        });
+    }
+}
+
+// 只更新修改界面的照片控件，不重新加载图片
+function updateEditPhotoControls() {
+    const items = Array.from(editPhotoPreview.children);
+    let existingIndex = 0;
+    let newIndex = 0;
+    
+    items.forEach((item, globalIndex) => {
+        const type = item.dataset.type;
+        
+        if (type === 'existing') {
+            const photo = editExistingPhotos[existingIndex];
+            item.dataset.index = existingIndex;
+            
+            // 更新按钮
+            const primaryBtn = item.querySelector('.primary-btn');
+            const removeBtn = item.querySelector('.remove-btn');
+            
+            if (primaryBtn) {
+                if (photo.is_primary) {
+                    primaryBtn.classList.add('active');
+                    primaryBtn.textContent = '主图';
+                } else {
+                    primaryBtn.classList.remove('active');
+                    primaryBtn.textContent = '设为主图';
+                }
+                primaryBtn.onclick = function() { setEditPrimaryPhoto(existingIndex, 'existing'); };
+            }
+            
+            if (removeBtn) {
+                removeBtn.onclick = function() { removeEditPhoto(existingIndex, 'existing'); };
+            }
+            
+            existingIndex++;
+        } else if (type === 'new') {
+            item.dataset.index = newIndex;
+            
+            // 更新按钮
+            const primaryBtn = item.querySelector('.primary-btn');
+            const removeBtn = item.querySelector('.remove-btn');
+            
+            if (primaryBtn) {
+                primaryBtn.onclick = function() { setEditPrimaryPhoto(newIndex, 'new'); };
+            }
+            
+            if (removeBtn) {
+                removeBtn.onclick = function() { removeEditPhoto(newIndex, 'new'); };
+            }
+            
+            newIndex++;
+        }
+    });
+}
+
+// 移除修改界面的照片
+function removeEditPhoto(index, type) {
+    if (type === 'existing') {
+        const photo = editExistingPhotos[index];
+        if (photo.is_primary && (editExistingPhotos.length + editSelectedPhotos.length) > 1) {
+            showToast('请先设置其他照片为主图，再删除当前主图', 'error');
+            return;
+        }
+        editDeletedPhotoIds.push(photo.id);
+        editExistingPhotos.splice(index, 1);
+    } else if (type === 'new') {
+        editSelectedPhotos.splice(index, 1);
+    }
+    updateEditPhotoPreview();
+}
+
+// 设置修改界面的主图
+function setEditPrimaryPhoto(index, type) {
+    // 取消所有照片的主图状态
+    editExistingPhotos.forEach(photo => photo.is_primary = false);
+    
+    // 设置新的主图并移到最前面
+    if (type === 'existing') {
+        const selectedPhoto = editExistingPhotos[index];
+        selectedPhoto.is_primary = true;
+        
+        // 如果不是第一张，移到最前面
+        if (index !== 0) {
+            editExistingPhotos.splice(index, 1);
+            editExistingPhotos.unshift(selectedPhoto);
+        }
+    } else if (type === 'new') {
+        // 如果设置新照片为主图，需要将它移到现有照片的前面
+        const newPhoto = editSelectedPhotos[index];
+        editSelectedPhotos.splice(index, 1);
+        // 将新照片作为第一张现有照片（会在提交时处理）
+        editExistingPhotos.unshift({
+            file: newPhoto,
+            is_primary: true,
+            isNew: true
+        });
+    }
+    
+    updateEditPhotoPreview();
+}
+
+// 打开修改信息界面
+async function openEditParticipant(participantId) {
+    try {
+        showLoadingOverlay('加载中...');
+        
+        // 获取参与者详细信息
+        const response = await fetch(`/api/admin/participants/${participantId}`, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('获取参与者信息失败');
+        }
+        
+        const result = await response.json();
+        const participant = result.data;
+        
+        // 填充表单
+        document.getElementById('editParticipantId').value = participant.id;
+        document.getElementById('editName').value = participant.name;
+        document.getElementById('editBaptismalName').value = participant.baptismal_name || '';
+        document.getElementById('editGender').value = participant.gender;
+        document.getElementById('editPhone').value = participant.phone;
+        
+        // 获取照片信息
+        const photosResponse = await fetch(`/api/admin/participants/${participantId}/photos`, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (photosResponse.ok) {
+            const photosResult = await photosResponse.json();
+            editExistingPhotos = photosResult.data.map(photo => ({...photo}));
+        } else {
+            editExistingPhotos = [];
+        }
+        
+        // 重置新照片和删除列表
+        editSelectedPhotos = [];
+        editDeletedPhotoIds = [];
+        
+        // 更新照片预览
+        updateEditPhotoPreview();
+        
+        // 显示模态框
+        editParticipantModal.style.display = 'flex';
+        hideLoadingOverlay();
+        
+    } catch (error) {
+        console.error('打开修改界面失败:', error);
+        showToast('获取参与者信息失败，请重试', 'error');
+        hideLoadingOverlay();
+    }
+}
+
+// 关闭修改信息界面
+function closeEditParticipantModal() {
+    editParticipantModal.style.display = 'none';
+    editParticipantForm.reset();
+    editExistingPhotos = [];
+    editSelectedPhotos = [];
+    editDeletedPhotoIds = [];
+    editPhotoPreview.innerHTML = '';
+    if (editPhotoPreviewSortable) {
+        editPhotoPreviewSortable.destroy();
+        editPhotoPreviewSortable = null;
+    }
+}
+
+// 处理修改信息表单提交
+async function handleEditParticipantSubmit(e) {
+    e.preventDefault();
+    
+    const participantId = document.getElementById('editParticipantId').value;
+    const name = document.getElementById('editName').value.trim();
+    const baptismalName = document.getElementById('editBaptismalName').value.trim();
+    const gender = document.getElementById('editGender').value;
+    const phone = document.getElementById('editPhone').value.trim();
+    
+    // 验证
+    if (!name || !baptismalName || !gender || !phone) {
+        showToast('请填写所有必填项', 'error');
+        return;
+    }
+    
+    // 检查是否至少有一张照片
+    if (editExistingPhotos.length + editSelectedPhotos.length === 0) {
+        showToast('至少需要一张照片', 'error');
+        return;
+    }
+    
+    // 检查是否有主图
+    const hasPrimary = editExistingPhotos.some(p => p.is_primary);
+    if (!hasPrimary && editExistingPhotos.length > 0) {
+        showToast('请设置一张主图', 'error');
+        return;
+    }
+    
+    try {
+        showLoadingOverlay('提交中...');
+        
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('baptismal_name', baptismalName);
+        formData.append('gender', gender);
+        formData.append('phone', phone);
+        
+        // 添加新照片
+        editSelectedPhotos.forEach(file => {
+            formData.append('photos', file);
+        });
+        
+        // 添加删除的照片ID
+        formData.append('deletedPhotoIds', JSON.stringify(editDeletedPhotoIds));
+        
+        // 添加照片顺序信息
+        const photoOrder = editExistingPhotos.map((photo, index) => ({
+            id: photo.id,
+            sort_order: index + 1,
+            is_primary: photo.is_primary
+        }));
+        formData.append('photoOrder', JSON.stringify(photoOrder));
+        
+        const response = await fetch(`/api/admin/participants/${participantId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('修改成功！', 'success');
+            closeEditParticipantModal();
+            // 刷新参与者列表
+            await loadParticipants();
+        } else {
+            throw new Error(result.message || '修改失败');
+        }
+        
+    } catch (error) {
+        console.error('修改失败:', error);
+        showToast('修改失败: ' + error.message, 'error');
+    } finally {
+        hideLoadingOverlay();
+    }
 }
 
 // 处理录入表单提交
