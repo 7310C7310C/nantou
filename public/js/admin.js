@@ -3795,16 +3795,16 @@ function applySelectionsFilters() {
         const participantsWithSelections = new Set(selectionsData.selections.map(s => s.user_id));
         filtered = filtered.filter(participant => participantsWithSelections.has(participant.id));
     } else if (selectedFilter === 'notFullSelectionsCheckbox') {
-        // 只看未选满的过滤（未选满5个）
+        // 只看未选满的过滤（未选满7个）
         filtered = filtered.filter(participant => {
             const userSelections = selectionsData.selections.filter(s => s.user_id === participant.id);
-            return userSelections.length < 5;
+            return userSelections.length < 7;
         });
     } else if (selectedFilter === 'fullSelectionsCheckbox') {
-        // 只看选满的过滤（已选满5个）
+        // 只看选满的过滤（已选满7个）
         filtered = filtered.filter(participant => {
             const userSelections = selectionsData.selections.filter(s => s.user_id === participant.id);
-            return userSelections.length === 5;
+            return userSelections.length === 7;
         });
     }
     // allSelectionsFilter 或其他情况显示全部，不需要额外过滤
@@ -4198,7 +4198,7 @@ async function validateGroupMatching() {
                         <div class="missing-user-item">
                             <div>
                                 <div class="user-name">${user.name}（${user.username}）</div>
-                                <div class="user-details">${genderText} | 已选择: ${user.currentSelections}/5</div>
+                                <div class="user-details">${genderText} | 已选择: ${user.currentSelections}/7</div>
                             </div>
                         </div>
                     `;
@@ -4266,7 +4266,7 @@ async function validateChatMatching() {
                         <div class="missing-user-item">
                             <div>
                                 <div class="user-name">${user.name}（${user.username}）</div>
-                                <div class="user-details">${genderText} | 已选择: ${user.currentSelections}/5</div>
+                                <div class="user-details">${genderText} | 已选择: ${user.currentSelections}/7</div>
                             </div>
                         </div>
                     `;
