@@ -505,6 +505,12 @@ function controlUIByRole(role) {
         
         card.style.display = shouldShow ? 'block' : 'none';
     });
+    
+    // 控制"资料导入"按钮的显示（只有admin可见）
+    const profileImportBtn = document.getElementById('openProfileImportBtn');
+    if (profileImportBtn) {
+        profileImportBtn.style.display = (role === 'admin') ? 'block' : 'none';
+    }
 }
 
 // 获取角色显示名称
@@ -4423,9 +4429,60 @@ const importProgress = document.getElementById('importProgress');
 const progressFill = document.getElementById('progressFill');
 const importResult = document.getElementById('importResult');
 const closeImportResultBtn = document.getElementById('closeImportResultBtn');
+const incompleteProfilesList = document.getElementById('incompleteProfilesList');
+const profilesLoading = document.getElementById('profilesLoading');
+const profilesEmpty = document.getElementById('profilesEmpty');
 
 // 存储选择的文件
 let selectedFile = null;
+
+// 加载未完善资料的人员列表
+async function loadIncompleteProfiles() {
+    try {
+        profilesLoading.style.display = 'block';
+        incompleteProfilesList.style.display = 'none';
+        profilesEmpty.style.display = 'none';
+        
+        const response = await fetch('/api/admin/incomplete-profiles', {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        const result = await response.json();
+        
+        profilesLoading.style.display = 'none';
+        
+        if (result.success && result.data && result.data.length > 0) {
+            // 显示人员列表
+            incompleteProfilesList.style.display = 'block';
+            incompleteProfilesList.innerHTML = result.data.map(person => {
+                const genderClass = person.gender === 'male' ? 'male' : 'female';
+                const genderText = person.gender === 'male' ? '♂ 男' : '♀ 女';
+                
+                return `
+                    <div class="profile-item">
+                        <div class="profile-info">
+                            <div class="profile-name">${person.name || '未知'}</div>
+                            <div class="profile-username">${person.username}</div>
+                            <div class="profile-phone">${person.phone}</div>
+                            <div class="profile-gender ${genderClass}">${genderText}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            // 显示空状态
+            profilesEmpty.style.display = 'block';
+        }
+        
+    } catch (error) {
+        console.error('加载未完善资料人员失败:', error);
+        profilesLoading.style.display = 'none';
+        incompleteProfilesList.innerHTML = '<div style="color: #f44336; text-align: center;">加载失败，请重试</div>';
+        incompleteProfilesList.style.display = 'block';
+    }
+}
 
 // 打开资料导入模态框
 if (openProfileImportBtn) {
@@ -4439,6 +4496,9 @@ if (openProfileImportBtn) {
         // 重置状态
         resetImportModal();
         profileImportModal.style.display = 'flex';
+        
+        // 加载未完善资料的人员列表
+        loadIncompleteProfiles();
     });
 }
 

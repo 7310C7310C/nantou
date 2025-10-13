@@ -127,6 +127,7 @@ app.delete('/api/admin/photos/:photo_id', protect, restrictTo('admin', 'staff'),
 // 资料导入API路由（仅管理员可访问）
 app.post('/api/admin/import-profiles', protect, restrictTo('admin'), profileImportController.getUploadMiddleware(), profileImportController.importProfiles);
 app.get('/api/admin/profile-stats', protect, restrictTo('admin'), profileImportController.getImportStats);
+app.get('/api/admin/incomplete-profiles', protect, restrictTo('admin'), profileImportController.getIncompleteProfiles);
 
 // 日志管理API路由
 app.get('/api/admin/logs', protect, restrictTo('admin'), logController.getRecentLogs);

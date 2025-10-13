@@ -222,6 +222,31 @@ class ProfileImportService {
       connection.release();
     }
   }
+  
+  /**
+   * 获取尚未完善资料的人员列表
+   * @returns {Promise<Array>} 未完善资料的人员列表
+   */
+  static async getIncompleteProfiles() {
+    try {
+      const [rows] = await pool.execute(
+        `SELECT 
+          id,
+          username,
+          name,
+          phone,
+          gender
+        FROM participants 
+        WHERE profile_completed = 0
+        ORDER BY created_at DESC`
+      );
+      
+      return rows;
+    } catch (error) {
+      logger.error('获取未完善资料人员失败:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = ProfileImportService;
