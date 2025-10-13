@@ -12,6 +12,20 @@ input, button, select, textarea {
     -webkit-tap-highlight-color: transparent;
 }
 
+/* 禁用图片的拖动、选择和右键菜单 */
+img {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+    pointer-events: auto;
+}
+
 /* 默认隐藏登录界面，避免刷新时闪现 */
 #loginSection {
     display: none;

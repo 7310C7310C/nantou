@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>管理后台</title>
-    <link rel="stylesheet" href="css/style.css?v=20251013c">
-    <link rel="stylesheet" href="css/admin.css?v=20251013c">
+    <link rel="stylesheet" href="css/style.css?v=20251013d">
+    <link rel="stylesheet" href="css/admin.css?v=20251013d">
 </head>
 <body>
     <div class="admin-container">
@@ -1067,7 +1067,39 @@
     <!-- Toast 提示容器 -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <script src="js/Sortable.min.js?v=20251013c"></script>
-    <script src="js/admin.js?v=20251013c"></script>
+    <!-- 禁用右键菜单和长按菜单 -->
+    <script>
+        // 禁用整个页面的右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        }, false);
+
+        // 禁用图片的长按菜单（移动端）
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // 禁用图片拖动
+        document.addEventListener('dragstart', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                return false;
+            }
+        }, false);
+
+        // 禁用图片选择
+        document.addEventListener('selectstart', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                return false;
+            }
+        }, false);
+    </script>
+
+    <script src="js/Sortable.min.js?v=20251013d"></script>
+    <script src="js/admin.js?v=20251013d"></script>
 </body>
 </html>

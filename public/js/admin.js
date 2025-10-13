@@ -899,10 +899,41 @@ function initPhotoPreviewSortable() {
                 });
                 
                 selectedPhotos = newOrder;
-                updatePhotoPreview();
+                
+                // 只更新按钮状态和索引，不重新加载图片
+                updatePhotoControls();
             }
         });
     }
+}
+
+// 只更新照片控件（按钮状态和索引），不重新加载图片
+function updatePhotoControls() {
+    const items = Array.from(photoPreview.children);
+    
+    items.forEach((item, index) => {
+        // 更新 dataset.index
+        item.dataset.index = index;
+        
+        // 更新按钮
+        const primaryBtn = item.querySelector('.primary-btn');
+        const removeBtn = item.querySelector('.remove-btn');
+        
+        if (primaryBtn) {
+            if (index === 0) {
+                primaryBtn.classList.add('active');
+                primaryBtn.textContent = '主图';
+            } else {
+                primaryBtn.classList.remove('active');
+                primaryBtn.textContent = '设为主图';
+            }
+            primaryBtn.onclick = function() { setPrimaryPhoto(index); };
+        }
+        
+        if (removeBtn) {
+            removeBtn.onclick = function() { removePhoto(index); };
+        }
+    });
 }
 
 // 移除照片
@@ -1090,10 +1121,65 @@ function initEditPhotoPreviewSortable() {
                 
                 editExistingPhotos = newExistingPhotos;
                 editSelectedPhotos = newSelectedPhotos;
-                updateEditPhotoPreview();
+                
+                // 只更新按钮状态和索引，不重新加载图片
+                updateEditPhotoControls();
             }
         });
     }
+}
+
+// 只更新修改界面的照片控件，不重新加载图片
+function updateEditPhotoControls() {
+    const items = Array.from(editPhotoPreview.children);
+    let existingIndex = 0;
+    let newIndex = 0;
+    
+    items.forEach((item, globalIndex) => {
+        const type = item.dataset.type;
+        
+        if (type === 'existing') {
+            const photo = editExistingPhotos[existingIndex];
+            item.dataset.index = existingIndex;
+            
+            // 更新按钮
+            const primaryBtn = item.querySelector('.primary-btn');
+            const removeBtn = item.querySelector('.remove-btn');
+            
+            if (primaryBtn) {
+                if (photo.is_primary) {
+                    primaryBtn.classList.add('active');
+                    primaryBtn.textContent = '主图';
+                } else {
+                    primaryBtn.classList.remove('active');
+                    primaryBtn.textContent = '设为主图';
+                }
+                primaryBtn.onclick = function() { setEditPrimaryPhoto(existingIndex, 'existing'); };
+            }
+            
+            if (removeBtn) {
+                removeBtn.onclick = function() { removeEditPhoto(existingIndex, 'existing'); };
+            }
+            
+            existingIndex++;
+        } else if (type === 'new') {
+            item.dataset.index = newIndex;
+            
+            // 更新按钮
+            const primaryBtn = item.querySelector('.primary-btn');
+            const removeBtn = item.querySelector('.remove-btn');
+            
+            if (primaryBtn) {
+                primaryBtn.onclick = function() { setEditPrimaryPhoto(newIndex, 'new'); };
+            }
+            
+            if (removeBtn) {
+                removeBtn.onclick = function() { removeEditPhoto(newIndex, 'new'); };
+            }
+            
+            newIndex++;
+        }
+    });
 }
 
 // 移除修改界面的照片
@@ -1101,7 +1187,7 @@ function removeEditPhoto(index, type) {
     if (type === 'existing') {
         const photo = editExistingPhotos[index];
         if (photo.is_primary && (editExistingPhotos.length + editSelectedPhotos.length) > 1) {
-            alert('请先设置其他照片为主图，再删除当前主图');
+            showToast('请先设置其他照片为主图，再删除当前主图', 'error');
             return;
         }
         editDeletedPhotoIds.push(photo.id);
@@ -1195,7 +1281,7 @@ async function openEditParticipant(participantId) {
         
     } catch (error) {
         console.error('打开修改界面失败:', error);
-        alert('获取参与者信息失败，请重试');
+        showToast('获取参与者信息失败，请重试', 'error');
         hideLoadingOverlay();
     }
 }
@@ -1226,20 +1312,20 @@ async function handleEditParticipantSubmit(e) {
     
     // 验证
     if (!name || !baptismalName || !gender || !phone) {
-        alert('请填写所有必填项');
+        showToast('请填写所有必填项', 'error');
         return;
     }
     
     // 检查是否至少有一张照片
     if (editExistingPhotos.length + editSelectedPhotos.length === 0) {
-        alert('至少需要一张照片');
+        showToast('至少需要一张照片', 'error');
         return;
     }
     
     // 检查是否有主图
     const hasPrimary = editExistingPhotos.some(p => p.is_primary);
     if (!hasPrimary && editExistingPhotos.length > 0) {
-        alert('请设置一张主图');
+        showToast('请设置一张主图', 'error');
         return;
     }
     
@@ -1279,7 +1365,7 @@ async function handleEditParticipantSubmit(e) {
         const result = await response.json();
         
         if (result.success) {
-            alert('修改成功！');
+            showToast('修改成功！', 'success');
             closeEditParticipantModal();
             // 刷新参与者列表
             await loadParticipants();
@@ -1289,7 +1375,7 @@ async function handleEditParticipantSubmit(e) {
         
     } catch (error) {
         console.error('修改失败:', error);
-        alert('修改失败: ' + error.message);
+        showToast('修改失败: ' + error.message, 'error');
     } finally {
         hideLoadingOverlay();
     }
