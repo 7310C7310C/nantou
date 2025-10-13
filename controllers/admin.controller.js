@@ -427,15 +427,39 @@ async function updateParticipant(req, res) {
           [name, baptismal_name, gender, phone, participant_id]
         );
 
-        // 2. 处理删除的照片
+        // 2. 处理删除的照片（从 OSS 删除文件并从数据库删除记录）
         if (deletedPhotoIds) {
           const idsToDelete = JSON.parse(deletedPhotoIds);
           if (idsToDelete.length > 0) {
+            const { deletePhoto } = require('../services/oss.service');
+            
+            // 先查询要删除的照片 URL
             const placeholders = idsToDelete.map(() => '?').join(',');
+            const [photosToDelete] = await connection.execute(
+              `SELECT id, photo_url FROM participant_photos WHERE id IN (${placeholders}) AND participant_id = ?`,
+              [...idsToDelete, participant_id]
+            );
+            
+            // 从 OSS 删除文件
+            for (const photo of photosToDelete) {
+              try {
+                // 从 URL 中提取文件名（URL 格式：https://domain/filename）
+                const fileName = photo.photo_url.split('/').pop();
+                await deletePhoto(fileName);
+                logger.info('从 OSS 删除照片成功', { photo_id: photo.id, url: photo.photo_url, fileName });
+              } catch (deleteError) {
+                logger.error('从 OSS 删除照片失败', { photo_id: photo.id, error: deleteError });
+                // 继续处理，即使 OSS 删除失败也要从数据库删除记录
+              }
+            }
+            
+            // 从数据库删除记录
             await connection.execute(
               `DELETE FROM participant_photos WHERE id IN (${placeholders}) AND participant_id = ?`,
               [...idsToDelete, participant_id]
             );
+            
+            logger.info('从数据库删除照片记录成功', { participant_id, deleted_count: idsToDelete.length });
           }
         }
 
@@ -454,9 +478,16 @@ async function updateParticipant(req, res) {
 
         // 4. 上传新照片
         if (req.files && req.files.length > 0) {
-          const ossService = require('../services/oss.service');
+          const { uploadPhoto } = require('../services/oss.service');
           
-          // 获取当前照片数量
+          // 获取参与者用户名用于生成文件名
+          const [participantInfo] = await connection.execute(
+            'SELECT username FROM participants WHERE id = ?',
+            [participant_id]
+          );
+          const username = participantInfo[0]?.username || 'unknown';
+          
+          // 获取当前照片数量（在删除操作之后）
           const [photoCountResult] = await connection.execute(
             'SELECT COUNT(*) as count FROM participant_photos WHERE participant_id = ?',
             [participant_id]
@@ -470,13 +501,29 @@ async function updateParticipant(req, res) {
           );
           let nextSortOrder = (maxSortResult[0].max_sort || 0) + 1;
 
-          for (const file of req.files) {
+          logger.info('准备上传新照片', { 
+            participant_id, 
+            username,
+            new_photos: req.files.length, 
+            current_count: currentPhotoCount,
+            next_sort_order: nextSortOrder
+          });
+
+          for (let i = 0; i < req.files.length; i++) {
+            const file = req.files[i];
+            
             if (currentPhotoCount >= 5) {
+              logger.warn('照片数量已达上限，跳过剩余照片', { participant_id, currentPhotoCount });
               break; // 最多5张照片
             }
 
             try {
-              const photoUrl = await ossService.uploadFile(file.buffer, file.originalname);
+              // 生成文件名：{username}_{timestamp}.{extension}
+              const fileExtension = file.originalname.split('.').pop().toLowerCase();
+              const fileName = `${username}_${Date.now()}.${fileExtension}`;
+              
+              const photoUrl = await uploadPhoto(file.buffer, fileName);
+              logger.info('上传照片到 OSS 成功', { participant_id, fileName, url: photoUrl });
               
               await connection.execute(
                 `INSERT INTO participant_photos (participant_id, photo_url, is_primary, sort_order)
@@ -487,10 +534,15 @@ async function updateParticipant(req, res) {
               currentPhotoCount++;
               nextSortOrder++;
             } catch (uploadError) {
-              logger.error('照片上传失败', uploadError);
+              logger.error('照片上传失败', { participant_id, error: uploadError.message });
               // 继续处理其他照片
             }
           }
+          
+          logger.info('新照片上传完成', { 
+            participant_id, 
+            uploaded_count: currentPhotoCount - photoCountResult[0].count 
+          });
         }
 
         // 5. 确保至少有一张主图
