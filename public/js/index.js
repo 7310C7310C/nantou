@@ -1127,6 +1127,16 @@ function updateNavigationButtons() {
 document.addEventListener('DOMContentLoaded', function() {
     // 用户卡片点击事件（事件委托）
     document.getElementById('usersGrid').addEventListener('click', function(e) {
+        // 检查是否刚触发过长按（通过卡片上的标记）
+        const userCard = e.target.closest('.user-card');
+        if (userCard && userCard.dataset.longPressTriggered === 'true') {
+            // 清除标记并阻止本次点击
+            userCard.dataset.longPressTriggered = 'false';
+            e.stopPropagation();
+            e.preventDefault();
+            return;
+        }
+        
         // 收藏按钮
         const favBtn = e.target.closest('.favorite-toggle');
         if (favBtn) {
@@ -1134,7 +1144,7 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleFavorite(favBtn.dataset.id, favBtn);
             return;
         }
-        const userCard = e.target.closest('.user-card');
+        
         if (userCard) {
             const username = userCard.dataset.username;
             const photos = JSON.parse(userCard.dataset.photos || '[]');
@@ -3811,11 +3821,14 @@ function attachLongPressToCard(cardElement) {
     let startX = 0;
     let startY = 0;
     let hasMoved = false;
+    let longPressTriggered = false; // 标记是否触发了长按
     const moveThreshold = 10; // 移动超过10px视为滑动
+    const longPressDelay = 300; // 300ms 长按阈值（更快响应）
     
+    // 触摸事件处理
     const handleTouchStart = (e) => {
         // 如果点击的是按钮或其他交互元素，不触发长按
-        if (e.target.closest('button, a, input, textarea, .favorite-toggle, .match-btn')) {
+        if (e.target.closest('button, a, input, textarea, .favorite-toggle, .match-btn, .pin-action-overlay')) {
             return;
         }
         
@@ -3823,12 +3836,15 @@ function attachLongPressToCard(cardElement) {
         startX = touch.clientX;
         startY = touch.clientY;
         hasMoved = false;
+        longPressTriggered = false;
         
         longPressTimer = setTimeout(() => {
             if (!hasMoved) {
+                longPressTriggered = true;
+                cardElement.dataset.longPressTriggered = 'true';
                 handleCardLongPress(cardElement);
             }
-        }, 600); // 600ms 长按阈值
+        }, longPressDelay);
     };
     
     const handleTouchMove = (e) => {
@@ -3845,17 +3861,104 @@ function attachLongPressToCard(cardElement) {
         }
     };
     
-    const handleTouchEnd = () => {
+    const handleTouchEnd = (e) => {
         if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        
+        // 如果触发了长按，阻止后续的点击事件
+        if (longPressTriggered) {
+            e.preventDefault();
+            e.stopPropagation();
+            // 在卡片上设置标记，阻止后续的点击事件
+            cardElement.dataset.longPressTriggered = 'true';
+            // 延迟清除标记，确保点击事件已经处理
+            setTimeout(() => {
+                longPressTriggered = false;
+                cardElement.dataset.longPressTriggered = 'false';
+            }, 100);
+        }
+    };
+    
+    // 鼠标事件处理（桌面端）
+    const handleMouseDown = (e) => {
+        // 只处理左键
+        if (e.button !== 0) return;
+        
+        // 如果点击的是按钮或其他交互元素，不触发长按
+        if (e.target.closest('button, a, input, textarea, .favorite-toggle, .match-btn, .pin-action-overlay')) {
+            return;
+        }
+        
+        startX = e.clientX;
+        startY = e.clientY;
+        hasMoved = false;
+        longPressTriggered = false;
+        
+        longPressTimer = setTimeout(() => {
+            if (!hasMoved) {
+                longPressTriggered = true;
+                cardElement.dataset.longPressTriggered = 'true';
+                handleCardLongPress(cardElement);
+            }
+        }, longPressDelay);
+    };
+    
+    const handleMouseMove = (e) => {
+        if (!longPressTimer) return;
+        
+        const deltaX = Math.abs(e.clientX - startX);
+        const deltaY = Math.abs(e.clientY - startY);
+        
+        if (deltaX > moveThreshold || deltaY > moveThreshold) {
+            hasMoved = true;
             clearTimeout(longPressTimer);
             longPressTimer = null;
         }
     };
     
+    const handleMouseUp = (e) => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        
+        // 如果触发了长按，阻止后续的点击事件
+        if (longPressTriggered) {
+            e.preventDefault();
+            e.stopPropagation();
+            // 在卡片上设置标记，阻止后续的点击事件
+            cardElement.dataset.longPressTriggered = 'true';
+            // 延迟清除标记，确保点击事件已经处理
+            setTimeout(() => {
+                longPressTriggered = false;
+                cardElement.dataset.longPressTriggered = 'false';
+            }, 100);
+        }
+    };
+    
+    // 阻止长按后的点击事件传播
+    const handleClick = (e) => {
+        if (longPressTriggered || cardElement.dataset.longPressTriggered === 'true') {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+        }
+    };
+    
+    // 添加触摸事件监听器
     cardElement.addEventListener('touchstart', handleTouchStart, { passive: true });
     cardElement.addEventListener('touchmove', handleTouchMove, { passive: true });
     cardElement.addEventListener('touchend', handleTouchEnd);
     cardElement.addEventListener('touchcancel', handleTouchEnd);
+    
+    // 添加鼠标事件监听器
+    cardElement.addEventListener('mousedown', handleMouseDown);
+    cardElement.addEventListener('mousemove', handleMouseMove);
+    cardElement.addEventListener('mouseup', handleMouseUp);
+    cardElement.addEventListener('mouseleave', handleMouseUp); // 鼠标离开时取消
+    cardElement.addEventListener('click', handleClick, true); // 捕获阶段阻止点击
 }
 
 /**
@@ -3864,6 +3967,12 @@ function attachLongPressToCard(cardElement) {
 function handleCardLongPress(cardElement) {
     const participantId = parseInt(cardElement.dataset.id);
     const isPinned = cardElement.dataset.isPinned === 'true';
+    
+    // 如果已经有遮罩层，先移除
+    const existingOverlay = cardElement.querySelector('.pin-action-overlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
     
     // 创建遮罩层和操作按钮
     const overlay = document.createElement('div');
@@ -3877,19 +3986,72 @@ function handleCardLongPress(cardElement) {
     cardElement.style.position = 'relative'; // 确保卡片有定位上下文
     cardElement.appendChild(overlay);
     
-    // 点击按钮处理置顶操作
-    actionBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        overlay.remove();
-        await togglePinParticipant(participantId, isPinned);
-    });
-    
-    // 点击遮罩其他区域关闭
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
+    // 移除遮罩的函数
+    const removeOverlay = () => {
+        if (overlay && overlay.parentElement) {
             overlay.remove();
         }
+        // 清理事件监听器
+        window.removeEventListener('scroll', handleScroll, true);
+        document.removeEventListener('click', handleOutsideClick, true);
+    };
+    
+    // 点击按钮处理置顶操作
+    actionBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        removeOverlay();
+        await togglePinParticipant(participantId, isPinned);
+    }, true); // 使用捕获阶段，确保优先处理
+    
+    // 点击遮罩其他区域关闭（但不包括按钮）
+    overlay.addEventListener('click', (e) => {
+        // 如果点击的是按钮或按钮内部，不关闭
+        if (e.target === actionBtn || actionBtn.contains(e.target)) {
+            return;
+        }
+        // 点击遮罩本身才关闭
+        if (e.target === overlay) {
+            removeOverlay();
+        }
     });
+    
+    // 当滚动时也隐藏遮罩
+    const handleScroll = () => {
+        removeOverlay();
+    };
+    window.addEventListener('scroll', handleScroll, true);
+    
+    // 点击卡片外部关闭遮罩
+    const handleOutsideClick = (e) => {
+        // 如果点击的是卡片外部，关闭遮罩
+        if (!cardElement.contains(e.target)) {
+            removeOverlay();
+        }
+    };
+    // 延迟添加，避免立即触发
+    setTimeout(() => {
+        document.addEventListener('click', handleOutsideClick, true);
+    }, 100);
+    
+    // 当焦点离开卡片时隐藏遮罩（处理键盘导航）
+    const handleFocusLeave = (e) => {
+        // 检查焦点是否移到了卡片外部
+        if (e.relatedTarget && !cardElement.contains(e.relatedTarget)) {
+            removeOverlay();
+        }
+    };
+    cardElement.addEventListener('focusout', handleFocusLeave);
+    
+    // 按 ESC 键关闭
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            removeOverlay();
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
     
     // 添加轻微的触觉反馈（如果设备支持）
     if (navigator.vibrate) {
@@ -3901,13 +4063,25 @@ function handleCardLongPress(cardElement) {
  * 切换参与者置顶状态
  */
 async function togglePinParticipant(participantId, currentlyPinned) {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+        showToast('请先登录', 'error');
+        return;
+    }
+    
+    // 乐观更新：先显示成功 Toast
+    const optimisticMessage = currentlyPinned ? '取消置顶成功，刷新页面后生效' : '置顶成功，刷新页面后生效';
+    showToast(optimisticMessage, 'success', 3000);
+    
+    // 立即更新卡片的 data-is-pinned 属性
+    const cardElement = document.querySelector(`.user-card[data-id="${participantId}"]`);
+    const newPinnedState = !currentlyPinned;
+    if (cardElement) {
+        cardElement.dataset.isPinned = newPinnedState;
+    }
+    
+    // 后台发送请求
     try {
-        const authToken = localStorage.getItem('authToken');
-        if (!authToken) {
-            showToast('请先登录', 'error');
-            return;
-        }
-        
         const response = await fetch(`/api/admin/participants/${participantId}/toggle-pin`, {
             method: 'PUT',
             headers: {
@@ -3916,26 +4090,29 @@ async function togglePinParticipant(participantId, currentlyPinned) {
             }
         });
         
-        if (response.ok) {
-            const data = await response.json();
-            const message = data.data.isPinned ? '置顶成功，刷新页面后生效' : '取消置顶成功，刷新页面后生效';
-            showToast(message, 'success', 3000);
-            
-            // 更新卡片的 data-is-pinned 属性（虽然不会立即重新排序）
-            const cardElement = document.querySelector(`.user-card[data-id="${participantId}"]`);
-            if (cardElement) {
-                cardElement.dataset.isPinned = data.data.isPinned;
-            }
-        } else {
+        if (!response.ok) {
             if (response.status === 401) {
                 handleAuthError();
                 return;
             }
+            
+            // 如果失败，回滚状态并显示错误
+            if (cardElement) {
+                cardElement.dataset.isPinned = currentlyPinned;
+            }
+            
             const errorData = await response.json();
-            showToast(errorData.message || '操作失败', 'error');
+            showToast(errorData.message || '操作失败，请重试', 'error');
         }
+        // 成功的话不需要额外操作，已经显示过 Toast 了
     } catch (error) {
         console.error('切换置顶状态失败:', error);
+        
+        // 如果网络错误，回滚状态并显示错误
+        if (cardElement) {
+            cardElement.dataset.isPinned = currentlyPinned;
+        }
+        
         showToast('网络错误，请重试', 'error');
     }
 }
