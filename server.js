@@ -123,6 +123,7 @@ app.patch('/api/admin/participants/:id/field', protect, restrictTo('admin'), par
 // 继续其他 participants 路由
 app.get('/api/admin/participants', protect, restrictTo('admin', 'staff'), adminController.getAllParticipants);
 app.patch('/api/admin/participants/:id/checkin', protect, restrictTo('admin', 'staff'), adminController.updateParticipantCheckin);
+app.put('/api/admin/participants/:id/toggle-pin', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.toggleParticipantPin);
 app.get('/api/admin/participants/:participant_id/photos', protect, restrictTo('admin', 'staff'), adminController.getParticipantPhotos);
 app.get('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.getParticipantById);
 app.delete('/api/admin/participants/:participant_id', protect, restrictTo('admin', 'staff'), adminController.deleteParticipant);

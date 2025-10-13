@@ -1838,6 +1838,58 @@ img, a, .user-photo {
 @keyframes toast-in { from { transform:translateY(-10px); opacity:0;} to { transform:translateY(0); opacity:1;} }
 @keyframes fade-out { to { opacity:0; transform:translateY(-8px);} }
 
+/* 置顶功能 - 长按操作按钮样式 */
+.pin-action-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    border-radius: 12px;
+    animation: pin-overlay-in 0.2s ease;
+}
+
+.pin-action-btn {
+    background: white;
+    color: #333;
+    border: none;
+    padding: 14px 32px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    min-width: 120px;
+    text-align: center;
+}
+
+.pin-action-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.pin-action-btn:active {
+    transform: scale(0.98);
+}
+
+@keyframes pin-overlay-in {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(4px);
+    }
+}
+
 /* 通用消息模态框样式 */
 .message-modal {
     position: fixed;

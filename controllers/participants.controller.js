@@ -2,6 +2,18 @@ const { pool } = require('../config/database');
 const logger = require('../utils/logger');
 
 /**
+ * 数组随机打乱（Fisher-Yates 洗牌算法）
+ */
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+/**
  * 获取参与者列表（公开接口）
  */
 async function getParticipants(req, res) {
@@ -17,44 +29,79 @@ async function getParticipants(req, res) {
     const offsetInt = parseInt(offset) || 0;
     
     let participants;
+    let pinnedParticipants = [];
+    let normalParticipants = [];
     
     // 执行查询
-    let rows;
     if (search && /^\d+$/.test(search)) {
-      // 有搜索条件
+      // 有搜索条件时，不考虑置顶，直接按搜索结果返回
       const params1 = [genderParam, `%${search}%`, limitNumInt, offsetInt];
-      [rows] = await pool.query(`
+      const [rows] = await pool.query(`
         SELECT 
           p.id,
           p.username,
           p.name,
           p.baptismal_name,
           p.gender,
+          p.is_pinned,
           p.created_at
         FROM participants p
         WHERE p.gender = ? AND p.username LIKE ?
         ORDER BY p.created_at DESC
         LIMIT ? OFFSET ?
       `, params1);
+      participants = rows;
     } else {
-      // 无搜索条件
-      const params2 = [genderParam, limitNumInt, offsetInt];
-      [rows] = await pool.query(`
-      SELECT 
-        p.id,
-        p.username,
-        p.name,
-        p.baptismal_name,
-        p.gender,
-          p.created_at
-      FROM participants p
-      WHERE p.gender = ?
-      ORDER BY p.created_at DESC
-        LIMIT ? OFFSET ?
-      `, params2);
+      // 无搜索条件时，置顶用户优先显示
+      
+      // 1. 查询所有置顶用户（仅第一页需要）
+      if (pageNum === 0) {
+        const [pinnedRows] = await pool.query(`
+          SELECT 
+            p.id,
+            p.username,
+            p.name,
+            p.baptismal_name,
+            p.gender,
+            p.is_pinned,
+            p.created_at
+          FROM participants p
+          WHERE p.gender = ? AND p.is_pinned = 1
+          ORDER BY p.created_at DESC
+        `, [genderParam]);
+        
+        // 随机打乱置顶用户
+        pinnedParticipants = shuffleArray(pinnedRows);
+      }
+      
+      // 2. 查询非置顶用户（考虑分页）
+      const pinnedCount = pinnedParticipants.length;
+      const adjustedLimit = limitNumInt - pinnedCount;
+      const adjustedOffset = pageNum === 0 ? 0 : offsetInt - pinnedCount;
+      
+      if (adjustedLimit > 0) {
+        const [normalRows] = await pool.query(`
+          SELECT 
+            p.id,
+            p.username,
+            p.name,
+            p.baptismal_name,
+            p.gender,
+            p.is_pinned,
+            p.created_at
+          FROM participants p
+          WHERE p.gender = ? AND p.is_pinned = 0
+          ORDER BY p.created_at DESC
+          LIMIT ? OFFSET ?
+        `, [genderParam, adjustedLimit, Math.max(0, adjustedOffset)]);
+        normalParticipants = normalRows;
+      }
+      
+      // 3. 合并置顶和非置顶用户
+      participants = [...pinnedParticipants, ...normalParticipants];
     }
     
-  participants = rows;
+  // 继续处理参与者数据
 
     // 获取每个参与者的主图
     const participantsWithPhotos = await Promise.all(participants.map(async (participant) => {

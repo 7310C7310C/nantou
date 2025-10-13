@@ -1267,6 +1267,73 @@ async function getSelectionDetail(req, res) {
   }
 }
 
+/**
+ * 切换参与者置顶状态
+ */
+async function toggleParticipantPin(req, res) {
+  try {
+    const { id } = req.params;
+    const participantId = parseInt(id);
+
+    if (isNaN(participantId)) {
+      return res.status(400).json({
+        success: false,
+        message: '无效的参与者ID'
+      });
+    }
+
+    logger.operation('切换参与者置顶状态', req.user?.id, { 
+      participant_id: participantId, 
+      operator: req.user?.username 
+    });
+
+    // 获取当前置顶状态
+    const [rows] = await pool.execute(
+      'SELECT id, name, is_pinned FROM participants WHERE id = ?',
+      [participantId]
+    );
+
+    if (rows.length === 0) {
+      logger.warn('切换置顶失败：参与者不存在', { participant_id: participantId });
+      return res.status(404).json({
+        success: false,
+        message: '参与者不存在'
+      });
+    }
+
+    const participant = rows[0];
+    const newPinnedState = participant.is_pinned ? 0 : 1;
+
+    // 更新置顶状态
+    await pool.execute(
+      'UPDATE participants SET is_pinned = ? WHERE id = ?',
+      [newPinnedState, participantId]
+    );
+
+    logger.info('置顶状态切换成功', {
+      participant_id: participantId,
+      participant_name: participant.name,
+      new_state: newPinnedState,
+      operator: req.user?.username
+    });
+
+    res.json({
+      success: true,
+      data: {
+        participantId: participantId,
+        isPinned: newPinnedState === 1
+      },
+      message: newPinnedState === 1 ? '置顶成功' : '取消置顶成功'
+    });
+  } catch (error) {
+    logger.error('切换置顶状态错误', error);
+    res.status(500).json({
+      success: false,
+      message: '服务器内部错误'
+    });
+  }
+}
+
 module.exports = {
   registerParticipant,
   getAllParticipants,
@@ -1292,5 +1359,6 @@ module.exports = {
   getFavoriteStats,
   getParticipantStats,
   getFavoriteDetail,
-  getSelectionDetail
+  getSelectionDetail,
+  toggleParticipantPin
 };

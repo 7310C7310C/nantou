@@ -644,6 +644,10 @@ function displayUsers(users) {
         drawStarIcon(canvas, filled);
     });
     
+    // 为所有卡片添加长按事件监听器（仅特权角色）
+    const cards = grid.querySelectorAll('.user-card');
+    cards.forEach(card => attachLongPressToCard(card));
+    
     // 预加载所有用户的照片
     preloadUserPhotos(users);
     
@@ -669,6 +673,8 @@ function appendUsers(users) {
             const filled = canvas.dataset.filled === 'true';
             drawStarIcon(canvas, filled);
         });
+        // 为新添加的卡片添加长按事件监听器
+        attachLongPressToCard(cards[i]);
     }
     
     // 预加载新添加用户的照片
@@ -798,7 +804,7 @@ function createUserCard(user) {
     const highlightedDisplayName = searchTerm ? highlightSearchTerm(rawDisplayName, searchTerm) : rawDisplayName;
 
     return `
-        <div class="user-card" data-id="${user.id}" data-username="${user.username}" data-photos='${JSON.stringify(user.photos || [])}'>
+        <div class="user-card" data-id="${user.id}" data-username="${user.username}" data-is-pinned="${user.is_pinned ? 'true' : 'false'}" data-photos='${JSON.stringify(user.photos || [])}'>
             ${favBtnHtml}
             ${matchBtnHtml}
             <img src="${photoUrl}" alt="用户照片" class="user-photo" onerror="this.src='/placeholder.jpg'">
@@ -3787,3 +3793,149 @@ function closeProfileModal() {
         });
     }
 })();
+
+// ==================== 置顶功能相关代码 ====================
+
+/**
+ * 为卡片添加长按事件监听器（仅特权角色）
+ */
+function attachLongPressToCard(cardElement) {
+    const userRole = localStorage.getItem('userRole');
+    const isPrivilegedRole = ['admin', 'staff', 'matchmaker'].includes(userRole);
+    
+    if (!isPrivilegedRole) {
+        return; // 非特权角色不添加长按功能
+    }
+    
+    let longPressTimer = null;
+    let startX = 0;
+    let startY = 0;
+    let hasMoved = false;
+    const moveThreshold = 10; // 移动超过10px视为滑动
+    
+    const handleTouchStart = (e) => {
+        // 如果点击的是按钮或其他交互元素，不触发长按
+        if (e.target.closest('button, a, input, textarea, .favorite-toggle, .match-btn')) {
+            return;
+        }
+        
+        const touch = e.touches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        hasMoved = false;
+        
+        longPressTimer = setTimeout(() => {
+            if (!hasMoved) {
+                handleCardLongPress(cardElement);
+            }
+        }, 600); // 600ms 长按阈值
+    };
+    
+    const handleTouchMove = (e) => {
+        if (!longPressTimer) return;
+        
+        const touch = e.touches[0];
+        const deltaX = Math.abs(touch.clientX - startX);
+        const deltaY = Math.abs(touch.clientY - startY);
+        
+        if (deltaX > moveThreshold || deltaY > moveThreshold) {
+            hasMoved = true;
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    };
+    
+    const handleTouchEnd = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    };
+    
+    cardElement.addEventListener('touchstart', handleTouchStart, { passive: true });
+    cardElement.addEventListener('touchmove', handleTouchMove, { passive: true });
+    cardElement.addEventListener('touchend', handleTouchEnd);
+    cardElement.addEventListener('touchcancel', handleTouchEnd);
+}
+
+/**
+ * 处理卡片长按事件
+ */
+function handleCardLongPress(cardElement) {
+    const participantId = parseInt(cardElement.dataset.id);
+    const isPinned = cardElement.dataset.isPinned === 'true';
+    
+    // 创建遮罩层和操作按钮
+    const overlay = document.createElement('div');
+    overlay.className = 'pin-action-overlay';
+    
+    const actionBtn = document.createElement('button');
+    actionBtn.className = 'pin-action-btn';
+    actionBtn.textContent = isPinned ? '取消置顶' : '置顶';
+    
+    overlay.appendChild(actionBtn);
+    cardElement.style.position = 'relative'; // 确保卡片有定位上下文
+    cardElement.appendChild(overlay);
+    
+    // 点击按钮处理置顶操作
+    actionBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        overlay.remove();
+        await togglePinParticipant(participantId, isPinned);
+    });
+    
+    // 点击遮罩其他区域关闭
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.remove();
+        }
+    });
+    
+    // 添加轻微的触觉反馈（如果设备支持）
+    if (navigator.vibrate) {
+        navigator.vibrate(50);
+    }
+}
+
+/**
+ * 切换参与者置顶状态
+ */
+async function togglePinParticipant(participantId, currentlyPinned) {
+    try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            showToast('请先登录', 'error');
+            return;
+        }
+        
+        const response = await fetch(`/api/admin/participants/${participantId}/toggle-pin`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const message = data.data.isPinned ? '置顶成功，刷新页面后生效' : '取消置顶成功，刷新页面后生效';
+            showToast(message, 'success', 3000);
+            
+            // 更新卡片的 data-is-pinned 属性（虽然不会立即重新排序）
+            const cardElement = document.querySelector(`.user-card[data-id="${participantId}"]`);
+            if (cardElement) {
+                cardElement.dataset.isPinned = data.data.isPinned;
+            }
+        } else {
+            if (response.status === 401) {
+                handleAuthError();
+                return;
+            }
+            const errorData = await response.json();
+            showToast(errorData.message || '操作失败', 'error');
+        }
+    } catch (error) {
+        console.error('切换置顶状态失败:', error);
+        showToast('网络错误，请重试', 'error');
+    }
+}
