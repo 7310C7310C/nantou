@@ -113,7 +113,9 @@ function formatBirthday(birthday) {
  * 规则：
  * 1. 去除"省""市"字眼
  * 2. 特别行政区只显示地区名（香港、澳门、台湾）
- * 3. 格式：广东深圳
+ * 3. 自治区正确处理（内蒙古、新疆、西藏、宁夏、广西）
+ * 4. 直辖市只显示市名（北京、上海、天津、重庆）
+ * 5. 格式：广东深圳、内蒙古呼和浩特
  * 
  * @param {string} location - 原始地理位置
  * @returns {string} 格式化后的地理位置
@@ -122,51 +124,91 @@ function formatLocation(location) {
   if (!location) return null;
   
   try {
-    let formatted = location.trim();
+    let text = location.trim();
     
-    // 处理特别行政区
-    if (formatted.includes('香港特别行政区') || formatted.includes('香港特區')) {
-      return '香港';
-    }
-    if (formatted.includes('澳门特别行政区') || formatted.includes('澳門特區')) {
-      return '澳门';
-    }
-    if (formatted.includes('台湾') || formatted.includes('臺灣')) {
-      return '台湾';
-    }
+    // 特殊处理：港澳台
+    if (text.includes('香港')) return '香港';
+    if (text.includes('澳门') || text.includes('澳門')) return '澳门';
+    if (text.includes('台湾') || text.includes('臺灣')) return '台湾';
     
-    // 分割地址
-    const parts = formatted.split(/\s+/);
+    // 第一步：识别省级
+    let province = '';
+    let city = '';
     
-    // 提取省和市的主要部分
-    const result = [];
+    // 自治区（按长度从长到短匹配）
+    const autonomousRegions = [
+      { full: '新疆维吾尔自治区', short: '新疆' },
+      { full: '内蒙古自治区', short: '内蒙古' },
+      { full: '宁夏回族自治区', short: '宁夏' },
+      { full: '广西壮族自治区', short: '广西' },
+      { full: '西藏自治区', short: '西藏' }
+    ];
     
-    for (const part of parts) {
-      if (!part) continue;
-      
-      // 去除"省""市""自治区""特别行政区"等后缀
-      let cleaned = part
-        .replace(/省$/, '')
-        .replace(/市$/, '')
-        .replace(/自治区$/, '')
-        .replace(/特别行政区$/, '')
-        .replace(/维吾尔自治区$/, '')
-        .replace(/回族自治区$/, '')
-        .replace(/壮族自治区$/, '')
-        .replace(/自治州$/, '')
-        .replace(/地区$/, '')
-        .replace(/县$/, '')
-        .replace(/区$/, '');
-      
-      if (cleaned) {
-        result.push(cleaned);
+    for (const region of autonomousRegions) {
+      if (text.includes(region.full)) {
+        province = region.short;
+        text = text.replace(region.full, '').trim();
+        break;
+      } else if (text.startsWith(region.short)) {
+        province = region.short;
+        text = text.substring(region.short.length).trim();
+        break;
       }
-      
-      // 只取前两个主要部分（省+市）
-      if (result.length >= 2) break;
     }
     
-    return result.join('') || formatted;
+    // 直辖市
+    const municipalities = ['北京', '上海', '天津', '重庆'];
+    if (!province) {
+      for (const m of municipalities) {
+        if (text.includes(m)) {
+          return m;
+        }
+      }
+    }
+    
+    // 普通省份
+    if (!province) {
+      const match = text.match(/^([^省市]+)(省)?/);
+      if (match) {
+        province = match[1];
+        text = text.substring(match[0].length).trim();
+      }
+    }
+    
+    // 第二步：提取市
+    text = text.replace(/^[\s\u3000]+/, ''); // 去除开头空白
+    
+    // 如果有空格，先取第一段（市级部分）
+    if (text.includes(' ')) {
+      city = text.split(' ')[0];
+    } else {
+      city = text;
+    }
+    
+    // 去除市、自治州、自治县等后缀（从长到短匹配）
+    city = city
+      .replace(/土家族苗族自治州$/, '')
+      .replace(/土家族自治县$/, '')
+      .replace(/哈萨克自治州$/, '')
+      .replace(/自治州$/, '')
+      .replace(/自治县$/, '')
+      .replace(/地区$/, '')
+      .replace(/盟$/, '')
+      .replace(/市$/, '')
+      .replace(/县$/, '')
+      .replace(/区$/, '')
+      .trim();
+    
+    // 返回结果
+    if (province && city) {
+      return province + city;
+    } else if (province) {
+      return province;
+    } else if (city) {
+      return city;
+    }
+    
+    return location;
     
   } catch (error) {
     return location;
