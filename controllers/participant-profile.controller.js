@@ -87,6 +87,111 @@ class ParticipantProfileController {
       });
     }
   }
+  
+  /**
+   * 获取所有参与者的完整资料（用于编辑表格）
+   * @route GET /api/admin/participants/profiles
+   */
+  static async getAllProfiles(req, res) {
+    try {
+      const { username } = req.query;
+      
+      let query = `
+        SELECT 
+          id,
+          username,
+          name,
+          baptismal_name,
+          gender,
+          phone,
+          birthday,
+          hometown,
+          current_city,
+          education,
+          industry,
+          position,
+          height,
+          family_members,
+          property_status,
+          annual_income,
+          hobbies,
+          personality,
+          self_introduction,
+          mate_selection_criteria,
+          live_with_parents,
+          profile_completed
+        FROM participants
+      `;
+      
+      const params = [];
+      
+      if (username) {
+        query += ' WHERE username LIKE ?';
+        params.push(`%${username}%`);
+      }
+      
+      query += ' ORDER BY username ASC';
+      
+      const [rows] = await pool.execute(query, params);
+      
+      return res.json({
+        success: true,
+        data: rows
+      });
+      
+    } catch (error) {
+      logger.error('获取所有参与者资料失败:', error);
+      return res.status(500).json({
+        success: false,
+        message: '获取资料失败'
+      });
+    }
+  }
+  
+  /**
+   * 更新参与者单个字段
+   * @route PATCH /api/admin/participants/:id/field
+   */
+  static async updateField(req, res) {
+    try {
+      const participantId = req.params.id;
+      const { field, value } = req.body;
+      
+      // 允许更新的字段白名单
+      const allowedFields = [
+        'name', 'baptismal_name', 'phone', 'birthday',
+        'hometown', 'current_city', 'education', 'industry',
+        'position', 'height', 'family_members', 'property_status',
+        'annual_income', 'hobbies', 'personality', 'self_introduction',
+        'mate_selection_criteria', 'live_with_parents'
+      ];
+      
+      if (!allowedFields.includes(field)) {
+        return res.status(400).json({
+          success: false,
+          message: '不允许更新该字段'
+        });
+      }
+      
+      // 构建更新 SQL
+      const query = `UPDATE participants SET ${field} = ? WHERE id = ?`;
+      await pool.execute(query, [value, participantId]);
+      
+      logger.info(`更新参与者 ${participantId} 的字段 ${field}`);
+      
+      return res.json({
+        success: true,
+        message: '更新成功'
+      });
+      
+    } catch (error) {
+      logger.error('更新字段失败:', error);
+      return res.status(500).json({
+        success: false,
+        message: '更新失败'
+      });
+    }
+  }
 }
 
 /**

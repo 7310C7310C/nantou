@@ -511,6 +511,12 @@ function controlUIByRole(role) {
     if (profileImportBtn) {
         profileImportBtn.style.display = (role === 'admin') ? 'block' : 'none';
     }
+    
+    // 控制"资料编辑"按钮的显示（只有admin可见）
+    const profileEditBtn = document.getElementById('openProfileEditBtn');
+    if (profileEditBtn) {
+        profileEditBtn.style.display = (role === 'admin') ? 'block' : 'none';
+    }
 }
 
 // 获取角色显示名称
@@ -4668,3 +4674,328 @@ function resetImportModal() {
     document.getElementById('unmatchedList').style.display = 'none';
     document.getElementById('errorList').style.display = 'none';
 }
+
+// ==================== 资料编辑功能 ====================
+const openProfileEditBtn = document.getElementById('openProfileEditBtn');
+const profileEditModal = document.getElementById('profileEditModal');
+const closeProfileEditBtn = document.getElementById('closeProfileEditBtn');
+const profileEditSearchInput = document.getElementById('profileEditSearchInput');
+const profileEditLoading = document.getElementById('profileEditLoading');
+const profileEditTableWrapper = document.getElementById('profileEditTableWrapper');
+const profileEditTableBody = document.getElementById('profileEditTableBody');
+
+let allProfilesData = [];
+let currentEditingCell = null;
+
+// 字段名映射
+const fieldMapping = {
+    'username': '账号',
+    'name': '姓名',
+    'baptismal_name': '圣名',
+    'gender': '性别',
+    'phone': '手机号',
+    'birthday': '生日',
+    'hometown': '籍贯',
+    'current_city': '现居城市',
+    'education': '学历',
+    'industry': '行业',
+    'position': '职位',
+    'height': '身高',
+    'family_members': '家庭成员',
+    'property_status': '房产状况',
+    'annual_income': '年收入',
+    'hobbies': '兴趣爱好',
+    'personality': '性格',
+    'self_introduction': '自我介绍',
+    'mate_selection_criteria': '择偶标准',
+    'live_with_parents': '婚后与父母同住'
+};
+
+// 只读字段（不允许编辑）
+const readonlyFields = ['username', 'gender'];
+
+// 大文本字段（使用 textarea）
+const textareaFields = ['self_introduction', 'mate_selection_criteria', 'family_members', 'hobbies'];
+
+// Toast 提示
+// 打开资料编辑模态框
+if (openProfileEditBtn) {
+    openProfileEditBtn.addEventListener('click', function() {
+        if (!currentUser || currentUser.role !== 'admin') {
+            alert('只有管理员可以使用资料编辑功能');
+            return;
+        }
+        
+        profileEditModal.style.display = 'flex';
+        loadAllProfiles();
+    });
+}
+
+// 关闭模态框
+if (closeProfileEditBtn) {
+    closeProfileEditBtn.addEventListener('click', function() {
+        profileEditModal.style.display = 'none';
+        cancelEditing();
+    });
+}
+
+// 点击背景关闭
+if (profileEditModal) {
+    profileEditModal.addEventListener('click', function(e) {
+        if (e.target === profileEditModal) {
+            profileEditModal.style.display = 'none';
+            cancelEditing();
+        }
+    });
+}
+
+// 搜索筛选
+if (profileEditSearchInput) {
+    profileEditSearchInput.addEventListener('input', function() {
+        filterProfiles(this.value);
+    });
+}
+
+// 加载所有参与者资料
+async function loadAllProfiles(username = '') {
+    try {
+        profileEditLoading.style.display = 'block';
+        profileEditTableWrapper.style.display = 'none';
+        
+        const url = username 
+            ? `/api/admin/participants/profiles?username=${encodeURIComponent(username)}`
+            : '/api/admin/participants/profiles';
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        const result = await response.json();
+        
+        profileEditLoading.style.display = 'none';
+        
+        if (result.success && result.data) {
+            allProfilesData = result.data;
+            renderProfileTable(allProfilesData);
+            profileEditTableWrapper.style.display = 'block';
+        } else {
+            showToast('加载失败', 'error');
+        }
+        
+    } catch (error) {
+        console.error('加载资料失败:', error);
+        profileEditLoading.style.display = 'none';
+        showToast('加载失败，请重试', 'error');
+    }
+}
+
+// 筛选显示
+function filterProfiles(keyword) {
+    if (!keyword.trim()) {
+        renderProfileTable(allProfilesData);
+        return;
+    }
+    
+    const filtered = allProfilesData.filter(p => 
+        p.username.toLowerCase().includes(keyword.toLowerCase())
+    );
+    
+    renderProfileTable(filtered);
+}
+
+// 渲染表格
+function renderProfileTable(data) {
+    if (!data || data.length === 0) {
+        profileEditTableBody.innerHTML = '<tr><td colspan="20" style="text-align:center; padding: 40px;">暂无数据</td></tr>';
+        return;
+    }
+    
+    profileEditTableBody.innerHTML = data.map(participant => {
+        const genderText = participant.gender === 'male' ? '♂ 男' : '♀ 女';
+        
+        return `
+            <tr data-id="${participant.id}">
+                <td class="cell-readonly" data-field="username">${participant.username || ''}</td>
+                <td data-field="name">${participant.name || ''}</td>
+                <td data-field="baptismal_name">${participant.baptismal_name || ''}</td>
+                <td class="cell-readonly" data-field="gender">${genderText}</td>
+                <td data-field="phone">${participant.phone || ''}</td>
+                <td data-field="birthday">${formatDate(participant.birthday)}</td>
+                <td data-field="hometown">${participant.hometown || ''}</td>
+                <td data-field="current_city">${participant.current_city || ''}</td>
+                <td data-field="education">${participant.education || ''}</td>
+                <td data-field="industry">${participant.industry || ''}</td>
+                <td data-field="position">${participant.position || ''}</td>
+                <td data-field="height">${participant.height || ''}</td>
+                <td data-field="family_members">${participant.family_members || ''}</td>
+                <td data-field="property_status">${participant.property_status || ''}</td>
+                <td data-field="annual_income">${participant.annual_income || ''}</td>
+                <td data-field="hobbies">${participant.hobbies || ''}</td>
+                <td data-field="personality">${participant.personality || ''}</td>
+                <td data-field="self_introduction">${participant.self_introduction || ''}</td>
+                <td data-field="mate_selection_criteria">${participant.mate_selection_criteria || ''}</td>
+                <td data-field="live_with_parents">${participant.live_with_parents || ''}</td>
+            </tr>
+        `;
+    }).join('');
+    
+    // 绑定单元格点击事件
+    attachCellClickEvents();
+}
+
+// 格式化日期
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// 绑定单元格点击事件
+function attachCellClickEvents() {
+    const cells = profileEditTableBody.querySelectorAll('td:not(.cell-readonly)');
+    
+    cells.forEach(cell => {
+        cell.addEventListener('click', function() {
+            if (currentEditingCell) {
+                saveCurrentEdit();
+            }
+            startEditing(this);
+        });
+    });
+}
+
+// 开始编辑单元格
+function startEditing(cell) {
+    const field = cell.dataset.field;
+    const row = cell.parentElement;
+    const participantId = row.dataset.id;
+    const currentValue = cell.textContent.trim();
+    
+    if (readonlyFields.includes(field)) {
+        return;
+    }
+    
+    currentEditingCell = {
+        cell: cell,
+        field: field,
+        participantId: participantId,
+        originalValue: currentValue
+    };
+    
+    cell.classList.add('editing');
+    
+    // 创建输入框
+    let input;
+    if (textareaFields.includes(field)) {
+        input = document.createElement('textarea');
+        input.rows = 3;
+    } else {
+        input = document.createElement('input');
+        input.type = field === 'birthday' ? 'date' : 'text';
+    }
+    
+    input.value = currentValue;
+    input.className = 'cell-input';
+    
+    cell.innerHTML = '';
+    cell.appendChild(input);
+    input.focus();
+    
+    // 失去焦点时保存
+    input.addEventListener('blur', function() {
+        setTimeout(() => saveCurrentEdit(), 100);
+    });
+    
+    // 按 Enter 保存（textarea 除外）
+    if (!textareaFields.includes(field)) {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveCurrentEdit();
+            }
+            if (e.key === 'Escape') {
+                cancelEditing();
+            }
+        });
+    }
+}
+
+// 保存当前编辑
+async function saveCurrentEdit() {
+    if (!currentEditingCell) return;
+    
+    const { cell, field, participantId, originalValue } = currentEditingCell;
+    const input = cell.querySelector('input, textarea');
+    
+    if (!input) {
+        currentEditingCell = null;
+        return;
+    }
+    
+    const newValue = input.value.trim();
+    
+    // 如果值没有变化，直接取消编辑
+    if (newValue === originalValue) {
+        cell.classList.remove('editing');
+        cell.textContent = originalValue;
+        currentEditingCell = null;
+        return;
+    }
+    
+    // 发送更新请求
+    try {
+        const response = await fetch(`/api/admin/participants/${participantId}/field`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                field: field,
+                value: newValue || null
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            cell.classList.remove('editing');
+            cell.textContent = newValue;
+            showToast('保存成功', 'success');
+            
+            // 更新本地数据
+            const participant = allProfilesData.find(p => p.id == participantId);
+            if (participant) {
+                participant[field] = newValue || null;
+            }
+        } else {
+            cell.classList.remove('editing');
+            cell.textContent = originalValue;
+            showToast('保存失败: ' + result.message, 'error');
+        }
+        
+    } catch (error) {
+        console.error('保存失败:', error);
+        cell.classList.remove('editing');
+        cell.textContent = originalValue;
+        showToast('保存失败，请重试', 'error');
+    }
+    
+    currentEditingCell = null;
+}
+
+// 取消编辑
+function cancelEditing() {
+    if (!currentEditingCell) return;
+    
+    const { cell, originalValue } = currentEditingCell;
+    cell.classList.remove('editing');
+    cell.textContent = originalValue;
+    currentEditingCell = null;
+}
+
