@@ -1454,23 +1454,33 @@ async function handleEditParticipantSubmit(e) {
     try {
         showLoadingOverlay('提交中...');
         
+        // 收集所有需要上传的新照片
+        const filesToUpload = [];
+        editExistingPhotos.forEach(photo => {
+            if (photo && photo.file instanceof File) {
+                filesToUpload.push(photo.file);
+            }
+        });
+        editSelectedPhotos.forEach(file => {
+            if (file instanceof File) {
+                filesToUpload.push(file);
+            }
+        });
+        
+        // 压缩照片
+        const compressedPhotos = filesToUpload.length > 0 
+            ? await compressPhotos(filesToUpload)
+            : [];
+        
         const formData = new FormData();
         formData.append('name', name);
         formData.append('baptismal_name', baptismalName);
         formData.append('gender', gender);
         formData.append('phone', phone);
         
-        // 添加新照片（包括设置为主图的新照片）
-        editExistingPhotos.forEach(photo => {
-            if (photo && photo.file instanceof File) {
-                formData.append('photos', photo.file);
-            }
-        });
-
-        editSelectedPhotos.forEach(file => {
-            if (file instanceof File) {
-                formData.append('photos', file);
-            }
+        // 添加压缩后的照片
+        compressedPhotos.forEach((photo, index) => {
+            formData.append('photos', photo, `photo_${index + 1}.jpg`);
         });
         
         // 添加删除的照片ID

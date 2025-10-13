@@ -81,7 +81,7 @@ async function registerNewParticipant(participantData) {
         const photo = participantData.photos[i];
         
         try {
-          // 生成文件名：{username}_{timestamp}.jpg
+          // 生成文件名：{username}_{timestamp}.{extension}
           const fileExtension = getFileExtension(photo.originalname);
           const fileName = `${username}_${Date.now()}.${fileExtension}`;
           
