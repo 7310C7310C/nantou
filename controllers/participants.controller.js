@@ -54,6 +54,14 @@ async function getParticipants(req, res) {
     } else {
       // 无搜索条件时，置顶用户优先显示
       
+      // 先获取置顶用户总数（用于计算分页）
+      const [pinnedCountResult] = await pool.query(`
+        SELECT COUNT(*) as count
+        FROM participants p
+        WHERE p.gender = ? AND p.is_pinned = 1
+      `, [genderParam]);
+      const totalPinnedCount = pinnedCountResult[0].count;
+      
       // 1. 查询所有置顶用户（仅第一页需要）
       if (pageNum === 0) {
         const [pinnedRows] = await pool.query(`
@@ -75,11 +83,21 @@ async function getParticipants(req, res) {
       }
       
       // 2. 查询非置顶用户（考虑分页）
-      const pinnedCount = pinnedParticipants.length;
-      const adjustedLimit = limitNumInt - pinnedCount;
-      const adjustedOffset = pageNum === 0 ? 0 : offsetInt - pinnedCount;
+      let normalLimit = limitNumInt;
+      let normalOffset = 0;
       
-      if (adjustedLimit > 0) {
+      if (pageNum === 0) {
+        // 第一页：返回置顶用户后的剩余空间
+        normalLimit = limitNumInt - pinnedParticipants.length;
+        normalOffset = 0;
+      } else {
+        // 第二页及之后：返回完整的 limit 数量
+        // offset 需要减去第一页中置顶用户占用的空间
+        normalLimit = limitNumInt;
+        normalOffset = pageNum * limitNumInt - totalPinnedCount;
+      }
+      
+      if (normalLimit > 0 && normalOffset >= 0) {
         const [normalRows] = await pool.query(`
           SELECT 
             p.id,
@@ -93,7 +111,7 @@ async function getParticipants(req, res) {
           WHERE p.gender = ? AND p.is_pinned = 0
           ORDER BY p.created_at DESC
           LIMIT ? OFFSET ?
-        `, [genderParam, adjustedLimit, Math.max(0, adjustedOffset)]);
+        `, [genderParam, normalLimit, normalOffset]);
         normalParticipants = normalRows;
       }
       
