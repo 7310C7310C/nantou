@@ -313,8 +313,12 @@ function setupEventListeners() {
         setupEditDragAndDrop();
     }
 
-    // 大图查看功能
+    // 大图查看功能 - 支持点击和触摸
     fullscreenImage.addEventListener('click', closeFullscreenImage);
+    fullscreenImage.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        closeFullscreenImage();
+    });
 
     // 点击模态框外部关闭
     registrationModal.addEventListener('click', (e) => {
@@ -693,7 +697,7 @@ function displayParticipants(participants) {
                     ${participant.photos && participant.photos.length > 0 ? 
                         participant.photos.map(photo => `
                             <div class="participant-photo ${photo.is_primary ? 'primary' : ''}" title="${photo.is_primary ? '主图' : '照片'}">
-                                <img src="${photo.photo_url}" alt="照片" onerror="this.style.display='none'" onclick="showFullscreenImage('${photo.photo_url}')" style="cursor: pointer;">
+                                <img src="${photo.photo_url}" alt="照片" onerror="this.style.display='none'" data-photo-url="${photo.photo_url}" class="photo-thumbnail" style="cursor: pointer;">
                                 ${photo.is_primary ? '<span class="primary-badge">主图</span>' : ''}
                             </div>
                         `).join('') : 
@@ -708,6 +712,39 @@ function displayParticipants(participants) {
             </div>
         </div>
     `).join('');
+    
+    // 为所有图片添加点击和触摸事件监听器
+    attachPhotoClickHandlers();
+}
+
+// 为图片附加点击和触摸事件处理器
+function attachPhotoClickHandlers() {
+    const photoThumbnails = participantsList.querySelectorAll('.photo-thumbnail');
+    photoThumbnails.forEach(img => {
+        // 移除可能存在的旧事件监听器
+        const newImg = img.cloneNode(true);
+        img.parentNode.replaceChild(newImg, img);
+        
+        // 添加点击事件（鼠标）
+        newImg.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const photoUrl = this.getAttribute('data-photo-url');
+            if (photoUrl) {
+                showFullscreenImage(photoUrl);
+            }
+        });
+        
+        // 添加触摸事件（触摸屏）
+        newImg.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const photoUrl = this.getAttribute('data-photo-url');
+            if (photoUrl) {
+                showFullscreenImage(photoUrl);
+            }
+        });
+    });
 }
 
 // 过滤参与者
