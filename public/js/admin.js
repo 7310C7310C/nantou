@@ -5987,9 +5987,23 @@ function applyFavoriteMutualFilters() {
     const selectedFilter = document.querySelector('input[name="favoriteMutualFilter"]:checked')?.id;
     
     if (selectedFilter === 'withFavoriteMutualOnlyCheckbox') {
-        // 只看有互收藏的过滤
+        // 只看有互收藏的过滤（修复bug：必须是双向互收藏的用户）
+        // 构建有互收藏关系的参与者集合
+        const participantsWithMutual = new Set();
+        favoriteMutualData.mutualFavorites.forEach(mutualKey => {
+            const [id1, id2] = mutualKey.split('-').map(Number);
+            participantsWithMutual.add(id1);
+            participantsWithMutual.add(id2);
+        });
+        filtered = filtered.filter(participant => participantsWithMutual.has(participant.id));
+    } else if (selectedFilter === 'withFavoritesOnlyCheckbox') {
+        // 只看有收藏的（收藏了至少一个人）
         const participantsWithFavorites = new Set(favoriteMutualData.favorites.map(f => f.user_id));
         filtered = filtered.filter(participant => participantsWithFavorites.has(participant.id));
+    } else if (selectedFilter === 'noFavoritesCheckbox') {
+        // 只看无收藏的（没有收藏任何人）
+        const participantsWithFavorites = new Set(favoriteMutualData.favorites.map(f => f.user_id));
+        filtered = filtered.filter(participant => !participantsWithFavorites.has(participant.id));
     }
     // allFavoriteMutualFilter 显示全部，不需要额外过滤
     

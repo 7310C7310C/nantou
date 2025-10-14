@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>管理后台</title>
-    <link rel="stylesheet" href="css/style.css?v=20251014b">
-    <link rel="stylesheet" href="css/admin.css?v=20251014b">
+    <link rel="stylesheet" href="css/style.css?v=20251014c">
+    <link rel="stylesheet" href="css/admin.css?v=20251014c">
 </head>
 <body>
     <div class="admin-container">
@@ -82,7 +82,10 @@
 
                 <div class="dashboard-card">
                     <h3>📋 系统日志</h3>
-                    <button class="btn btn-primary" id="openLogsBtn" style="width: 50%;">查看日志</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-primary" id="openLogsBtn" style="flex: 1; margin: 0;">查看日志</button>
+                        <button class="btn btn-secondary" style="flex: 1; margin: 0; visibility: hidden; pointer-events: none;">占位</button>
+                    </div>
                 </div>
 
                 <div class="dashboard-card">
@@ -722,6 +725,14 @@
                                 <input type="radio" name="favoriteMutualFilter" id="withFavoriteMutualOnlyCheckbox">
                                 <span>只看有互收藏的</span>
                             </label>
+                            <label class="radio-option">
+                                <input type="radio" name="favoriteMutualFilter" id="withFavoritesOnlyCheckbox">
+                                <span>只看有收藏的</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="favoriteMutualFilter" id="noFavoritesCheckbox">
+                                <span>只看无收藏的</span>
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -1184,7 +1195,7 @@
         }, false);
     </script>
 
-    <script src="js/Sortable.min.js?v=20251014b"></script>
-    <script src="js/admin.js?v=20251014b"></script>
+    <script src="js/Sortable.min.js?v=20251014c"></script>
+    <script src="js/admin.js?v=20251014c"></script>
 </body>
 </html>
