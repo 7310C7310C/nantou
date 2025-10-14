@@ -81,6 +81,10 @@ body {
     user-select: text;
 }
 
+.search-input::-webkit-search-cancel-button {
+    display: none;
+}
+
 .clear-btn {
     position: absolute;
     right: 25px;

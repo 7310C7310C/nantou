@@ -4,7 +4,6 @@ let isLoading = false;
 let hasMore = true;
 let searchTerm = '';
 let allUsers = [];
-let searchTimeout = null;
 let preloadedImages = new Map(); // 存储预加载的图片
 let favoriteIds = new Set(); // 当前用户收藏的参与者ID集合
 let favoritesLoaded = false; // 是否已加载收藏列表
@@ -115,7 +114,7 @@ function updateUIForLoggedOutState() {
     
     // 重置搜索框状态
     if (searchInput) {
-        searchInput.placeholder = '输入编号…';
+        searchInput.placeholder = '输入编号……';
         searchInput.setAttribute('pattern', '[0-9]*');
         searchInput.setAttribute('inputmode', 'numeric');
     }
@@ -199,6 +198,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     const maleBtn = document.getElementById('maleBtn');
     if (femaleBtn) femaleBtn.disabled = true;
     if (maleBtn) maleBtn.disabled = true;
+    
+    const searchInputEl = document.getElementById('searchInput');
+    if (searchInputEl) {
+        let ignoreNextSearchEvent = false;
+        searchInputEl.addEventListener('input', () => handleSearchInput(searchInputEl));
+        searchInputEl.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleSearchInput(searchInputEl);
+                ignoreNextSearchEvent = true;
+                searchUsers();
+            }
+        });
+        searchInputEl.addEventListener('search', () => {
+            handleSearchInput(searchInputEl);
+            if (ignoreNextSearchEvent) {
+                ignoreNextSearchEvent = false;
+                return;
+            }
+            searchUsers();
+        });
+    }
     
     document.addEventListener('contextmenu', function(e) {
         // 全局阻止长按弹出的原生菜单（Android Chrome 等），但允许在输入/可编辑元素上使用原生菜单
@@ -444,16 +465,6 @@ function handleSearchInput(input) {
     // 显示或隐藏清除按钮
     const clearBtn = document.getElementById('clearBtn');
     clearBtn.style.display = input.value.length > 0 ? 'flex' : 'none';
-    
-    // 清除之前的定时器
-    if (searchTimeout) {
-        clearTimeout(searchTimeout);
-    }
-    
-    // 设置防抖延迟，300ms后执行搜索
-    searchTimeout = setTimeout(() => {
-        searchUsers();
-    }, 300);
 }
 
 // 清除搜索
@@ -485,7 +496,12 @@ function clearSearch() {
 
 // 搜索用户
 function searchUsers() {
-    const newSearchTerm = document.getElementById('searchInput').value.trim();
+    const searchInputEl = document.getElementById('searchInput');
+    const newSearchTerm = searchInputEl ? searchInputEl.value.trim() : '';
+
+    if (searchInputEl) {
+        searchInputEl.blur();
+    }
     
     // 如果搜索条件没有变化且当前性别有缓存数据，直接显示
     if (newSearchTerm === searchTerm && genderCache[currentGender].users.length > 0) {
@@ -1375,11 +1391,11 @@ function updateSearchInputState() {
     const isSigned = localStorage.getItem('isSigned') === '1';
     
     if (['admin','staff','matchmaker'].includes(role) || (role === 'participant' && isSigned)) {
-        searchInputEl.placeholder = '输入编号或姓名…';
+        searchInputEl.placeholder = '输入编号或姓名……';
         searchInputEl.removeAttribute('pattern');
         searchInputEl.removeAttribute('inputmode');
     } else {
-        searchInputEl.placeholder = '输入编号…';
+        searchInputEl.placeholder = '输入编号……';
         searchInputEl.setAttribute('pattern', '[0-9]*');
         searchInputEl.setAttribute('inputmode', 'numeric');
     }
@@ -1473,7 +1489,7 @@ function setupUserDropdown() {
         localStorage.removeItem('isSigned');
         const searchInput = document.getElementById('searchInput');
         if (searchInput) {
-            searchInput.placeholder = '输入编号…';
+            searchInput.placeholder = '输入编号……';
             searchInput.setAttribute('pattern', '[0-9]*');
             searchInput.setAttribute('inputmode', 'numeric');
         }
