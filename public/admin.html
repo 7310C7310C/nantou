@@ -32,9 +32,11 @@
             <div class="dashboard-grid">
                 <div class="dashboard-card">
                     <h3>👥 报名录入</h3>
-                    <button class="btn btn-primary" id="openRegistrationBtn">开始录入</button>
-                    <button class="btn btn-secondary" id="openManageBtn" style="margin-top: 10px;">管理已录入</button>
-                    <div style="display: flex; gap: 8px; margin-top: 10px;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                        <button class="btn btn-primary" id="openRegistrationBtn" style="flex: 1; margin: 0;">开始录入</button>
+                        <button class="btn btn-secondary" id="openManageBtn" style="flex: 1; margin: 0;">管理已录入</button>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
                         <button class="btn btn-secondary" id="openProfileImportBtn" style="flex: 1; margin: 0;">资料导入</button>
                         <button class="btn btn-secondary" id="openProfileEditBtn" style="flex: 1; margin: 0;">资料编辑</button>
                     </div>
@@ -42,14 +44,18 @@
 
                 <div class="dashboard-card">
                     <h3>✅ 现场签到</h3>
-                    <button class="btn btn-primary" id="openCheckinBtn">开始签到</button>
-                    <button class="btn btn-secondary" id="clearCheckinBtn" style="margin-top: 10px;">清空签到</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-primary" id="openCheckinBtn" style="flex: 1; margin: 0;">开始签到</button>
+                        <button class="btn btn-secondary" id="clearCheckinBtn" style="flex: 1; margin: 0;">清空签到</button>
+                    </div>
                 </div>
 
                 <div class="dashboard-card">
                     <h3>🧮 算法操作</h3>
-                    <button class="btn btn-primary" id="executeGroupMatchingBtn">执行分组匹配</button>
-                    <button class="btn btn-primary" id="executeChatMatchingBtn" style="margin-top: 10px;">执行聊天匹配</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-primary" id="executeGroupMatchingBtn" style="flex: 1; margin: 0;">执行分组匹配</button>
+                        <button class="btn btn-primary" id="executeChatMatchingBtn" style="flex: 1; margin: 0;">执行聊天匹配</button>
+                    </div>
                 </div>
 
                 <div class="dashboard-card">
@@ -62,6 +68,9 @@
                     <h3>📊 数据统计</h3>
                     <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                         <button class="btn btn-primary" id="viewFavoriteStatsBtn" style="flex: 1; margin: 0;">被收藏情况</button>
+                        <button class="btn btn-primary" id="openFavoriteMutualBtn" style="flex: 1; margin: 0;">收藏互选情况</button>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                         <button class="btn btn-primary" id="viewParticipantStatsBtn" style="flex: 1; margin: 0;">被终选情况</button>
                         <button class="btn btn-primary" id="openSelectionsBtn" style="flex: 1; margin: 0;">终选互选情况</button>
                     </div>
@@ -73,13 +82,15 @@
 
                 <div class="dashboard-card">
                     <h3>📋 系统日志</h3>
-                    <button class="btn btn-primary" id="openLogsBtn">查看日志</button>
+                    <button class="btn btn-primary" id="openLogsBtn" style="width: 50%;">查看日志</button>
                 </div>
 
                 <div class="dashboard-card">
                     <h3>⚙️ 系统设置</h3>
-                    <button class="btn btn-primary" id="openStaffManagementBtn">工作人员管理</button>
-                    <button class="btn btn-secondary" id="openFeatureFlagsBtn" style="margin-top: 10px;">功能开关</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-primary" id="openStaffManagementBtn" style="flex: 1; margin: 0;">工作人员管理</button>
+                        <button class="btn btn-secondary" id="openFeatureFlagsBtn" style="flex: 1; margin: 0;">功能开关</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -657,6 +668,68 @@
             <!-- 参与者互选列表 -->
             <div class="selections-list" id="selectionsList">
                 <!-- 互选列表将在这里显示 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 收藏互选情况模态框 -->
+    <div class="selections-modal" id="favoriteMutualModal">
+        <div class="selections-content">
+            <button class="close-btn-floating" id="closeFavoriteMutualBtn">&times;</button>
+            
+            <!-- 实时数据看板 -->
+            <div class="selections-dashboard">
+                <div class="stat-card">
+                    <h3>总参与者</h3>
+                    <div class="stat-number">
+                        <span id="favoriteMutualTotal">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>男生</h3>
+                    <div class="stat-number">
+                        <span id="favoriteMutualMaleCount">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <h3>女生</h3>
+                    <div class="stat-number">
+                        <span id="favoriteMutualFemaleCount">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 搜索和过滤器 -->
+            <div class="selections-filters">
+                <div class="search-container">
+                    <input type="text" id="favoriteMutualSearchInput" placeholder="搜索编号或姓名..." class="search-input">
+                    <button class="clear-search-btn" id="clearFavoriteMutualSearchBtn" style="display: none;">&times;</button>
+                </div>
+                <div class="filter-row">
+                    <div class="gender-toggle">
+                        <input type="radio" id="favoriteMutualGenderFemale" name="favoriteMutualGender" value="female" checked>
+                        <label for="favoriteMutualGenderFemale" class="gender-btn">女</label>
+                        <input type="radio" id="favoriteMutualGenderMale" name="favoriteMutualGender" value="male">
+                        <label for="favoriteMutualGenderMale" class="gender-btn">男</label>
+                    </div>
+                    <div class="selections-filter-container">
+                        <div class="filter-group">
+                            <label class="radio-option">
+                                <input type="radio" name="favoriteMutualFilter" id="allFavoriteMutualFilter" checked>
+                                <span>全部</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="favoriteMutualFilter" id="withFavoriteMutualOnlyCheckbox">
+                                <span>只看有互收藏的</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 参与者互收藏列表 -->
+            <div class="selections-list" id="favoriteMutualList">
+                <!-- 互收藏列表将在这里显示 -->
             </div>
         </div>
     </div>

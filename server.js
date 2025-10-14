@@ -159,6 +159,7 @@ app.get('/api/admin/favorite-stats', protect, restrictTo('admin', 'staff', 'matc
 app.get('/api/admin/participant-stats', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getParticipantStats);
 app.get('/api/admin/favorite-detail/:targetId', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getFavoriteDetail);
 app.get('/api/admin/selection-detail/:targetId', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getSelectionDetail);
+app.get('/api/admin/favorite-mutual-data', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getFavoriteMutualData);
 
 // 匹配算法管理API路由（仅管理员可访问）
 app.get('/api/admin/validate-selections', protect, restrictTo('admin'), adminController.validateUserSelections);

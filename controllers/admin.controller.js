@@ -1477,6 +1477,102 @@ async function getSelectionDetail(req, res) {
 }
 
 /**
+ * 获取收藏互选情况数据
+ */
+async function getFavoriteMutualData(req, res) {
+  try {
+    logger.operation('获取收藏互选情况数据', req.user?.id, { operator: req.user?.username });
+    
+    const connection = await pool.getConnection();
+    
+    try {
+      // 获取所有参与者的基本信息和照片
+      const [participants] = await connection.query(`
+        SELECT 
+          p.id,
+          p.username,
+          p.name,
+          p.baptismal_name,
+          p.gender,
+          p.phone,
+          p.is_checked_in,
+          pp.photo_url
+        FROM participants p
+        LEFT JOIN participant_photos pp ON p.id = pp.participant_id AND pp.is_primary = 1
+        ORDER BY p.id ASC
+      `);
+
+      // 获取所有的收藏记录
+      const [favorites] = await connection.query(`
+        SELECT 
+          f.user_id,
+          f.favorited_participant_id as target_id,
+          f.created_at,
+          u.name as user_name,
+          u.baptismal_name as user_baptismal,
+          u.username as user_username,
+          u.gender as user_gender,
+          t.name as target_name,
+          t.baptismal_name as target_baptismal,
+          t.username as target_username,
+          t.gender as target_gender
+        FROM favorites f
+        JOIN participants u ON f.user_id = u.id
+        JOIN participants t ON f.favorited_participant_id = t.id
+        ORDER BY f.user_id ASC
+      `);
+
+      // 构建互收藏关系映射
+      const mutualFavorites = new Set();
+      const favoriteMap = {};
+      
+      // 建立收藏映射
+      favorites.forEach(f => {
+        if (!favoriteMap[f.user_id]) {
+          favoriteMap[f.user_id] = [];
+        }
+        favoriteMap[f.user_id].push(f.target_id);
+      });
+      
+      // 找出互收藏关系
+      favorites.forEach(f => {
+        if (favoriteMap[f.target_id] && favoriteMap[f.target_id].includes(f.user_id)) {
+          mutualFavorites.add(`${Math.min(f.user_id, f.target_id)}-${Math.max(f.user_id, f.target_id)}`);
+        }
+      });
+
+      // 将数据组织成更易于前端使用的格式
+      const favoritesData = {
+        participants: participants,
+        favorites: favorites,
+        mutualFavorites: Array.from(mutualFavorites),
+        summary: {
+          totalParticipants: participants.length,
+          maleCount: participants.filter(p => p.gender === 'male').length,
+          femaleCount: participants.filter(p => p.gender === 'female').length
+        }
+      };
+
+      res.json({
+        success: true,
+        data: favoritesData
+      });
+      
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    logger.error('获取收藏互选情况数据失败', error);
+    res.status(500).json({
+      success: false,
+      message: '获取收藏互选情况数据失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
  * 切换参与者置顶状态
  */
 async function toggleParticipantPin(req, res) {
@@ -1570,5 +1666,6 @@ module.exports = {
   getParticipantStats,
   getFavoriteDetail,
   getSelectionDetail,
+  getFavoriteMutualData,
   toggleParticipantPin
 };
