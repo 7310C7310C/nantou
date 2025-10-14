@@ -2,18 +2,6 @@ const { pool } = require('../config/database');
 const logger = require('../utils/logger');
 
 /**
- * 数组随机打乱（Fisher-Yates 洗牌算法）
- */
-function shuffleArray(array) {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
-
-/**
  * 获取参与者列表（公开接口）
  */
 async function getParticipants(req, res) {
@@ -78,8 +66,8 @@ async function getParticipants(req, res) {
           ORDER BY p.created_at DESC
         `, [genderParam]);
         
-        // 随机打乱置顶用户
-        pinnedParticipants = shuffleArray(pinnedRows);
+        // 置顶用户按创建时间倒序显示，不再随机打乱
+        pinnedParticipants = pinnedRows;
       }
       
       // 2. 查询非置顶用户（考虑分页）
