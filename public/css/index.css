@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
-    background: linear-gradient(135deg, #db909a 0%, #c084fc 50%, #ffa4c5 100%) fixed;
+    background: linear-gradient(135deg, #db909a 0%, #d5abff 50%, #ffa4c5 100%) fixed;
     min-height: 100vh;
     padding: 20px;
     -webkit-user-select: none;
