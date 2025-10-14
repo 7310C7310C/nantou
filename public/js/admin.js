@@ -2737,8 +2737,8 @@ function applyCheckinFilters() {
         // 搜索过滤
         if (search) {
             const searchLower = search.toLowerCase();
-            const matchesUsername = participant.username.toLowerCase().includes(searchLower);
-            const matchesName = participant.name.toLowerCase().includes(searchLower);
+            const matchesUsername = participant.username && participant.username.toLowerCase().includes(searchLower);
+            const matchesName = participant.name && participant.name.toLowerCase().includes(searchLower);
             if (!matchesUsername && !matchesName) {
                 return false;
             }
@@ -3894,9 +3894,9 @@ function applySelectionsFilters() {
     const searchValue = document.getElementById('selectionsSearchInput')?.value.trim().toLowerCase();
     if (searchValue) {
         filtered = filtered.filter(participant => 
-            participant.username.toLowerCase().includes(searchValue) ||
-            participant.name.toLowerCase().includes(searchValue) ||
-            participant.baptismal_name.toLowerCase().includes(searchValue)
+            (participant.username && participant.username.toLowerCase().includes(searchValue)) ||
+            (participant.name && participant.name.toLowerCase().includes(searchValue)) ||
+            (participant.baptismal_name && participant.baptismal_name.toLowerCase().includes(searchValue))
         );
     }
     
@@ -5971,9 +5971,9 @@ function applyFavoriteMutualFilters() {
     const searchValue = document.getElementById('favoriteMutualSearchInput')?.value.trim().toLowerCase();
     if (searchValue) {
         filtered = filtered.filter(participant => 
-            participant.username.toLowerCase().includes(searchValue) ||
-            participant.name.toLowerCase().includes(searchValue) ||
-            participant.baptismal_name.toLowerCase().includes(searchValue)
+            (participant.username && participant.username.toLowerCase().includes(searchValue)) ||
+            (participant.name && participant.name.toLowerCase().includes(searchValue)) ||
+            (participant.baptismal_name && participant.baptismal_name.toLowerCase().includes(searchValue))
         );
     }
     
