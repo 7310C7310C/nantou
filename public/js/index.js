@@ -3753,6 +3753,7 @@ function renderProfile(result) {
         ${profile.current_city ? `<tr><td>现居/工作城市</td><td>${profile.current_city}</td></tr>` : ''}
         ${profile.education ? `<tr><td>学历</td><td>${profile.education}</td></tr>` : ''}
         ${profile.industry ? `<tr><td>行业</td><td>${profile.industry}</td></tr>` : ''}
+        ${profile.position ? `<tr><td>职位</td><td>${profile.position}</td></tr>` : ''}
     `;
     
     // 如果是工作人员，显示详细资料
@@ -3763,7 +3764,6 @@ function renderProfile(result) {
             ${profile.height ? `<tr><td>身高（cm）</td><td>${profile.height}</td></tr>` : ''}
             ${profile.hobbies ? `<tr><td>兴趣爱好</td><td>${profile.hobbies}</td></tr>` : ''}
             ${profile.personality ? `<tr><td>性格</td><td>${profile.personality}</td></tr>` : ''}
-            ${profile.position ? `<tr><td>职位</td><td>${profile.position}</td></tr>` : ''}
             ${profile.property_status ? `<tr><td>房产状况</td><td>${profile.property_status}</td></tr>` : ''}
             ${profile.annual_income ? `<tr><td>年收入</td><td>${profile.annual_income}</td></tr>` : ''}
             ${profile.self_introduction ? `<tr><td>关于自己</td><td>${profile.self_introduction}</td></tr>` : ''}
