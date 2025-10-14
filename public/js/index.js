@@ -1189,25 +1189,48 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 触摸控制（移动端）
+    // 触摸控制（移动端）- 优化以防止浏览器滑动返回手势冲突
     let touchStartX = 0;
+    let touchStartY = 0;
     let touchEndX = 0;
+    let touchEndY = 0;
 
-    document.getElementById('fullscreenViewer').addEventListener('touchstart', function(e) {
+    const fullscreenViewer = document.getElementById('fullscreenViewer');
+
+    fullscreenViewer.addEventListener('touchstart', function(e) {
         touchStartX = e.changedTouches[0].screenX;
-    });
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: false });
 
-    document.getElementById('fullscreenViewer').addEventListener('touchend', function(e) {
+    fullscreenViewer.addEventListener('touchmove', function(e) {
+        // 计算移动距离
+        const currentX = e.changedTouches[0].screenX;
+        const currentY = e.changedTouches[0].screenY;
+        const diffX = Math.abs(currentX - touchStartX);
+        const diffY = Math.abs(currentY - touchStartY);
+        
+        // 如果横向移动大于纵向移动，阻止默认行为（防止浏览器滑动返回）
+        if (diffX > diffY && diffX > 10) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, { passive: false });
+
+    fullscreenViewer.addEventListener('touchend', function(e) {
         touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
         handleSwipe();
-    });
+    }, { passive: false });
 
     function handleSwipe() {
         const swipeThreshold = 50;
-        const diff = touchStartX - touchEndX;
-
-        if (Math.abs(diff) > swipeThreshold) {
-            if (diff > 0) {
+        const diffX = touchStartX - touchEndX;
+        const diffY = Math.abs(touchStartY - touchEndY);
+        
+        // 只有在垂直滑动较小（小于100px）且横向滑动足够大时才切换图片
+        // 这样可以避免与浏览器的滑动返回手势冲突
+        if (Math.abs(diffX) > swipeThreshold && diffY < 100) {
+            if (diffX > 0) {
                 // 向左滑动，显示下一张
                 showNextImage();
             } else {

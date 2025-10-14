@@ -614,6 +614,8 @@ img, a, .user-photo {
     display: none;
     align-items: center;
     justify-content: center;
+    touch-action: pan-y pinch-zoom; /* 只允许垂直滚动和缩放，防止浏览器滑动返回 */
+    overscroll-behavior: contain; /* 防止滑动传播到父元素 */
 }
 
 .fullscreen-viewer.active {
@@ -634,6 +636,8 @@ img, a, .user-photo {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    touch-action: pan-y pinch-zoom; /* 只允许垂直滚动和缩放 */
+    overscroll-behavior: contain; /* 防止滑动传播 */
 }
 
 .viewer-content img {
