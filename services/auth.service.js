@@ -7,11 +7,9 @@ class AuthService {
    * 用户登录
    * @param {string} username - 用户名
    * @param {string} password - 密码
-   * @param {string} ipAddress - 客户端IP地址
-   * @param {string} userAgent - 用户代理字符串
    * @returns {Promise<Object>} 登录结果
    */
-  async login(username, password, ipAddress = null, userAgent = null) {
+  async login(username, password) {
     try {
       let user = null;
       let userType = null;
@@ -39,32 +37,12 @@ class AuthService {
       }
 
       if (!user) {
-        // 记录失败的登录尝试 - 用户名不存在
-        const logger = require('../utils/logger');
-        logger.security('登录失败 - 用户名不存在', null, {
-          username: username,
-          ipAddress: ipAddress,
-          userAgent: userAgent,
-          reason: '用户名不存在',
-          timestamp: new Date().toISOString()
-        });
         throw new Error('用户名或密码错误');
       }
 
       // 验证密码
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
-        // 记录失败的登录尝试 - 密码错误
-        const logger = require('../utils/logger');
-        logger.security('登录失败 - 密码错误', user.id, {
-          username: username,
-          userId: user.id,
-          userType: userType,
-          ipAddress: ipAddress,
-          userAgent: userAgent,
-          reason: '密码错误',
-          timestamp: new Date().toISOString()
-        });
         throw new Error('用户名或密码错误');
       }
 
