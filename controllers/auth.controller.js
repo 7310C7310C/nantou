@@ -13,28 +13,14 @@ class AuthController {
 
       // 验证输入
       if (!username || !password) {
-        // 记录无效的登录尝试
-        const ipAddress = req.ip || req.connection.remoteAddress;
-        const userAgent = req.get('user-agent') || 'Unknown';
-        logger.security('登录失败 - 缺少用户名或密码', null, {
-          ipAddress: ipAddress,
-          userAgent: userAgent,
-          reason: '缺少用户名或密码',
-          timestamp: new Date().toISOString()
-        });
-        
         return res.status(400).json({
           success: false,
           message: '用户名和密码不能为空'
         });
       }
 
-      // 获取客户端信息
-      const ipAddress = req.ip || req.connection.remoteAddress;
-      const userAgent = req.get('user-agent') || 'Unknown';
-
-      // 调用认证服务，传递IP和User-Agent
-      const result = await authService.login(username, password, ipAddress, userAgent);
+      // 调用认证服务
+      const result = await authService.login(username, password);
 
       // 记录登录成功日志
       if (result.success) {
@@ -44,8 +30,6 @@ class AuthController {
           username: user.username,
           userType: user.userType,
           role: user.role,
-          ipAddress: ipAddress,
-          userAgent: userAgent,
           loginTime: new Date().toISOString()
         });
       }
