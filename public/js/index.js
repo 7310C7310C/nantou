@@ -1811,9 +1811,9 @@ function openSelectionsModal(type = 'group') {
     const priorityNote = document.getElementById('selectionsPriorityNote');
     if (priorityNote) {
         if (type === 'chat') {
-            priorityNote.textContent = '按喜欢程度从 1~7 排序,越靠前越优先匹配聊天';
+            priorityNote.textContent = '按喜欢程度从 1~7 排序，越靠前越优先匹配聊天';
         } else {
-            priorityNote.textContent = '按喜欢程度从 1~7 排序,越靠前越优先分到一组';
+            priorityNote.textContent = '按喜欢程度从 1~7 排序，越靠前越优先分到一组';
         }
     }
     
