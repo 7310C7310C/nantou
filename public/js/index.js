@@ -3863,7 +3863,7 @@ function attachLongPressToCard(cardElement) {
     let hasMoved = false;
     let longPressTriggered = false; // 标记是否触发了长按
     const moveThreshold = 10; // 移动超过10px视为滑动
-    const longPressDelay = 300; // 300ms 长按阈值（更快响应）
+    const longPressDelay = 2000; // 2000ms 长按阈值（2秒）
     
     // 触摸事件处理
     const handleTouchStart = (e) => {
