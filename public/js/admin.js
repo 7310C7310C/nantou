@@ -1538,6 +1538,9 @@ async function handleEditParticipantSubmit(e) {
         if (result.success) {
             showToast('修改成功！', 'success');
             closeEditParticipantModal();
+            // 重置筛选器
+            genderFilter.value = '';
+            searchInput.value = '';
             // 刷新参与者列表
             await loadParticipants();
         } else {
@@ -1862,6 +1865,32 @@ function hideLoading() {
 
 // 一键复制账号密码
 function copyAccountInfo(username, password, showAlert = true) {
+    const accountInfo = `用户名：${username}\n密码：${password}`;
+    
+    return new Promise((resolve, reject) => {
+        navigator.clipboard.writeText(accountInfo).then(() => {
+            if (showAlert) {
+                alert('账号密码已复制到剪贴板');
+            }
+            resolve();
+        }).catch(() => {
+            // 降级方案
+            const textArea = document.createElement('textarea');
+            textArea.value = accountInfo;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            if (showAlert) {
+                alert('账号密码已复制到剪贴板');
+            }
+            resolve();
+        });
+    });
+}
+
+// 一键复制工作人员账号密码
+function copyStaffAccountInfo(username, password, showAlert = true) {
     const accountInfo = `用户名：${username}\n密码：${password}`;
     
     return new Promise((resolve, reject) => {
@@ -3313,9 +3342,26 @@ function showCreateStaffResult(staffData) {
         <p style="margin-top: 15px; color: #856404; font-size: 14px;">
             <strong>重要提醒：</strong>请务必记录上述信息，密码只显示一次！
         </p>
+        <div style="margin-top: 15px;">
+            <button class="copy-btn" onclick="copyStaffAccountInfo('${staffData.username}', '${staffData.password}')">复制账号密码</button>
+        </div>
     `;
     
     createStaffResultModal.style.display = 'block';
+    
+    // 自动复制账号密码
+    setTimeout(async () => {
+        try {
+            await copyStaffAccountInfo(staffData.username, staffData.password, false);
+            // 复制成功后显示绿色提示
+            const copyStatus = document.createElement('p');
+            copyStatus.style.cssText = 'color: #28a745; font-size: 14px; margin: 10px 0;';
+            copyStatus.textContent = '✅ 账号密码已自动复制到剪贴板';
+            staffAccountInfo.insertBefore(copyStatus, staffAccountInfo.querySelector('.copy-btn').parentNode);
+        } catch (error) {
+            console.error('自动复制失败:', error);
+        }
+    }, 500); // 延迟500毫秒，确保弹窗完全显示后再复制
 }
 
 // 关闭创建工作人员结果模态框
@@ -3395,9 +3441,26 @@ function showResetStaffPasswordResult(data) {
         <p style="margin-top: 15px; color: #856404; font-size: 14px;">
             <strong>重要提醒：</strong>请务必记录新密码，密码只显示一次！
         </p>
+        <div style="margin-top: 15px;">
+            <button class="copy-btn" onclick="copyStaffAccountInfo('${data.username}', '${data.new_password}')">复制账号密码</button>
+        </div>
     `;
     
     resetStaffPasswordResultModal.style.display = 'block';
+    
+    // 自动复制账号密码
+    setTimeout(async () => {
+        try {
+            await copyStaffAccountInfo(data.username, data.new_password, false);
+            // 复制成功后显示绿色提示
+            const copyStatus = document.createElement('p');
+            copyStatus.style.cssText = 'color: #28a745; font-size: 14px; margin: 10px 0;';
+            copyStatus.textContent = '✅ 账号密码已自动复制到剪贴板';
+            newStaffPasswordInfo.insertBefore(copyStatus, newStaffPasswordInfo.querySelector('.copy-btn').parentNode);
+        } catch (error) {
+            console.error('自动复制失败:', error);
+        }
+    }, 500); // 延迟500毫秒，确保弹窗完全显示后再复制
 }
 
 // 关闭重设工作人员密码结果模态框
