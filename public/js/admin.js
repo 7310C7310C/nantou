@@ -119,6 +119,15 @@ let selectionsData = {
     summary: {}
 };
 
+// 收藏互选情况相关全局变量
+let favoriteMutualData = {
+    participants: [],
+    favorites: [],
+    mutualFavorites: [],
+    filteredParticipants: [],
+    summary: {}
+};
+
 // 页面加载时检查登录状态
 document.addEventListener('DOMContentLoaded', function() {
     // 先隐藏所有界面，避免闪现
@@ -270,6 +279,16 @@ function setupEventListeners() {
     const closeSelectionsBtn = document.getElementById('closeSelectionsBtn');
     if (closeSelectionsBtn) {
         closeSelectionsBtn.addEventListener('click', closeSelectionsModal);
+    }
+
+    // 收藏互选情况功能
+    const openFavoriteMutualBtn = document.getElementById('openFavoriteMutualBtn');
+    if (openFavoriteMutualBtn) {
+        openFavoriteMutualBtn.addEventListener('click', openFavoriteMutualModal);
+    }
+    const closeFavoriteMutualBtn = document.getElementById('closeFavoriteMutualBtn');
+    if (closeFavoriteMutualBtn) {
+        closeFavoriteMutualBtn.addEventListener('click', closeFavoriteMutualModal);
     }
 
     // 匹配算法功能
@@ -5833,5 +5852,247 @@ function cancelEditing() {
     cell.classList.remove('editing');
     cell.textContent = originalValue;
     currentEditingCell = null;
+}
+
+// ==================== 收藏互选情况相关功能 ====================
+
+// 打开收藏互选情况模态框
+async function openFavoriteMutualModal() {
+    const favoriteMutualModal = document.getElementById('favoriteMutualModal');
+    favoriteMutualModal.style.display = 'block';
+    
+    // 设置收藏互选情况事件监听器
+    setupFavoriteMutualEventListeners();
+    
+    // 加载收藏互选情况数据
+    await loadFavoriteMutualData();
+}
+
+// 关闭收藏互选情况模态框
+function closeFavoriteMutualModal() {
+    const favoriteMutualModal = document.getElementById('favoriteMutualModal');
+    favoriteMutualModal.style.display = 'none';
+    
+    // 清除搜索框
+    clearFavoriteMutualSearch();
+}
+
+// 设置收藏互选情况相关事件监听器
+function setupFavoriteMutualEventListeners() {
+    const favoriteMutualSearchInput = document.getElementById('favoriteMutualSearchInput');
+    const clearFavoriteMutualSearchBtn = document.getElementById('clearFavoriteMutualSearchBtn');
+    const favoriteMutualGenderRadios = document.querySelectorAll('input[name="favoriteMutualGender"]');
+    const favoriteMutualFilterRadios = document.querySelectorAll('input[name="favoriteMutualFilter"]');
+
+    // 搜索输入
+    if (favoriteMutualSearchInput) {
+        favoriteMutualSearchInput.removeEventListener('input', handleFavoriteMutualSearch);
+        favoriteMutualSearchInput.addEventListener('input', handleFavoriteMutualSearch);
+    }
+
+    // 清除搜索按钮
+    if (clearFavoriteMutualSearchBtn) {
+        clearFavoriteMutualSearchBtn.removeEventListener('click', clearFavoriteMutualSearch);
+        clearFavoriteMutualSearchBtn.addEventListener('click', clearFavoriteMutualSearch);
+    }
+
+    // 性别过滤
+    favoriteMutualGenderRadios.forEach(radio => {
+        radio.removeEventListener('change', handleFavoriteMutualGenderFilter);
+        radio.addEventListener('change', handleFavoriteMutualGenderFilter);
+    });
+
+    // 过滤选项单选按钮
+    favoriteMutualFilterRadios.forEach(radio => {
+        radio.removeEventListener('change', handleFavoriteMutualFilterChange);
+        radio.addEventListener('change', handleFavoriteMutualFilterChange);
+    });
+}
+
+// 加载收藏互选情况数据
+async function loadFavoriteMutualData() {
+    try {
+        const token = getAuthToken();
+        
+        if (!token) {
+            throw new Error('认证令牌不存在');
+        }
+
+        const response = await fetch('/api/admin/favorite-mutual-data', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            favoriteMutualData = data.data;
+            
+            // 应用当前过滤器
+            applyFavoriteMutualFilters();
+            
+            // 更新统计数据
+            updateFavoriteMutualStats();
+            
+            // 渲染参与者列表
+            renderFavoriteMutualParticipants();
+        } else {
+            throw new Error('获取收藏互选情况数据失败');
+        }
+    } catch (error) {
+        console.error('加载收藏互选情况数据失败:', error);
+        showToast('加载收藏互选情况数据失败: ' + error.message, 'error');
+    }
+}
+
+// 更新收藏互选情况统计数据
+function updateFavoriteMutualStats() {
+    const favoriteMutualTotal = document.getElementById('favoriteMutualTotal');
+    const favoriteMutualMaleCount = document.getElementById('favoriteMutualMaleCount');
+    const favoriteMutualFemaleCount = document.getElementById('favoriteMutualFemaleCount');
+
+    if (favoriteMutualTotal) {
+        favoriteMutualTotal.textContent = favoriteMutualData.summary.totalParticipants || 0;
+    }
+    if (favoriteMutualMaleCount) {
+        favoriteMutualMaleCount.textContent = favoriteMutualData.summary.maleCount || 0;
+    }
+    if (favoriteMutualFemaleCount) {
+        favoriteMutualFemaleCount.textContent = favoriteMutualData.summary.femaleCount || 0;
+    }
+}
+
+// 应用收藏互选情况过滤器
+function applyFavoriteMutualFilters() {
+    let filtered = [...favoriteMutualData.participants];
+    
+    // 搜索过滤
+    const searchValue = document.getElementById('favoriteMutualSearchInput')?.value.trim().toLowerCase();
+    if (searchValue) {
+        filtered = filtered.filter(participant => 
+            participant.username.toLowerCase().includes(searchValue) ||
+            participant.name.toLowerCase().includes(searchValue) ||
+            participant.baptismal_name.toLowerCase().includes(searchValue)
+        );
+    }
+    
+    // 性别过滤
+    const selectedGender = document.querySelector('input[name="favoriteMutualGender"]:checked')?.value;
+    if (selectedGender) {
+        filtered = filtered.filter(participant => participant.gender === selectedGender);
+    }
+    
+    // 过滤选项处理
+    const selectedFilter = document.querySelector('input[name="favoriteMutualFilter"]:checked')?.id;
+    
+    if (selectedFilter === 'withFavoriteMutualOnlyCheckbox') {
+        // 只看有互收藏的过滤
+        const participantsWithFavorites = new Set(favoriteMutualData.favorites.map(f => f.user_id));
+        filtered = filtered.filter(participant => participantsWithFavorites.has(participant.id));
+    }
+    // allFavoriteMutualFilter 显示全部，不需要额外过滤
+    
+    favoriteMutualData.filteredParticipants = filtered;
+}
+
+// 渲染收藏互选情况参与者列表
+function renderFavoriteMutualParticipants() {
+    const favoriteMutualList = document.getElementById('favoriteMutualList');
+    if (!favoriteMutualList) return;
+
+    if (favoriteMutualData.filteredParticipants.length === 0) {
+        favoriteMutualList.innerHTML = `
+            <div class="no-selections">
+                <span class="emoji">😔</span>
+                <div>没有找到符合条件的参与者</div>
+            </div>
+        `;
+        return;
+    }
+
+    const html = favoriteMutualData.filteredParticipants.map(participant => {
+        const userFavorites = favoriteMutualData.favorites.filter(f => f.user_id === participant.id);
+        
+        return `
+            <div class="selections-item">
+                <div class="selections-item-header">
+                    <div class="selections-avatar">
+                        ${participant.photo_url ? 
+                            `<img src="${participant.photo_url}" alt="${participant.name}">` : 
+                            `<div style="display: flex; align-items: center; justify-content: center; height: 100%; background-color: #f0f0f0; color: #999; font-size: 12px;">无照片</div>`
+                        }
+                    </div>
+                    <div class="selections-user-info">
+                        <div class="selections-user-name">${participant.name} (${participant.username})</div>
+                    </div>
+                </div>
+                ${userFavorites.length > 0 ? `
+                    <div class="selections-targets">
+                        <div class="selections-targets-title">收藏的对象：</div>
+                        <div class="selections-target-list">
+                            ${userFavorites.map(favorite => {
+                                // 检查是否为互收藏关系
+                                const mutualKey1 = `${Math.min(participant.id, favorite.target_id)}-${Math.max(participant.id, favorite.target_id)}`;
+                                const isMutual = favoriteMutualData.mutualFavorites && favoriteMutualData.mutualFavorites.includes(mutualKey1);
+                                
+                                return `
+                                    <div class="selections-target-item ${isMutual ? 'mutual-selection' : ''}">
+                                        <span>${favorite.target_name} (${favorite.target_username})</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                ` : `
+                    <div class="selections-targets">
+                        <div class="selections-targets-title">收藏的对象：</div>
+                        <div class="selections-no-choice">无收藏</div>
+                    </div>
+                `}
+            </div>
+        `;
+    }).join('');
+
+    favoriteMutualList.innerHTML = html;
+}
+
+// 处理收藏互选情况搜索
+function handleFavoriteMutualSearch() {
+    const searchInput = document.getElementById('favoriteMutualSearchInput');
+    const clearBtn = document.getElementById('clearFavoriteMutualSearchBtn');
+    
+    if (searchInput.value.trim()) {
+        clearBtn.style.display = 'flex';
+    } else {
+        clearBtn.style.display = 'none';
+    }
+    
+    applyFavoriteMutualFilters();
+    renderFavoriteMutualParticipants();
+}
+
+// 清除收藏互选情况搜索
+function clearFavoriteMutualSearch() {
+    const searchInput = document.getElementById('favoriteMutualSearchInput');
+    const clearBtn = document.getElementById('clearFavoriteMutualSearchBtn');
+    
+    searchInput.value = '';
+    clearBtn.style.display = 'none';
+    
+    applyFavoriteMutualFilters();
+    renderFavoriteMutualParticipants();
+}
+
+// 处理收藏互选情况性别过滤
+function handleFavoriteMutualGenderFilter() {
+    applyFavoriteMutualFilters();
+    renderFavoriteMutualParticipants();
+}
+
+// 处理过滤选项变化
+function handleFavoriteMutualFilterChange() {
+    applyFavoriteMutualFilters();
+    renderFavoriteMutualParticipants();
 }
 
