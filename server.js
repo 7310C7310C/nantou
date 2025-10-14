@@ -1,5 +1,7 @@
 const express = require('express');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 // 设置时区为北京时间
@@ -22,9 +24,61 @@ const { protect, restrictTo, optionalAuth } = require('./middleware/auth.middlew
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// 安全中间件 - Helmet（设置安全HTTP头）
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // 允许加载外部资源
+}));
+
+// 登录速率限制 - 防止暴力破解
+const loginLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5分钟
+  max: 5, // 最多5次尝试
+  message: {
+    success: false,
+    message: '登录尝试次数过多，请5分钟后再试'
+  },
+  standardHeaders: true, // 返回速率限制信息在 `RateLimit-*` 头中
+  legacyHeaders: false, // 禁用 `X-RateLimit-*` 头
+  // 根据IP地址限制
+  keyGenerator: (req) => {
+    return req.ip || req.connection.remoteAddress;
+  },
+  // 只在达到限制时触发
+  skipSuccessfulRequests: false, // 成功的请求也计数
+  skipFailedRequests: false, // 失败的请求也计数
+});
+
+// 通用API速率限制 - 防止滥用
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15分钟
+  max: 100, // 最多100次请求
+  message: {
+    success: false,
+    message: '请求过于频繁，请稍后再试'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // 中间件
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// 应用通用API速率限制到所有/api路由
+app.use('/api', apiLimiter);
 
 // CORS 中间件
 app.use((req, res, next) => {
@@ -108,8 +162,8 @@ app.get('/api/test-auth', protect, (req, res) => {
   });
 });
 
-// 认证路由
-app.post('/api/auth/login', authController.login);
+// 认证路由 - 登录接口应用速率限制
+app.post('/api/auth/login', loginLimiter, authController.login);
 app.get('/api/auth/me', protect, authController.getCurrentUser);
 app.post('/api/auth/logout', protect, authController.logout);
 
