@@ -1297,7 +1297,7 @@ async function getFavoriteStats(req, res) {
     const connection = await pool.getConnection();
     
     try {
-      // 获取所有已签到的参与者及其被收藏次数
+      // 获取所有参与者及其被收藏次数
       const query = `
         SELECT 
           p.id,
@@ -1307,7 +1307,6 @@ async function getFavoriteStats(req, res) {
           COUNT(DISTINCT f.user_id) as favorite_count
         FROM participants p
         LEFT JOIN favorites f ON f.favorited_participant_id = p.id
-        WHERE p.is_checked_in = 1
         GROUP BY p.id, p.username, p.name, p.gender
         ORDER BY favorite_count DESC, p.id ASC
       `;
