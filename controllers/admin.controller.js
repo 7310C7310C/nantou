@@ -869,7 +869,7 @@ async function getFeatureFlags(req, res) {
       };
     }
 
-    logger.info('获取功能开关状态成功', { featureFlags });
+    // logger.info('获取功能开关状态成功', { featureFlags });
     
     res.json({
       success: true,

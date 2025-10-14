@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>管理后台</title>
-    <link rel="stylesheet" href="css/style.css?v=20251014">
-    <link rel="stylesheet" href="css/admin.css?v=20251014">
+    <link rel="stylesheet" href="css/style.css?v=20251014a">
+    <link rel="stylesheet" href="css/admin.css?v=20251014a">
 </head>
 <body>
     <div class="admin-container">
@@ -1075,10 +1075,22 @@
             return false;
         }, false);
 
-        // 禁用图片的长按菜单（移动端）
+        // 禁用图片的长按菜单（移动端），但允许点击查看大图
+        let touchTimer;
         document.addEventListener('touchstart', function(e) {
             if (e.target.tagName === 'IMG') {
-                e.preventDefault();
+                // 设置长按计时器
+                touchTimer = setTimeout(function() {
+                    e.preventDefault(); // 只在长按时阻止
+                }, 500); // 500ms后认为是长按
+            }
+        }, { passive: false });
+        
+        document.addEventListener('touchend', function(e) {
+            // 清除长按计时器，允许正常点击
+            if (touchTimer) {
+                clearTimeout(touchTimer);
+                touchTimer = null;
             }
         }, { passive: false });
 
@@ -1099,7 +1111,7 @@
         }, false);
     </script>
 
-    <script src="js/Sortable.min.js?v=20251014"></script>
-    <script src="js/admin.js?v=20251014"></script>
+    <script src="js/Sortable.min.js?v=20251014a"></script>
+    <script src="js/admin.js?v=20251014a"></script>
 </body>
 </html>
