@@ -1797,11 +1797,26 @@ function setupFavoritesModal() {
 }
 
 // ============ 选择最喜欢的七人（分组匹配 / 聊天匹配） ============
-function openSelectionsModal() {
+// 用于记录当前是哪个按钮触发的模态框
+let currentMatchingType = 'group'; // 'group' 或 'chat'
+
+function openSelectionsModal(type = 'group') {
+    currentMatchingType = type;
     const modal = document.getElementById('selectionsModal');
     if (!modal) return;
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
+    
+    // 根据类型更新提示文案
+    const priorityNote = document.getElementById('selectionsPriorityNote');
+    if (priorityNote) {
+        if (type === 'chat') {
+            priorityNote.textContent = '按喜欢程度从 1~7 排序，越靠前越优先匹配聊天';
+        } else {
+            priorityNote.textContent = '按喜欢程度从 1~7 排序，越靠前越优先分到一组';
+        }
+    }
+    
     loadSelectionsModal();
 }
 
@@ -1813,8 +1828,10 @@ function closeSelectionsModal() {
 }
 
 function setupSelectionsModal() {
-    const openBtns = [document.getElementById('groupMatchingBtn'), document.getElementById('chatMatchingBtn')];
-    openBtns.forEach(b => { if (b) b.addEventListener('click', openSelectionsModal); });
+    const groupBtn = document.getElementById('groupMatchingBtn');
+    const chatBtn = document.getElementById('chatMatchingBtn');
+    if (groupBtn) groupBtn.addEventListener('click', () => openSelectionsModal('group'));
+    if (chatBtn) chatBtn.addEventListener('click', () => openSelectionsModal('chat'));
     const closeBtn = document.getElementById('closeSelectionsModal');
     if (closeBtn) closeBtn.addEventListener('click', closeSelectionsModal);
     const modal = document.getElementById('selectionsModal');
@@ -3178,7 +3195,7 @@ async function checkFeatureFlags() {
  */
 function handleGroupMatching() {
     // 打开选择最喜欢的人模态（功能已实现）
-    openSelectionsModal();
+    openSelectionsModal('group');
 }
 
 /**
@@ -3186,7 +3203,7 @@ function handleGroupMatching() {
  */
 function handleChatMatching() {
     // 打开选择最喜欢的人模态（功能已实现）
-    openSelectionsModal();
+    openSelectionsModal('chat');
 }
 
 // 为功能匹配按钮添加事件监听器

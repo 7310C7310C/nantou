@@ -242,6 +242,26 @@ body {
     background: rgba(255, 107, 107, 0.08);
     box-shadow: 0 6px 24px rgba(255, 107, 107, 0.18);
 }
+.selections-priority-note {
+    text-align: center;
+    color: #fff;
+    margin: 0 auto 12px;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: .3px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.45);
+    display: block;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: rgba(255, 107, 107, 0.25);
+    border: 1px solid rgba(255, 107, 107, 0.7);
+    width: max-content;
+    max-width: 98vw;
+    box-sizing: border-box;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .selections-note {
     text-align: center;
     color: #fff;
@@ -276,6 +296,7 @@ body {
 /* Responsive: on narrow screens show two per row */
 @media (max-width: 768px) {
     .selections-top { gap:10px; padding: 10px; border-radius: 14px; }
+    .selections-priority-note { font-size: 13px; padding: 6px 12px; }
     .selections-note { font-size: 14px; padding: 6px 10px; }
     /* make two columns by setting card width */
     .selection-top-card.user-card { width: calc(50% - 10px); min-width: 140px; }
