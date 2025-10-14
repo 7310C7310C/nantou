@@ -4022,12 +4022,32 @@ function clearSelectionsSearch() {
 
 // 处理互选情况性别过滤
 function handleSelectionsGenderFilter() {
+    // 清空搜索框
+    const searchInput = document.getElementById('selectionsSearchInput');
+    const clearBtn = document.getElementById('clearSelectionsSearchBtn');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    if (clearBtn) {
+        clearBtn.style.display = 'none';
+    }
+    
     applySelectionsFilters();
     renderSelectionsParticipants();
 }
 
 // 处理过滤选项变化
 function handleSelectionsFilterChange() {
+    // 清空搜索框
+    const searchInput = document.getElementById('selectionsSearchInput');
+    const clearBtn = document.getElementById('clearSelectionsSearchBtn');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    if (clearBtn) {
+        clearBtn.style.display = 'none';
+    }
+    
     applySelectionsFilters();
     renderSelectionsParticipants();
 }
@@ -6100,12 +6120,32 @@ function clearFavoriteMutualSearch() {
 
 // 处理收藏互选情况性别过滤
 function handleFavoriteMutualGenderFilter() {
+    // 清空搜索框
+    const searchInput = document.getElementById('favoriteMutualSearchInput');
+    const clearBtn = document.getElementById('clearFavoriteMutualSearchBtn');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    if (clearBtn) {
+        clearBtn.style.display = 'none';
+    }
+    
     applyFavoriteMutualFilters();
     renderFavoriteMutualParticipants();
 }
 
 // 处理过滤选项变化
 function handleFavoriteMutualFilterChange() {
+    // 清空搜索框
+    const searchInput = document.getElementById('favoriteMutualSearchInput');
+    const clearBtn = document.getElementById('clearFavoriteMutualSearchBtn');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    if (clearBtn) {
+        clearBtn.style.display = 'none';
+    }
+    
     applyFavoriteMutualFilters();
     renderFavoriteMutualParticipants();
 }
