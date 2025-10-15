@@ -1905,6 +1905,24 @@ function renderSelectionsTop(selections) {
             top.insertAdjacentHTML('beforeend', item);
         }
     }
+    
+    // 更新状态提示标签
+    updateSelectionsStatusAlert(selections);
+}
+
+function updateSelectionsStatusAlert(selections) {
+    const statusAlert = document.getElementById('selectionsStatusAlert');
+    if (!statusAlert) return;
+    
+    const filledCount = selections.length;
+    
+    if (filledCount >= 7) {
+        statusAlert.textContent = '已选满 7 人，请拖动排序';
+        statusAlert.className = 'selections-status-alert complete';
+    } else {
+        statusAlert.textContent = '未选满 7 人，将无法参与算法匹配';
+        statusAlert.className = 'selections-status-alert incomplete';
+    }
 }
 
 function createSelectionTopCard(id, name, idx, filled, photoUrl = '', baptismal = '') {
