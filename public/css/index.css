@@ -284,6 +284,25 @@ body {
     margin-left: auto;
     margin-right: auto;
 }
+
+/* 聊天结果提示样式 - 在网格内显示 */
+.chat-results-note-inline {
+    text-align: center;
+    color: #fff;
+    margin: 0 0 15px 0;
+    font-weight: 700;
+    letter-spacing: .3px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.45);
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: rgba(255, 107, 107, 0.2);
+    border: 1px solid rgba(255, 107, 107, 0.6);
+    box-sizing: border-box;
+    word-wrap: break-word;
+    white-space: normal;
+    line-height: 1.5;
+    grid-column: 1 / -1; /* 占据整行 */
+}
 /* 下方“我的喜欢”网格与上方卡片之间的明显分界线，仅限选择模态 */
 #selectionsModal .favorites-grid {
     border-top: 2px dashed rgba(255, 107, 107, 0.6);
@@ -302,6 +321,11 @@ body {
     .selections-top { gap:10px; padding: 10px; border-radius: 14px; }
     .selections-priority-note { font-size: 13px; padding: 6px 12px; }
     .selections-note { font-size: 14px; padding: 6px 10px; }
+    .chat-results-note-inline { 
+        font-size: 13px; 
+        padding: 8px 12px; 
+        margin-bottom: 10px;
+    }
     /* make two columns by setting card width */
     .selection-top-card.user-card { width: calc(50% - 10px); min-width: 140px; }
 }

@@ -3524,6 +3524,11 @@ function renderUserChatResult(resultData) {
         </div>
     `;
     
+    // 创建提示信息
+    const chatResultsNote = `
+        <div class="chat-results-note-inline">请将已聊完的异性标记为"已聊"，后续轮次匹配才会为您推荐不重复的异性</div>
+    `;
+    
     const targetCards = targets.map((target, index) => {
         const photoUrl = target.photo_url || '/images/default-avatar.png';
         const statusText = target.is_completed ? '已聊' : '未聊';
@@ -3554,9 +3559,9 @@ function renderUserChatResult(resultData) {
         `;
     }).join('');
     
-    // 清空内容区域，将标题放在grid中的第一个位置
+    // 清空内容区域，将标题、提示和卡片放在grid中
     contentEl.innerHTML = '';
-    gridEl.innerHTML = chatInfoTitle + targetCards;
+    gridEl.innerHTML = chatInfoTitle + chatResultsNote + targetCards;
     
     gridEl.style.display = 'grid';
 }
