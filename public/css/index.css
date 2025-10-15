@@ -266,6 +266,37 @@ body {
     margin-right: auto;
 }
 
+.selections-status-alert {
+    text-align: center;
+    color: #fff;
+    margin: 0 auto 16px;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: .3px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.45);
+    display: block;
+    padding: 10px 20px;
+    border-radius: 8px;
+    width: max-content;
+    max-width: 98vw;
+    box-sizing: border-box;
+    margin-left: auto;
+    margin-right: auto;
+    transition: all 0.3s ease;
+}
+
+.selections-status-alert.incomplete {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+    border: 2px solid #ff4757;
+    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+}
+
+.selections-status-alert.complete {
+    background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+    border: 2px solid #2f9e44;
+    box-shadow: 0 2px 8px rgba(47, 158, 68, 0.3);
+}
+
 .selections-note {
     text-align: center;
     color: #fff;
@@ -320,6 +351,7 @@ body {
 @media (max-width: 768px) {
     .selections-top { gap:10px; padding: 10px; border-radius: 14px; }
     .selections-priority-note { font-size: 13px; padding: 6px 12px; }
+    .selections-status-alert { font-size: 13px; padding: 8px 14px; margin-bottom: 12px; }
     .selections-note { font-size: 14px; padding: 6px 10px; }
     .chat-results-note-inline { 
         font-size: 13px; 
