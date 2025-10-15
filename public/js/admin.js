@@ -586,10 +586,10 @@ function controlUIByRole(role) {
         profileEditBtn.style.display = (role === 'admin') ? 'block' : 'none';
     }
     
-    // 控制"配对统计"按钮的显示（数据统计卡片中，只有admin和staff可见）
-    const viewMatchmakingStatsBtn2 = document.getElementById('viewMatchmakingStatsBtn2');
-    if (viewMatchmakingStatsBtn2) {
-        viewMatchmakingStatsBtn2.style.display = (role === 'admin' || role === 'staff') ? 'block' : 'none';
+    // 控制"配对统计"行的显示（数据统计卡片中，只有admin和staff可见）
+    const matchmakingStatsRow = document.getElementById('matchmakingStatsRow');
+    if (matchmakingStatsRow) {
+        matchmakingStatsRow.style.display = (role === 'admin' || role === 'staff') ? 'flex' : 'none';
     }
 }
 
