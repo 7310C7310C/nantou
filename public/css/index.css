@@ -573,10 +573,12 @@ img, a, .user-photo {
 }
 
 .no-results {
+    grid-column: 1 / -1;
     text-align: center;
     padding: 40px;
     color: #fff;
     font-size: 18px;
+    white-space: nowrap;
 }
 
 .loading-spinner {
