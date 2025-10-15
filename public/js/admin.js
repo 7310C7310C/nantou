@@ -5067,11 +5067,19 @@ function renderFavoriteStats() {
         const hasData = item.favorite_count > 0;
         const rowId = `favorite-row-${item.id}`;
         const detailId = `favorite-detail-${item.id}`;
+        const photoUrl = item.main_photo || '/images/default-avatar.png';
         
         html += `
             <tr id="${rowId}">
-                <td>${item.username}</td>
-                <td>${item.name || '未知'}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${photoUrl}" alt="${item.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${item.name || '未知'}</span>
+                            <span style="font-size: 12px; color: #666;">${item.username}</span>
+                        </div>
+                    </div>
+                </td>
                 <td>
                     <div class="like-count ${favoriteClass}" style="display: flex; align-items: center; justify-content: space-between;">
                         <span>${item.favorite_count} 💗</span>
@@ -5081,7 +5089,7 @@ function renderFavoriteStats() {
             </tr>
             ${hasData ? `
             <tr id="${detailId}" class="detail-row" style="display: none;">
-                <td colspan="3" style="padding: 0;">
+                <td colspan="2" style="padding: 0;">
                     <div class="detail-content" style="padding: 12px; background: #f8f9fa; border-top: 1px solid #dee2e6;">
                         <div class="detail-loading" style="text-align: center; color: #666;">加载中...</div>
                     </div>
@@ -5184,11 +5192,19 @@ function renderParticipantStats() {
         const hasData = item.liked_count > 0;
         const rowId = `selection-row-${item.id}`;
         const detailId = `selection-detail-${item.id}`;
+        const photoUrl = item.main_photo || '/images/default-avatar.png';
         
         html += `
             <tr id="${rowId}">
-                <td>${item.username}</td>
-                <td>${item.name || '未知'}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${photoUrl}" alt="${item.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${item.name || '未知'}</span>
+                            <span style="font-size: 12px; color: #666;">${item.username}</span>
+                        </div>
+                    </div>
+                </td>
                 <td>
                     <div class="like-count ${likeClass}" style="display: flex; align-items: center; justify-content: space-between;">
                         <span>${item.liked_count} ☑️</span>
@@ -5198,7 +5214,7 @@ function renderParticipantStats() {
             </tr>
             ${hasData ? `
             <tr id="${detailId}" class="detail-row" style="display: none;">
-                <td colspan="3" style="padding: 0;">
+                <td colspan="2" style="padding: 0;">
                     <div class="detail-content" style="padding: 12px; background: #f8f9fa; border-top: 1px solid #dee2e6;">
                         <div class="detail-loading" style="text-align: center; color: #666;">加载中...</div>
                     </div>
@@ -5241,10 +5257,17 @@ async function toggleFavoriteDetail(targetId, targetName, targetUsername) {
                 if (users.length === 0) {
                     detailContent.innerHTML = '<div style="color: #999; text-align: center;">暂无数据</div>';
                 } else {
-                    const userListHtml = users.map(u => 
-                        `<span style="display: inline-block; margin: 4px 8px; padding: 4px 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">${u.name || '未知'}（${u.username}）</span>`
-                    ).join('');
-                    detailContent.innerHTML = `<div style="line-height: 1.8;">${userListHtml}</div>`;
+                    const userListHtml = users.map(u => {
+                        const photoUrl = u.main_photo || '/images/default-avatar.png';
+                        return `<div class="detail-user-item">
+                            <img src="${photoUrl}" alt="${u.name}" onerror="this.src='/images/default-avatar.png'">
+                            <div class="detail-user-info">
+                                <span class="detail-user-name">${u.name || '未知'}</span>
+                                <span class="detail-user-id">${u.username}</span>
+                            </div>
+                        </div>`;
+                    }).join('');
+                    detailContent.innerHTML = `<div class="detail-user-list">${userListHtml}</div>`;
                 }
             } else {
                 const error = await response.json();
@@ -5289,10 +5312,17 @@ async function toggleSelectionDetail(targetId, targetName, targetUsername) {
                 if (users.length === 0) {
                     detailContent.innerHTML = '<div style="color: #999; text-align: center;">暂无数据</div>';
                 } else {
-                    const userListHtml = users.map(u => 
-                        `<span style="display: inline-block; margin: 4px 8px; padding: 4px 10px; background: #fff; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">${u.name || '未知'}（${u.username}）</span>`
-                    ).join('');
-                    detailContent.innerHTML = `<div style="line-height: 1.8;">${userListHtml}</div>`;
+                    const userListHtml = users.map(u => {
+                        const photoUrl = u.main_photo || '/images/default-avatar.png';
+                        return `<div class="detail-user-item">
+                            <img src="${photoUrl}" alt="${u.name}" onerror="this.src='/images/default-avatar.png'">
+                            <div class="detail-user-info">
+                                <span class="detail-user-name">${u.name || '未知'}</span>
+                                <span class="detail-user-id">${u.username}</span>
+                            </div>
+                        </div>`;
+                    }).join('');
+                    detailContent.innerHTML = `<div class="detail-user-list">${userListHtml}</div>`;
                 }
             } else {
                 const error = await response.json();
@@ -6209,41 +6239,4 @@ function handleFavoriteMutualFilterChange() {
             return false;
         }
     }, false);
-})();
-
-// ==================== Eruda 调试工具初始化 ====================
-(function() {
-    let clickCount = 0;
-    let clickTimer = null;
-    let erudaLoaded = false;
-    
-    document.addEventListener('click', function(e) {
-        // 只在点击空白区域时计数（body 或 html）
-        if (e.target === document.body || e.target === document.documentElement) {
-            clickCount++;
-            
-            // 清除之前的定时器
-            if (clickTimer) {
-                clearTimeout(clickTimer);
-            }
-            
-            // 如果达到10次，加载 Eruda
-            if (clickCount >= 10 && !erudaLoaded) {
-                erudaLoaded = true;
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/eruda';
-                script.onload = function() {
-                    eruda.init();
-                    console.log('🎉 Eruda 调试工具已激活！');
-                };
-                document.body.appendChild(script);
-                clickCount = 0;
-            }
-            
-            // 2秒后重置计数
-            clickTimer = setTimeout(function() {
-                clickCount = 0;
-            }, 2000);
-        }
-    });
 })();
