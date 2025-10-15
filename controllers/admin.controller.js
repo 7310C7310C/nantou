@@ -1304,10 +1304,12 @@ async function getFavoriteStats(req, res) {
           p.username,
           p.name,
           p.gender,
+          pp.photo_url as main_photo,
           COUNT(DISTINCT f.user_id) as favorite_count
         FROM participants p
         LEFT JOIN favorites f ON f.favorited_participant_id = p.id
-        GROUP BY p.id, p.username, p.name, p.gender
+        LEFT JOIN participant_photos pp ON pp.participant_id = p.id AND pp.is_primary = 1
+        GROUP BY p.id, p.username, p.name, p.gender, pp.photo_url
         ORDER BY favorite_count DESC, p.id ASC
       `;
       
@@ -1354,11 +1356,13 @@ async function getParticipantStats(req, res) {
           p.username,
           p.name,
           p.gender,
+          pp.photo_url as main_photo,
           COUNT(DISTINCT s.user_id) as liked_count
         FROM participants p
         LEFT JOIN selections s ON s.target_id = p.id
+        LEFT JOIN participant_photos pp ON pp.participant_id = p.id AND pp.is_primary = 1
         WHERE p.is_checked_in = 1
-        GROUP BY p.id, p.username, p.name, p.gender
+        GROUP BY p.id, p.username, p.name, p.gender, pp.photo_url
         ORDER BY liked_count DESC, p.id ASC
       `;
       
@@ -1405,9 +1409,11 @@ async function getFavoriteDetail(req, res) {
         SELECT 
           p.id,
           p.username,
-          p.name
+          p.name,
+          pp.photo_url as main_photo
         FROM favorites f
         INNER JOIN participants p ON f.user_id = p.id
+        LEFT JOIN participant_photos pp ON pp.participant_id = p.id AND pp.is_primary = 1
         WHERE f.favorited_participant_id = ?
         ORDER BY f.created_at DESC
       `;
@@ -1448,9 +1454,11 @@ async function getSelectionDetail(req, res) {
         SELECT 
           p.id,
           p.username,
-          p.name
+          p.name,
+          pp.photo_url as main_photo
         FROM selections s
         INNER JOIN participants p ON s.user_id = p.id
+        LEFT JOIN participant_photos pp ON pp.participant_id = p.id AND pp.is_primary = 1
         WHERE s.target_id = ?
         ORDER BY s.created_at DESC
       `;

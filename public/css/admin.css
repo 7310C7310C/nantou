@@ -4453,3 +4453,79 @@ input[type="checkbox"]:checked + .toggle-slider:before {
     }
 }
 
+/* 详情用户列表样式 */
+.detail-user-list {
+    line-height: 1.8;
+    padding: 4px;
+}
+
+.detail-user-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 8px;
+    padding: 8px 12px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+.detail-user-item img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.detail-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.detail-user-name {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.detail-user-id {
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
+}
+
+/* 手机端：一行两个，平分空间 */
+@media (max-width: 768px) {
+    .detail-user-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    
+    .detail-user-item {
+        display: flex;
+        flex: 0 0 calc(50% - 6px);
+        margin: 0;
+        box-sizing: border-box;
+        min-width: 0;
+    }
+    
+    .detail-user-info {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .detail-user-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .detail-user-id {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
