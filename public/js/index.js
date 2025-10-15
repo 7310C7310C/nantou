@@ -1993,7 +1993,7 @@ async function onSelectAdd(e) {
     const isCheckedIn = bottomCard && bottomCard.dataset.isCheckedIn === '1';
     
     if (!isCheckedIn) {
-        showToast('此用户未签到', 'error');
+        showToast('此用户未找工作人员签到', 'error');
         return;
     }
 
