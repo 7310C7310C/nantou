@@ -1,5 +1,6 @@
 const authService = require('../services/auth.service');
 const logger = require('../utils/logger');
+const { ipRateLimiter, usernameRateLimiter, getClientIp } = require('../middleware/rate-limit.middleware');
 
 class AuthController {
   /**
@@ -19,19 +20,55 @@ class AuthController {
         });
       }
 
+      // 获取客户端IP地址
+      const clientIp = getClientIp(req);
+
+      // 检查IP级别的速率限制
+      const ipLimitResult = ipRateLimiter.isRateLimited('ip', clientIp);
+      if (ipLimitResult) {
+        return res.status(429).json({
+          success: false,
+          message: `登录尝试次数过多，请 ${ipLimitResult.remainingTime} 分钟后再试`,
+          remainingTime: ipLimitResult.remainingTime,
+          retryAfter: ipLimitResult.retryAfter
+        });
+      }
+
+      // 检查用户名级别的速率限制
+      const usernameLimitResult = usernameRateLimiter.isRateLimited('username', username);
+      if (usernameLimitResult) {
+        return res.status(429).json({
+          success: false,
+          message: `该账户登录尝试次数过多，已被临时锁定，请 ${usernameLimitResult.remainingTime} 分钟后再试`,
+          remainingTime: usernameLimitResult.remainingTime,
+          retryAfter: usernameLimitResult.retryAfter
+        });
+      }
+
       // 调用认证服务
       const result = await authService.login(username, password);
 
-      // 记录登录成功日志
+      // 登录成功处理
       if (result.success) {
         const user = result.data.user;
+        
+        // 重置速率限制记录
+        ipRateLimiter.resetAttempts('ip', clientIp);
+        usernameRateLimiter.resetAttempts('username', username);
+        
+        // 记录登录成功日志
         logger.success(`用户登录成功: ${user.username} (${user.userType})`, {
           userId: user.id,
           username: user.username,
           userType: user.userType,
           role: user.role,
+          clientIp: clientIp,
           loginTime: new Date().toISOString()
         });
+      } else {
+        // 登录失败，记录失败尝试
+        ipRateLimiter.recordFailure('ip', clientIp);
+        usernameRateLimiter.recordFailure('username', username);
       }
 
       // 返回成功响应
@@ -39,6 +76,15 @@ class AuthController {
 
     } catch (error) {
       console.error('登录错误:', error.message);
+      
+      // 登录失败，记录失败尝试
+      const { username } = req.body;
+      const clientIp = getClientIp(req);
+      
+      if (username) {
+        ipRateLimiter.recordFailure('ip', clientIp);
+        usernameRateLimiter.recordFailure('username', username);
+      }
       
       res.status(401).json({
         success: false,
