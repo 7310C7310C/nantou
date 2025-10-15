@@ -1157,50 +1157,6 @@
     <!-- Toast 提示容器 -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- 禁用右键菜单和长按菜单 -->
-    <script>
-        // 禁用整个页面的右键菜单
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-            return false;
-        }, false);
-
-        // 禁用图片的长按菜单（移动端），但允许点击查看大图
-        let touchTimer;
-        document.addEventListener('touchstart', function(e) {
-            if (e.target.tagName === 'IMG') {
-                // 设置长按计时器
-                touchTimer = setTimeout(function() {
-                    e.preventDefault(); // 只在长按时阻止
-                }, 500); // 500ms后认为是长按
-            }
-        }, { passive: false });
-        
-        document.addEventListener('touchend', function(e) {
-            // 清除长按计时器，允许正常点击
-            if (touchTimer) {
-                clearTimeout(touchTimer);
-                touchTimer = null;
-            }
-        }, { passive: false });
-
-        // 禁用图片拖动
-        document.addEventListener('dragstart', function(e) {
-            if (e.target.tagName === 'IMG') {
-                e.preventDefault();
-                return false;
-            }
-        }, false);
-
-        // 禁用图片选择
-        document.addEventListener('selectstart', function(e) {
-            if (e.target.tagName === 'IMG') {
-                e.preventDefault();
-                return false;
-            }
-        }, false);
-    </script>
-
     <script src="js/Sortable.min.js?v=20251015d"></script>
     <script src="js/admin.js?v=20251015d"></script>
 </body>
