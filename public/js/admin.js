@@ -5325,6 +5325,7 @@ const closeImportResultBtn = document.getElementById('closeImportResultBtn');
 const incompleteProfilesList = document.getElementById('incompleteProfilesList');
 const profilesLoading = document.getElementById('profilesLoading');
 const profilesEmpty = document.getElementById('profilesEmpty');
+const incompleteProfilesCount = document.getElementById('incompleteProfilesCount');
 
 // 存储选择的文件
 let selectedFile = null;
@@ -5347,7 +5348,8 @@ async function loadIncompleteProfiles() {
         profilesLoading.style.display = 'none';
         
         if (result.success && result.data && result.data.length > 0) {
-            // 显示人员列表
+            // 显示人员列表和人数
+            incompleteProfilesCount.textContent = `（${result.data.length} 人）`;
             incompleteProfilesList.style.display = 'block';
             incompleteProfilesList.innerHTML = result.data.map(person => {
                 const genderClass = person.gender === 'male' ? 'male' : 'female';
@@ -5366,12 +5368,14 @@ async function loadIncompleteProfiles() {
             }).join('');
         } else {
             // 显示空状态
+            incompleteProfilesCount.textContent = '（0 人）';
             profilesEmpty.style.display = 'block';
         }
         
     } catch (error) {
         console.error('加载未完善资料人员失败:', error);
         profilesLoading.style.display = 'none';
+        incompleteProfilesCount.textContent = '';
         incompleteProfilesList.innerHTML = '<div style="color: #f44336; text-align: center;">加载失败，请重试</div>';
         incompleteProfilesList.style.display = 'block';
     }
