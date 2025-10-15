@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>管理后台</title>
-    <link rel="stylesheet" href="css/style.css?v=20251015">
-    <link rel="stylesheet" href="css/admin.css?v=20251015">
+    <link rel="stylesheet" href="css/style.css?v=20251015a">
+    <link rel="stylesheet" href="css/admin.css?v=20251015a">
 </head>
 <body>
     <div class="admin-container">
@@ -76,9 +76,13 @@
                         <button class="btn btn-primary" id="viewParticipantStatsBtn" style="flex: 1; margin: 0;">被终选情况</button>
                         <button class="btn btn-primary" id="openSelectionsBtn" style="flex: 1; margin: 0;">终选互选情况</button>
                     </div>
-                    <div style="display: flex; gap: 8px;">
+                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                         <button class="btn btn-secondary" id="viewGroupingResultsBtn" style="flex: 1; margin: 0;">分组匹配结果</button>
                         <button class="btn btn-secondary" id="viewChatResultsBtn" style="flex: 1; margin: 0;">聊天匹配结果</button>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" id="viewMatchmakingStatsBtn2" style="flex: 1; margin: 0;">配对统计</button>
+                        <button class="btn btn-secondary" style="flex: 1; margin: 0; visibility: hidden; pointer-events: none;">占位</button>
                     </div>
                 </div>
 
@@ -916,7 +920,7 @@
                                 <th>男</th>
                                 <th>女</th>
                                 <th>总星数</th>
-                                <th>红娘人数</th>
+                                <th>作此配对的红娘人数</th>
                             </tr>
                         </thead>
                         <tbody id="matchmakingStatsTableBody">
@@ -1197,7 +1201,7 @@
         }, false);
     </script>
 
-    <script src="js/Sortable.min.js?v=20251015"></script>
-    <script src="js/admin.js?v=20251015"></script>
+    <script src="js/Sortable.min.js?v=20251015a"></script>
+    <script src="js/admin.js?v=20251015a"></script>
 </body>
 </html>

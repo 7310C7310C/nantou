@@ -205,6 +205,12 @@ function setupEventListeners() {
         closeMatchmakingStatsBtn.addEventListener('click', closeMatchmakingStatsModal);
     }
     
+    // 配对统计（数据统计卡片中的副本）
+    const viewMatchmakingStatsBtn2 = document.getElementById('viewMatchmakingStatsBtn2');
+    if (viewMatchmakingStatsBtn2) {
+        viewMatchmakingStatsBtn2.addEventListener('click', openMatchmakingStatsModal);
+    }
+    
     // 收藏情况
     const viewFavoriteStatsBtn = document.getElementById('viewFavoriteStatsBtn');
     const closeFavoriteStatsBtn = document.getElementById('closeFavoriteStatsBtn');
@@ -578,6 +584,12 @@ function controlUIByRole(role) {
     const profileEditBtn = document.getElementById('openProfileEditBtn');
     if (profileEditBtn) {
         profileEditBtn.style.display = (role === 'admin') ? 'block' : 'none';
+    }
+    
+    // 控制"配对统计"按钮的显示（数据统计卡片中，只有admin和staff可见）
+    const viewMatchmakingStatsBtn2 = document.getElementById('viewMatchmakingStatsBtn2');
+    if (viewMatchmakingStatsBtn2) {
+        viewMatchmakingStatsBtn2.style.display = (role === 'admin' || role === 'staff') ? 'block' : 'none';
     }
 }
 
