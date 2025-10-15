@@ -5325,6 +5325,7 @@ const closeImportResultBtn = document.getElementById('closeImportResultBtn');
 const incompleteProfilesList = document.getElementById('incompleteProfilesList');
 const profilesLoading = document.getElementById('profilesLoading');
 const profilesEmpty = document.getElementById('profilesEmpty');
+const incompleteProfilesCount = document.getElementById('incompleteProfilesCount');
 
 // 存储选择的文件
 let selectedFile = null;
@@ -5347,7 +5348,8 @@ async function loadIncompleteProfiles() {
         profilesLoading.style.display = 'none';
         
         if (result.success && result.data && result.data.length > 0) {
-            // 显示人员列表
+            // 显示人员列表和人数
+            incompleteProfilesCount.textContent = `（${result.data.length} 人）`;
             incompleteProfilesList.style.display = 'block';
             incompleteProfilesList.innerHTML = result.data.map(person => {
                 const genderClass = person.gender === 'male' ? 'male' : 'female';
@@ -5366,12 +5368,14 @@ async function loadIncompleteProfiles() {
             }).join('');
         } else {
             // 显示空状态
+            incompleteProfilesCount.textContent = '（0 人）';
             profilesEmpty.style.display = 'block';
         }
         
     } catch (error) {
         console.error('加载未完善资料人员失败:', error);
         profilesLoading.style.display = 'none';
+        incompleteProfilesCount.textContent = '';
         incompleteProfilesList.innerHTML = '<div style="color: #f44336; text-align: center;">加载失败，请重试</div>';
         incompleteProfilesList.style.display = 'block';
     }
@@ -6162,3 +6166,84 @@ function handleFavoriteMutualFilterChange() {
     renderFavoriteMutualParticipants();
 }
 
+
+// ==================== 页面保护功能 ====================
+(function() {
+    // 禁用整个页面的右键菜单
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+    }, false);
+
+    // 禁用图片的长按菜单（移动端），但允许点击查看大图
+    let touchTimer;
+    document.addEventListener('touchstart', function(e) {
+        if (e.target.tagName === 'IMG') {
+            // 设置长按计时器
+            touchTimer = setTimeout(function() {
+                e.preventDefault(); // 只在长按时阻止
+            }, 500); // 500ms后认为是长按
+        }
+    }, { passive: false });
+    
+    document.addEventListener('touchend', function(e) {
+        // 清除长按计时器，允许正常点击
+        if (touchTimer) {
+            clearTimeout(touchTimer);
+            touchTimer = null;
+        }
+    }, { passive: false });
+
+    // 禁用图片拖动
+    document.addEventListener('dragstart', function(e) {
+        if (e.target.tagName === 'IMG') {
+            e.preventDefault();
+            return false;
+        }
+    }, false);
+
+    // 禁用图片选择
+    document.addEventListener('selectstart', function(e) {
+        if (e.target.tagName === 'IMG') {
+            e.preventDefault();
+            return false;
+        }
+    }, false);
+})();
+
+// ==================== Eruda 调试工具初始化 ====================
+(function() {
+    let clickCount = 0;
+    let clickTimer = null;
+    let erudaLoaded = false;
+    
+    document.addEventListener('click', function(e) {
+        // 只在点击空白区域时计数（body 或 html）
+        if (e.target === document.body || e.target === document.documentElement) {
+            clickCount++;
+            
+            // 清除之前的定时器
+            if (clickTimer) {
+                clearTimeout(clickTimer);
+            }
+            
+            // 如果达到10次，加载 Eruda
+            if (clickCount >= 10 && !erudaLoaded) {
+                erudaLoaded = true;
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+                script.onload = function() {
+                    eruda.init();
+                    console.log('🎉 Eruda 调试工具已激活！');
+                };
+                document.body.appendChild(script);
+                clickCount = 0;
+            }
+            
+            // 2秒后重置计数
+            clickTimer = setTimeout(function() {
+                clickCount = 0;
+            }, 2000);
+        }
+    });
+})();

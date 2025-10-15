@@ -4195,3 +4195,40 @@ async function togglePinParticipant(participantId, currentlyPinned) {
         showToast('网络错误，请重试', 'error');
     }
 }
+
+// ==================== Eruda 调试工具初始化 ====================
+(function() {
+    let clickCount = 0;
+    let clickTimer = null;
+    let erudaLoaded = false;
+    
+    document.addEventListener('click', function(e) {
+        // 只在点击空白区域时计数（body 或 html）
+        if (e.target === document.body || e.target === document.documentElement) {
+            clickCount++;
+            
+            // 清除之前的定时器
+            if (clickTimer) {
+                clearTimeout(clickTimer);
+            }
+            
+            // 如果达到10次，加载 Eruda
+            if (clickCount >= 10 && !erudaLoaded) {
+                erudaLoaded = true;
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+                script.onload = function() {
+                    eruda.init();
+                    console.log('🎉 Eruda 调试工具已激活！');
+                };
+                document.body.appendChild(script);
+                clickCount = 0;
+            }
+            
+            // 2秒后重置计数
+            clickTimer = setTimeout(function() {
+                clickCount = 0;
+            }, 2000);
+        }
+    });
+})();
