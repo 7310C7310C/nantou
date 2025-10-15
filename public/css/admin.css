@@ -4146,24 +4146,28 @@ input[type="checkbox"]:checked + .toggle-slider:before {
     align-items: center;
     gap: 15px;
     flex: 1;
+    flex-wrap: nowrap;
 }
 
 .profile-name {
     font-weight: 600;
     color: #333;
     min-width: 80px;
+    white-space: nowrap;
 }
 
 .profile-username {
     color: #666;
     font-size: 14px;
     min-width: 80px;
+    white-space: nowrap;
 }
 
 .profile-phone {
     color: #888;
     font-size: 14px;
     font-family: monospace;
+    white-space: nowrap;
 }
 
 .profile-gender {
@@ -4316,22 +4320,19 @@ input[type="checkbox"]:checked + .toggle-slider:before {
     }
     
     .profile-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
+        padding: 8px 10px;
     }
     
     .profile-info {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
+        gap: 10px;
         width: 100%;
+        overflow-x: auto;
     }
     
     .profile-name,
     .profile-username,
     .profile-phone {
-        min-width: auto;
+        font-size: 13px;
     }
     
     .import-section {
