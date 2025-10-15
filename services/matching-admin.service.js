@@ -240,7 +240,10 @@ async function executeGroupMatching(options) {
       };
     }
     
-    // 记录输入信息到日志
+    // 获取轮次号（提前获取以便日志记录）
+    const runBatch = await getNextGroupingBatch();
+    
+    // 记录统计信息到日志
     const inputInfo = {
       participants_count: participants.length,
       male_count: participants.filter(p => p.gender === 'male').length,
@@ -252,11 +255,14 @@ async function executeGroupMatching(options) {
     
     logger.info('执行分组匹配算法', { input: inputInfo });
     
+    // 记录详细的输入数据到日志（用于研究回顾）
+    logger.info(`[分组匹配 #${runBatch}] 算法配置选项`, { options });
+    logger.info(`[分组匹配 #${runBatch}] 参与者列表`, { participants });
+    logger.info(`[分组匹配 #${runBatch}] 用户选择数据`, { selections });
+    logger.info(`[分组匹配 #${runBatch}] 红娘推荐数据`, { matchmakerPicks });
+    
     // 调用算法
     const result = generateGroups(participants, selections, matchmakerPicks, options);
-    
-    // 获取轮次号
-    const runBatch = await getNextGroupingBatch();
     
     // 保存结果到数据库
     for (const group of result.groups) {
@@ -331,7 +337,10 @@ async function executeChatMatching(options) {
     // 获取已完成聊天的历史记录
     const completedChatHistory = await getCompletedChatHistory();
     
-    // 记录输入信息到日志
+    // 获取轮次号（提前获取以便日志记录）
+    const runBatch = await getNextChatBatch();
+    
+    // 记录统计信息到日志
     const inputInfo = {
       participants_count: participants.length,
       male_count: participants.filter(p => p.gender === 'male').length,
@@ -344,11 +353,15 @@ async function executeChatMatching(options) {
     
     logger.info('执行聊天匹配算法', { input: inputInfo });
     
+    // 记录详细的输入数据到日志（用于研究回顾）
+    logger.info(`[聊天匹配 #${runBatch}] 算法配置选项`, { options });
+    logger.info(`[聊天匹配 #${runBatch}] 参与者列表`, { participants });
+    logger.info(`[聊天匹配 #${runBatch}] 用户选择数据`, { selections });
+    logger.info(`[聊天匹配 #${runBatch}] 红娘推荐数据`, { matchmakerPicks });
+    logger.info(`[聊天匹配 #${runBatch}] 已完成聊天历史`, { completedChatHistory });
+    
     // 调用算法，传入已完成聊天历史
     const result = generateChatLists(participants, selections, matchmakerPicks, options, completedChatHistory);
-    
-    // 获取轮次号
-    const runBatch = await getNextChatBatch();
     
     // 将chatLists对象转换为数组格式
     const chatItemsArray = [];

@@ -5356,10 +5356,10 @@ async function loadIncompleteProfiles() {
                 return `
                     <div class="profile-item">
                         <div class="profile-info">
+                            <div class="profile-gender ${genderClass}">${genderText}</div>
                             <div class="profile-name">${person.name || '未知'}</div>
                             <div class="profile-username">${person.username}</div>
                             <div class="profile-phone">${person.phone}</div>
-                            <div class="profile-gender ${genderClass}">${genderText}</div>
                         </div>
                     </div>
                 `;
