@@ -538,6 +538,195 @@ async function getChatResult(runBatch) {
   }));
 }
 
+/**
+ * 预览分组匹配算法（不写入数据库）
+ * @param {Object} options 配置选项 {group_size_male, group_size_female}
+ * @returns {Object} 预览结果
+ */
+async function previewGroupMatching(options) {
+  try {
+    // 验证用户选择
+    const validation = await validateUserSelections();
+    if (!validation.isValid) {
+      if (validation.noCheckedInUsers) {
+        return {
+          success: false,
+          message: '没有已签到的参与者'
+        };
+      }
+      return {
+        success: false,
+        message: '存在未完成选择的用户',
+        missingUsers: validation.missingUsers
+      };
+    }
+    
+    // 获取算法输入数据
+    const participants = await getCheckedInParticipants();
+    const selections = await getValidSelections();
+    const matchmakerPicks = await getValidMatchmakerPicks();
+    
+    if (participants.length === 0) {
+      return {
+        success: false,
+        message: '没有已签到的参与者'
+      };
+    }
+    
+    logger.info('生成分组匹配预览', { 
+      participants_count: participants.length,
+      options 
+    });
+    
+    // 调用算法（不保存结果）
+    const algorithmResult = generateGroups(participants, selections, matchmakerPicks, options);
+    
+    // 获取所有涉及的用户名
+    const allUsernames = new Set();
+    algorithmResult.groups.forEach(group => {
+      group.male_ids.forEach(username => allUsernames.add(username));
+      group.female_ids.forEach(username => allUsernames.add(username));
+    });
+    
+    // 获取用户名到姓名的映射
+    const userNameMap = {};
+    if (allUsernames.size > 0) {
+      const placeholders = Array.from(allUsernames).map(() => '?').join(',');
+      const [userRows] = await pool.execute(`
+        SELECT username, name, baptismal_name
+        FROM participants 
+        WHERE username IN (${placeholders})
+      `, Array.from(allUsernames));
+      
+      userRows.forEach(user => {
+        userNameMap[user.username] = user.name || user.baptismal_name || user.username;
+      });
+    }
+    
+    // 转换格式，添加 male_members 和 female_members
+    const groups = algorithmResult.groups.map(group => ({
+      group_id: group.group_id,
+      male_ids: group.male_ids,
+      female_ids: group.female_ids,
+      male_members: group.male_ids.map(username => ({
+        username,
+        name: userNameMap[username] || username
+      })),
+      female_members: group.female_ids.map(username => ({
+        username,
+        name: userNameMap[username] || username
+      }))
+    }));
+    
+    return {
+      success: true,
+      message: '预览生成成功',
+      result: {
+        groups: groups
+      }
+    };
+    
+  } catch (error) {
+    logger.error('生成分组匹配预览失败', error);
+    throw error;
+  }
+}
+
+/**
+ * 预览聊天匹配算法（不写入数据库）
+ * @param {Object} options 配置选项 {list_size}
+ * @returns {Object} 预览结果
+ */
+async function previewChatMatching(options) {
+  try {
+    // 验证用户选择
+    const validation = await validateUserSelections();
+    if (!validation.isValid) {
+      if (validation.noCheckedInUsers) {
+        return {
+          success: false,
+          message: '没有已签到的参与者'
+        };
+      }
+      return {
+        success: false,
+        message: '存在未完成选择的用户',
+        missingUsers: validation.missingUsers
+      };
+    }
+    
+    // 获取算法输入数据
+    const participants = await getCheckedInParticipants();
+    const selections = await getValidSelections();
+    const matchmakerPicks = await getValidMatchmakerPicks();
+    
+    if (participants.length === 0) {
+      return {
+        success: false,
+        message: '没有已签到的参与者'
+      };
+    }
+    
+    // 获取已完成聊天的历史记录
+    const completedChatHistory = await getCompletedChatHistory();
+    
+    logger.info('生成聊天匹配预览', { 
+      participants_count: participants.length,
+      options 
+    });
+    
+    // 调用算法（不保存结果）
+    const algorithmResult = generateChatLists(participants, selections, matchmakerPicks, options, completedChatHistory);
+    
+    // 获取所有涉及的用户名
+    const allUsernames = new Set();
+    for (const [userId, targetIds] of Object.entries(algorithmResult.chatLists)) {
+      allUsernames.add(userId);
+      targetIds.forEach(targetId => allUsernames.add(targetId));
+    }
+    
+    // 获取用户名到姓名的映射
+    const userNameMap = {};
+    if (allUsernames.size > 0) {
+      const placeholders = Array.from(allUsernames).map(() => '?').join(',');
+      const [userRows] = await pool.execute(`
+        SELECT username, name, baptismal_name
+        FROM participants 
+        WHERE username IN (${placeholders})
+      `, Array.from(allUsernames));
+      
+      userRows.forEach(user => {
+        userNameMap[user.username] = user.name || user.baptismal_name || user.username;
+      });
+    }
+    
+    // 转换格式，添加用户名和姓名信息
+    const chatLists = {};
+    const userNames = {};  // 添加userId到姓名的映射
+    for (const [userId, targetIds] of Object.entries(algorithmResult.chatLists)) {
+      userNames[userId] = userNameMap[userId] || userId;  // 保存用户的姓名
+      chatLists[userId] = targetIds.map(targetId => ({
+        target_id: targetId,
+        target_name: userNameMap[targetId] || targetId
+      }));
+    }
+    
+    return {
+      success: true,
+      message: '预览生成成功',
+      result: {
+        chatLists: algorithmResult.chatLists,  // 保持原始格式用于前端显示
+        chatListsWithNames: chatLists,  // 带名字的版本
+        userNames: userNames  // userId到姓名的映射
+      }
+    };
+    
+  } catch (error) {
+    logger.error('生成聊天匹配预览失败', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getCheckedInParticipants,
   getValidSelections,
@@ -546,6 +735,8 @@ module.exports = {
   validateUserSelections,
   executeGroupMatching,
   executeChatMatching,
+  previewGroupMatching,
+  previewChatMatching,
   getGroupingHistory,
   getChatHistory,
   getGroupingResult,

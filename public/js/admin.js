@@ -4071,6 +4071,7 @@ function setupMatchingEventListeners() {
     // 分组匹配模态框
     const closeGroupMatchingBtn = document.getElementById('closeGroupMatchingBtn');
     const cancelGroupMatchingBtn = document.getElementById('cancelGroupMatchingBtn');
+    const previewGroupMatchingBtn = document.getElementById('previewGroupMatchingBtn');
     const executeGroupMatchingConfirmBtn = document.getElementById('executeGroupMatchingConfirmBtn');
     
     if (closeGroupMatchingBtn) {
@@ -4079,6 +4080,9 @@ function setupMatchingEventListeners() {
     if (cancelGroupMatchingBtn) {
         cancelGroupMatchingBtn.addEventListener('click', closeGroupMatchingModal);
     }
+    if (previewGroupMatchingBtn) {
+        previewGroupMatchingBtn.addEventListener('click', previewGroupMatching);
+    }
     if (executeGroupMatchingConfirmBtn) {
         executeGroupMatchingConfirmBtn.addEventListener('click', executeGroupMatchingConfirm);
     }
@@ -4086,6 +4090,7 @@ function setupMatchingEventListeners() {
     // 聊天匹配模态框
     const closeChatMatchingBtn = document.getElementById('closeChatMatchingBtn');
     const cancelChatMatchingBtn = document.getElementById('cancelChatMatchingBtn');
+    const previewChatMatchingBtn = document.getElementById('previewChatMatchingBtn');
     const executeChatMatchingConfirmBtn = document.getElementById('executeChatMatchingConfirmBtn');
     
     if (closeChatMatchingBtn) {
@@ -4093,6 +4098,9 @@ function setupMatchingEventListeners() {
     }
     if (cancelChatMatchingBtn) {
         cancelChatMatchingBtn.addEventListener('click', closeChatMatchingModal);
+    }
+    if (previewChatMatchingBtn) {
+        previewChatMatchingBtn.addEventListener('click', previewChatMatching);
     }
     if (executeChatMatchingConfirmBtn) {
         executeChatMatchingConfirmBtn.addEventListener('click', executeChatMatchingConfirm);
@@ -4147,6 +4155,27 @@ function setupMatchingEventListeners() {
     if (matchingResultsModal) {
         matchingResultsModal.addEventListener('click', (e) => {
             if (e.target === matchingResultsModal) closeResultsModal();
+        });
+    }
+    
+    // 预览模态框
+    const closePreviewBtn = document.getElementById('closePreviewBtn');
+    const closePreviewBtn2 = document.getElementById('closePreviewBtn2');
+    const executeFromPreviewBtn = document.getElementById('executeFromPreviewBtn');
+    const matchingPreviewModal = document.getElementById('matchingPreviewModal');
+    
+    if (closePreviewBtn) {
+        closePreviewBtn.addEventListener('click', closePreviewModal);
+    }
+    if (closePreviewBtn2) {
+        closePreviewBtn2.addEventListener('click', closePreviewModal);
+    }
+    if (executeFromPreviewBtn) {
+        executeFromPreviewBtn.addEventListener('click', executeFromPreview);
+    }
+    if (matchingPreviewModal) {
+        matchingPreviewModal.addEventListener('click', (e) => {
+            if (e.target === matchingPreviewModal) closePreviewModal();
         });
     }
 }
@@ -4305,6 +4334,7 @@ function closeChatMatchingModal() {
 async function validateGroupMatching() {
     const statusDiv = document.getElementById('groupValidationStatus');
     const executeBtn = document.getElementById('executeGroupMatchingConfirmBtn');
+    const previewBtn = document.getElementById('previewGroupMatchingBtn');
     const loadingSpinner = statusDiv.querySelector('.loading-spinner');
     const resultDiv = statusDiv.querySelector('.validation-result');
     
@@ -4313,6 +4343,7 @@ async function validateGroupMatching() {
     resultDiv.innerHTML = '';
     resultDiv.className = 'validation-result';
     executeBtn.disabled = true;
+    previewBtn.disabled = true;
     
     try {
         const response = await fetch('/api/admin/validate-selections', {
@@ -4335,6 +4366,7 @@ async function validateGroupMatching() {
             resultDiv.className = 'validation-result success';
             resultDiv.innerHTML = '<p>✅ 所有已签到用户都已完成选择，可以执行分组匹配</p>';
             executeBtn.disabled = false;
+            previewBtn.disabled = false;
         } else {
             resultDiv.className = 'validation-result error';
             let html = '<p>❌ 存在未完成选择的用户，无法执行分组匹配</p>';
@@ -4373,6 +4405,7 @@ async function validateGroupMatching() {
 async function validateChatMatching() {
     const statusDiv = document.getElementById('chatValidationStatus');
     const executeBtn = document.getElementById('executeChatMatchingConfirmBtn');
+    const previewBtn = document.getElementById('previewChatMatchingBtn');
     const loadingSpinner = statusDiv.querySelector('.loading-spinner');
     const resultDiv = statusDiv.querySelector('.validation-result');
     
@@ -4381,6 +4414,7 @@ async function validateChatMatching() {
     resultDiv.innerHTML = '';
     resultDiv.className = 'validation-result';
     executeBtn.disabled = true;
+    previewBtn.disabled = true;
     
     try {
         const response = await fetch('/api/admin/validate-selections', {
@@ -4403,6 +4437,7 @@ async function validateChatMatching() {
             resultDiv.className = 'validation-result success';
             resultDiv.innerHTML = '<p>✅ 所有已签到用户都已完成选择，可以执行聊天匹配</p>';
             executeBtn.disabled = false;
+            previewBtn.disabled = false;
         } else {
             resultDiv.className = 'validation-result error';
             let html = '<p>❌ 存在未完成选择的用户，无法执行聊天匹配</p>';
@@ -4526,6 +4561,268 @@ async function executeMatching() {
     
     // 关闭确认模态框
     closeMatchingConfirmModal();
+    
+    // 显示加载提示
+    showLoadingOverlay('正在执行匹配算法，请稍候...');
+    
+    try {
+        const endpoint = type === 'grouping' ? '/api/admin/execute-group-matching' : '/api/admin/execute-chat-matching';
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        hideLoadingOverlay();
+        
+        if (data.success) {
+            const typeName = type === 'grouping' ? '分组匹配' : '聊天匹配';
+            showToast(`${data.message}`, 'success');
+        } else {
+            throw new Error(data.message || '执行失败');
+        }
+        
+    } catch (error) {
+        console.error('执行匹配算法失败:', error);
+        hideLoadingOverlay();
+        showToast(error.message || '执行匹配算法失败，请稍后重试', 'error');
+    }
+}
+
+// 预览分组匹配
+async function previewGroupMatching() {
+    const maleSize = parseInt(document.getElementById('groupMaleSize').value);
+    const femaleSize = parseInt(document.getElementById('groupFemaleSize').value);
+    
+    const config = {
+        group_size_male: maleSize,
+        group_size_female: femaleSize
+    };
+    
+    await showMatchingPreview('grouping', config);
+}
+
+// 预览聊天匹配
+async function previewChatMatching() {
+    const listSize = parseInt(document.getElementById('chatListSize').value);
+    
+    const config = {
+        list_size: listSize
+    };
+    
+    await showMatchingPreview('chat', config);
+}
+
+// 显示匹配预览
+async function showMatchingPreview(type, config) {
+    // 关闭配置模态框
+    if (type === 'grouping') {
+        closeGroupMatchingModal();
+    } else {
+        closeChatMatchingModal();
+    }
+    
+    // 打开预览模态框
+    const modal = document.getElementById('matchingPreviewModal');
+    const titleEl = document.getElementById('previewTitle');
+    const displayDiv = document.getElementById('previewDisplay');
+    const loadingDiv = displayDiv.querySelector('.results-loading');
+    const contentArea = displayDiv.querySelector('.results-content-area');
+    const executeBtn = document.getElementById('executeFromPreviewBtn');
+    
+    titleEl.textContent = type === 'grouping' ? '分组匹配预览' : '聊天匹配预览';
+    modal.style.display = 'block';
+    loadingDiv.style.display = 'block';
+    contentArea.innerHTML = '';
+    
+    // 存储配置供后续执行使用
+    modal.dataset.type = type;
+    modal.dataset.config = JSON.stringify(config);
+    
+    try {
+        const endpoint = type === 'grouping' ? '/api/admin/preview-group-matching' : '/api/admin/preview-chat-matching';
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        loadingDiv.style.display = 'none';
+        
+        if (data.success) {
+            // 渲染预览结果
+            if (type === 'grouping') {
+                renderGroupingPreview(data.result, config);
+            } else {
+                renderChatPreview(data.result, config);
+            }
+        } else {
+            throw new Error(data.message || '生成预览失败');
+        }
+        
+    } catch (error) {
+        console.error('获取预览失败:', error);
+        loadingDiv.style.display = 'none';
+        contentArea.innerHTML = `<div style="text-align: center; padding: 40px; color: #dc3545;">获取预览失败：${error.message}</div>`;
+        executeBtn.disabled = true;
+    }
+}
+
+// 渲染分组匹配预览
+function renderGroupingPreview(result, config) {
+    const contentArea = document.getElementById('previewDisplay').querySelector('.results-content-area');
+    const { groups } = result;
+    
+    if (!groups || groups.length === 0) {
+        contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">无法生成分组结果</div>';
+        return;
+    }
+    
+    let html = `
+        <div style="margin-bottom: 20px; padding: 15px; background-color: #e7f3ff; border-radius: 5px; border: 1px solid #b3d9ff;">
+            <strong>配置参数：</strong>每组男性 ${config.group_size_male} 人，女性 ${config.group_size_female} 人
+        </div>
+        <div style="margin-bottom: 20px; text-align: center;">
+            <h4>预览结果（共 ${groups.length} 组）</h4>
+            <p style="color: #856404;">⚠️ 这是预览结果，尚未保存到数据库</p>
+        </div>
+    `;
+    
+    groups.forEach(group => {
+        html += `
+            <div class="group-result-item">
+                <div class="group-result-header">
+                    第 ${group.group_id} 组（男 ${group.male_members.length} 人，女 ${group.female_members.length} 人）
+                </div>
+                <div class="group-result-body">
+                    <div class="group-members-grid">
+        `;
+        
+        // 显示男性成员
+        group.male_members.forEach(member => {
+            html += `
+                <div class="member-card male">
+                    <div class="member-name">${member.name}（${member.username}）</div>
+                    <div class="member-details">男</div>
+                </div>
+            `;
+        });
+        
+        // 显示女性成员
+        group.female_members.forEach(member => {
+            html += `
+                <div class="member-card female">
+                    <div class="member-name">${member.name}（${member.username}）</div>
+                    <div class="member-details">女</div>
+                </div>
+            `;
+        });
+        
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    contentArea.innerHTML = html;
+}
+
+// 渲染聊天匹配预览
+function renderChatPreview(result, config) {
+    const contentArea = document.getElementById('previewDisplay').querySelector('.results-content-area');
+    const { chatLists, chatListsWithNames, userNames } = result;
+    
+    if (!chatLists || Object.keys(chatLists).length === 0) {
+        contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">无法生成聊天匹配结果</div>';
+        return;
+    }
+    
+    let html = `
+        <div style="margin-bottom: 20px; padding: 15px; background-color: #e7f3ff; border-radius: 5px; border: 1px solid #b3d9ff;">
+            <strong>配置参数：</strong>每人推荐 ${config.list_size} 人
+        </div>
+        <div style="margin-bottom: 20px; text-align: center;">
+            <h4>预览结果</h4>
+            <p style="color: #856404;">⚠️ 这是预览结果，尚未保存到数据库</p>
+        </div>
+    `;
+    
+    Object.keys(chatLists).forEach(userId => {
+        const targetIds = chatLists[userId];
+        const targetsWithNames = chatListsWithNames && chatListsWithNames[userId] ? chatListsWithNames[userId] : [];
+        const userName = userNames && userNames[userId] ? userNames[userId] : userId;
+        
+        html += `
+            <div class="group-result-item">
+                <div class="group-result-header">
+                    ${userName}（${userId}）的推荐名单（${targetIds.length} 人）
+                </div>
+                <div class="group-result-body">
+                    <div class="chat-result-grid">
+        `;
+        
+        targetIds.forEach((targetId, index) => {
+            const targetName = targetsWithNames[index] ? targetsWithNames[index].target_name : targetId;
+            html += `
+                <div class="chat-target-card">
+                    <div class="member-name">${targetName}（${targetId}）</div>
+                </div>
+            `;
+        });
+        
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    contentArea.innerHTML = html;
+}
+
+// 关闭预览模态框
+function closePreviewModal() {
+    const modal = document.getElementById('matchingPreviewModal');
+    if (modal) {
+        const type = modal.dataset.type;
+        modal.style.display = 'none';
+        
+        // 返回到之前的配置模态框
+        if (type === 'grouping') {
+            const groupMatchingModal = document.getElementById('groupMatchingModal');
+            if (groupMatchingModal) {
+                groupMatchingModal.style.display = 'block';
+            }
+        } else if (type === 'chat') {
+            const chatMatchingModal = document.getElementById('chatMatchingModal');
+            if (chatMatchingModal) {
+                chatMatchingModal.style.display = 'block';
+            }
+        }
+    }
+}
+
+// 从预览执行匹配
+async function executeFromPreview() {
+    const modal = document.getElementById('matchingPreviewModal');
+    const type = modal.dataset.type;
+    const config = JSON.parse(modal.dataset.config);
+    
+    // 关闭预览模态框
+    closePreviewModal();
     
     // 显示加载提示
     showLoadingOverlay('正在执行匹配算法，请稍候...');
