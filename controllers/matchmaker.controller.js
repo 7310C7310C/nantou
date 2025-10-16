@@ -277,8 +277,8 @@ class MatchmakerController {
    */
   static async getMatchmakingStatsByMatchmaker(req, res) {
     try {
-      // 验证权限 - 只有管理员和工作人员可以访问
-      if (!['admin', 'staff'].includes(req.user.role)) {
+      // 验证权限 - 管理员、工作人员和红娘可以访问
+      if (!['admin', 'staff', 'matchmaker'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: '权限不足'
@@ -309,8 +309,8 @@ class MatchmakerController {
     try {
       const { matchmaker_username } = req.params;
 
-      // 验证权限 - 只有管理员和工作人员可以访问
-      if (!['admin', 'staff'].includes(req.user.role)) {
+      // 验证权限 - 管理员、工作人员和红娘可以访问
+      if (!['admin', 'staff', 'matchmaker'].includes(req.user.role)) {
         return res.status(403).json({
           success: false,
           message: '权限不足'
