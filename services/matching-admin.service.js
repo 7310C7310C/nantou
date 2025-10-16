@@ -859,11 +859,23 @@ async function simulateGroupMatching(options) {
       matchmakerPicks.push(...pickRows);
     }
     
-    logger.info('模拟分组匹配数据统计', { 
-      participants: participantRows.length,
-      selections: simulatedSelections.length,
-      matchmakerPicks: matchmakerPicks.length
-    });
+    // 记录统计信息到日志
+    const inputInfo = {
+      participants_count: participantRows.length,
+      male_count: participantRows.filter(p => p.gender === 'male').length,
+      female_count: participantRows.filter(p => p.gender === 'female').length,
+      selections_count: Object.keys(userFavoritesMap).length,
+      matchmaker_picks_count: matchmakerPicks.length,
+      options: options
+    };
+    
+    logger.info('模拟分组匹配数据统计', inputInfo);
+    
+    // 记录详细的输入数据到日志（用于研究回顾）
+    logger.info('[模拟分组匹配] 算法配置选项', { options });
+    logger.info('[模拟分组匹配] 参与者列表', { participants: participantRows });
+    logger.info('[模拟分组匹配] 模拟选择数据（基于收藏）', { selections: simulatedSelections });
+    logger.info('[模拟分组匹配] 红娘推荐数据', { matchmakerPicks });
     
     // 调用核心算法（包含红娘推荐）
     const algorithmResult = generateGroups(participantRows, simulatedSelections, matchmakerPicks, options);
@@ -1008,11 +1020,25 @@ async function simulateChatMatching(options) {
       matchmakerPicks.push(...pickRows);
     }
     
-    logger.info('模拟聊天匹配数据统计', { 
-      participants: participantRows.length,
-      selections: simulatedSelections.length,
-      matchmakerPicks: matchmakerPicks.length
-    });
+    // 记录统计信息到日志
+    const inputInfo = {
+      participants_count: participantRows.length,
+      male_count: participantRows.filter(p => p.gender === 'male').length,
+      female_count: participantRows.filter(p => p.gender === 'female').length,
+      selections_count: Object.keys(userFavoritesMap).length,
+      matchmaker_picks_count: matchmakerPicks.length,
+      completed_chat_history_count: 0, // 模拟时不使用历史
+      options: options
+    };
+    
+    logger.info('模拟聊天匹配数据统计', inputInfo);
+    
+    // 记录详细的输入数据到日志（用于研究回顾）
+    logger.info('[模拟聊天匹配] 算法配置选项', { options });
+    logger.info('[模拟聊天匹配] 参与者列表', { participants: participantRows });
+    logger.info('[模拟聊天匹配] 模拟选择数据（基于收藏）', { selections: simulatedSelections });
+    logger.info('[模拟聊天匹配] 红娘推荐数据', { matchmakerPicks });
+    logger.info('[模拟聊天匹配] 已完成聊天历史', { completedChatHistory: [] });
     
     // 调用核心算法（包含红娘推荐，但使用空的聊天历史）
     // 参数顺序：participants, selections, matchmakerPicks, options, completedChatHistory

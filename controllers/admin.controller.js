@@ -1284,6 +1284,7 @@ async function previewChatMatching(req, res) {
 async function simulateGroupMatching(req, res) {
   try {
     logger.info('收到模拟分组匹配请求', { body: req.body, user: req.user?.username });
+    logger.operation('模拟分组匹配', req.user?.id, { operator: req.user?.username });
     
     const { group_size_male = 3, group_size_female = 3 } = req.body;
 
@@ -1327,6 +1328,7 @@ async function simulateGroupMatching(req, res) {
 async function simulateChatMatching(req, res) {
   try {
     logger.info('收到模拟聊天匹配请求', { body: req.body, user: req.user?.username });
+    logger.operation('模拟聊天匹配', req.user?.id, { operator: req.user?.username });
     
     const { list_size = 5 } = req.body;
 
