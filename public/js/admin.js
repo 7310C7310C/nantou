@@ -119,6 +119,12 @@ let selectionsData = {
     summary: {}
 };
 
+// 匹配结果相关全局变量
+let currentMatchingResultsData = null;
+
+// 匹配预览相关全局变量
+let currentMatchingPreviewData = null;
+
 // 收藏互选情况相关全局变量
 let favoriteMutualData = {
     participants: [],
@@ -4875,6 +4881,20 @@ async function showSimulateMatchingPreview(type, config) {
     loadingDiv.style.display = 'block';
     contentArea.innerHTML = '';
     
+    // 设置搜索事件监听器
+    const searchInput = document.getElementById('matchingPreviewSearchInput');
+    const clearBtn = document.getElementById('clearMatchingPreviewSearchBtn');
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.removeEventListener('input', handleMatchingPreviewSearch);
+        searchInput.addEventListener('input', handleMatchingPreviewSearch);
+    }
+    if (clearBtn) {
+        clearBtn.style.display = 'none';
+        clearBtn.removeEventListener('click', clearMatchingPreviewSearch);
+        clearBtn.addEventListener('click', clearMatchingPreviewSearch);
+    }
+    
     // 隐藏执行按钮（模拟模式不需要执行）
     if (executeBtn) {
         executeBtn.style.display = 'none';
@@ -4901,6 +4921,14 @@ async function showSimulateMatchingPreview(type, config) {
         loadingDiv.style.display = 'none';
         
         if (data.success) {
+            // 保存预览数据
+            currentMatchingPreviewData = {
+                type: type,
+                result: data,
+                config: config,
+                isSimulate: true
+            };
+            
             if (type === 'grouping') {
                 // 渲染分组结果
                 const groups = data.groupingResults;
@@ -5056,6 +5084,20 @@ async function showMatchingPreview(type, config) {
     loadingDiv.style.display = 'block';
     contentArea.innerHTML = '';
     
+    // 设置搜索事件监听器
+    const searchInput = document.getElementById('matchingPreviewSearchInput');
+    const clearBtn = document.getElementById('clearMatchingPreviewSearchBtn');
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.removeEventListener('input', handleMatchingPreviewSearch);
+        searchInput.addEventListener('input', handleMatchingPreviewSearch);
+    }
+    if (clearBtn) {
+        clearBtn.style.display = 'none';
+        clearBtn.removeEventListener('click', clearMatchingPreviewSearch);
+        clearBtn.addEventListener('click', clearMatchingPreviewSearch);
+    }
+    
     // 存储配置供后续执行使用
     modal.dataset.type = type;
     modal.dataset.config = JSON.stringify(config);
@@ -5077,6 +5119,14 @@ async function showMatchingPreview(type, config) {
         loadingDiv.style.display = 'none';
         
         if (data.success) {
+            // 保存预览数据
+            currentMatchingPreviewData = {
+                type: type,
+                result: data.result,
+                config: config,
+                isSimulate: false
+            };
+            
             // 渲染预览结果
             if (type === 'grouping') {
                 renderGroupingPreview(data.result, config);
@@ -5105,17 +5155,41 @@ function renderGroupingPreview(result, config) {
         return;
     }
     
+    // 应用搜索过滤
+    let filteredGroups = groups;
+    const searchInput = document.getElementById('matchingPreviewSearchInput');
+    if (searchInput && searchInput.value.trim()) {
+        const searchValue = searchInput.value.trim().toLowerCase();
+        filteredGroups = groups.filter(group => {
+            // 检查组内任何成员是否匹配搜索条件
+            const maleMatch = group.male_members.some(member => 
+                (member.username && member.username.toLowerCase().includes(searchValue)) ||
+                (member.name && member.name.toLowerCase().includes(searchValue))
+            );
+            const femaleMatch = group.female_members.some(member => 
+                (member.username && member.username.toLowerCase().includes(searchValue)) ||
+                (member.name && member.name.toLowerCase().includes(searchValue))
+            );
+            return maleMatch || femaleMatch;
+        });
+    }
+    
+    if (filteredGroups.length === 0) {
+        contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">没有找到符合条件的分组</div>';
+        return;
+    }
+    
     let html = `
         <div style="margin-bottom: 20px; padding: 15px; background-color: #e7f3ff; border-radius: 5px; border: 1px solid #b3d9ff;">
             <strong>配置参数：</strong>每组男性 ${config.group_size_male} 人，女性 ${config.group_size_female} 人
         </div>
         <div style="margin-bottom: 20px; text-align: center;">
-            <h4>预览结果（共 ${groups.length} 组）</h4>
+            <h4>预览结果（共 ${filteredGroups.length} 组）</h4>
             <p style="color: #856404;">⚠️ 这是预览结果，尚未保存到数据库</p>
         </div>
     `;
     
-    groups.forEach(group => {
+    filteredGroups.forEach(group => {
         html += `
             <div class="group-result-item">
                 <div class="group-result-header">
@@ -5175,17 +5249,43 @@ function renderChatPreview(result, config) {
         return;
     }
     
+    // 应用搜索过滤
+    let filteredUserIds = Object.keys(chatLists);
+    const searchInput = document.getElementById('matchingPreviewSearchInput');
+    if (searchInput && searchInput.value.trim()) {
+        const searchValue = searchInput.value.trim().toLowerCase();
+        filteredUserIds = filteredUserIds.filter(userId => {
+            const userDetail = userInfo && userInfo[userId] ? userInfo[userId] : null;
+            const userMatch = (userId && userId.toLowerCase().includes(searchValue)) ||
+                             (userDetail && userDetail.name && userDetail.name.toLowerCase().includes(searchValue));
+            
+            // 同时检查推荐目标
+            const targetsWithNames = chatListsWithNames && chatListsWithNames[userId] ? chatListsWithNames[userId] : [];
+            const targetMatch = targetsWithNames.some(target => 
+                (target.target_id && target.target_id.toLowerCase().includes(searchValue)) ||
+                (target.target_name && target.target_name.toLowerCase().includes(searchValue))
+            );
+            
+            return userMatch || targetMatch;
+        });
+    }
+    
+    if (filteredUserIds.length === 0) {
+        contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">没有找到符合条件的聊天匹配</div>';
+        return;
+    }
+    
     let html = `
         <div style="margin-bottom: 20px; padding: 15px; background-color: #e7f3ff; border-radius: 5px; border: 1px solid #b3d9ff;">
             <strong>配置参数：</strong>每人推荐 ${config.list_size} 人
         </div>
         <div style="margin-bottom: 20px; text-align: center;">
-            <h4>预览结果</h4>
+            <h4>预览结果（共 ${filteredUserIds.length} 人）</h4>
             <p style="color: #856404;">⚠️ 这是预览结果，尚未保存到数据库</p>
         </div>
     `;
     
-    Object.keys(chatLists).forEach(userId => {
+    filteredUserIds.forEach(userId => {
         const targetIds = chatLists[userId];
         const targetsWithNames = chatListsWithNames && chatListsWithNames[userId] ? chatListsWithNames[userId] : [];
         const userDetail = userInfo && userInfo[userId] ? userInfo[userId] : { name: userId, photo: '/images/default-avatar.png' };
@@ -5239,6 +5339,15 @@ function closePreviewModal() {
         const type = modal.dataset.type;
         modal.style.display = 'none';
         
+        // 清除搜索
+        const searchInput = document.getElementById('matchingPreviewSearchInput');
+        if (searchInput) searchInput.value = '';
+        const clearBtn = document.getElementById('clearMatchingPreviewSearchBtn');
+        if (clearBtn) clearBtn.style.display = 'none';
+        
+        // 清除预览数据
+        currentMatchingPreviewData = null;
+        
         // 返回到之前的配置模态框
         if (type === 'grouping') {
             const groupMatchingModal = document.getElementById('groupMatchingModal');
@@ -5249,6 +5358,230 @@ function closePreviewModal() {
             const chatMatchingModal = document.getElementById('chatMatchingModal');
             if (chatMatchingModal) {
                 chatMatchingModal.style.display = 'block';
+            }
+        }
+    }
+}
+
+// 渲染模拟匹配预览（带搜索过滤）
+function renderSimulateMatchingPreview(previewData) {
+    const { type, result, config } = previewData;
+    const contentArea = document.getElementById('previewDisplay').querySelector('.results-content-area');
+    const searchInput = document.getElementById('matchingPreviewSearchInput');
+    const searchValue = searchInput && searchInput.value.trim() ? searchInput.value.trim().toLowerCase() : '';
+    
+    if (type === 'grouping') {
+        const groups = result.groupingResults;
+        if (!groups || groups.length === 0) {
+            contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">暂无分组结果</div>';
+            return;
+        }
+        
+        // 应用搜索过滤
+        let filteredGroups = groups;
+        if (searchValue) {
+            filteredGroups = groups.filter(group => {
+                const maleMatch = group.male_members.some(member => 
+                    (member.username && member.username.toLowerCase().includes(searchValue)) ||
+                    (member.name && member.name.toLowerCase().includes(searchValue))
+                );
+                const femaleMatch = group.female_members.some(member => 
+                    (member.username && member.username.toLowerCase().includes(searchValue)) ||
+                    (member.name && member.name.toLowerCase().includes(searchValue))
+                );
+                return maleMatch || femaleMatch;
+            });
+        }
+        
+        if (filteredGroups.length === 0) {
+            contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">没有找到符合条件的分组</div>';
+            return;
+        }
+        
+        let html = `<div style="margin-bottom: 20px; text-align: center;">
+            <h4>模拟分组匹配结果（共 ${filteredGroups.length} 组）</h4>
+        </div>`;
+        
+        filteredGroups.forEach(group => {
+            html += `
+                <div class="group-result-item">
+                    <div class="group-result-header">
+                        第 ${group.group_id} 组（男 ${group.male_members.length} 人，女 ${group.female_members.length} 人）
+                    </div>
+                    <div class="group-result-body">
+                        <div class="group-members-grid">
+            `;
+            
+            group.male_members.forEach(member => {
+                html += `
+                    <div class="member-card male">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img src="${member.photo}" alt="${member.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <span style="font-weight: 500;">${member.name}</span>
+                                <span style="font-size: 12px; color: #666;">${member.username}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            group.female_members.forEach(member => {
+                html += `
+                    <div class="member-card female">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img src="${member.photo}" alt="${member.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <span style="font-weight: 500;">${member.name}</span>
+                                <span style="font-size: 12px; color: #666;">${member.username}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        contentArea.innerHTML = html;
+    } else {
+        // 聊天匹配
+        const chatLists = result.chatLists;
+        const chatListsWithNames = result.chatListsWithNames;
+        const userInfo = result.userInfo;
+        
+        if (!chatLists || Object.keys(chatLists).length === 0) {
+            contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">暂无聊天匹配结果</div>';
+            return;
+        }
+        
+        // 应用搜索过滤
+        let filteredUserIds = Object.keys(chatLists);
+        if (searchValue) {
+            filteredUserIds = filteredUserIds.filter(userId => {
+                const userDetail = userInfo && userInfo[userId] ? userInfo[userId] : null;
+                const userMatch = (userId && userId.toLowerCase().includes(searchValue)) ||
+                                 (userDetail && userDetail.name && userDetail.name.toLowerCase().includes(searchValue));
+                
+                const targetsWithNames = chatListsWithNames && chatListsWithNames[userId] ? chatListsWithNames[userId] : [];
+                const targetMatch = targetsWithNames.some(target => 
+                    (target.target_id && target.target_id.toLowerCase().includes(searchValue)) ||
+                    (target.target_name && target.target_name.toLowerCase().includes(searchValue))
+                );
+                
+                return userMatch || targetMatch;
+            });
+        }
+        
+        if (filteredUserIds.length === 0) {
+            contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">没有找到符合条件的聊天匹配</div>';
+            return;
+        }
+        
+        let html = `<div style="margin-bottom: 20px; text-align: center;">
+            <h4>模拟聊天匹配结果（共 ${filteredUserIds.length} 人）</h4>
+        </div>`;
+        
+        filteredUserIds.forEach(userId => {
+            const targetIds = chatLists[userId];
+            const targetsWithNames = chatListsWithNames && chatListsWithNames[userId] ? chatListsWithNames[userId] : [];
+            const userDetail = userInfo && userInfo[userId] ? userInfo[userId] : { name: userId, photo: '/images/default-avatar.png' };
+            
+            html += `
+                <div class="group-result-item">
+                    <div class="group-result-header">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img src="${userDetail.photo}" alt="${userDetail.name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <span style="font-weight: 500;">${userDetail.name}</span>
+                                <span style="font-size: 12px; color: #666;">${userId}</span>
+                            </div>
+                        </div>
+                        <span style="font-size: 14px; color: #666;">的推荐名单（${targetIds.length} 人）</span>
+                    </div>
+                    <div class="group-result-body">
+                        <div class="chat-result-grid">
+            `;
+            
+            targetsWithNames.forEach(targetDetail => {
+                const targetId = targetDetail.target_id;
+                html += `
+                    <div class="chat-target-card">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="${targetDetail.target_photo}" alt="${targetDetail.target_name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <span style="font-weight: 500; font-size: 14px;">${targetDetail.target_name}</span>
+                                <span style="font-size: 12px; color: #666;">${targetId}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        contentArea.innerHTML = html;
+    }
+}
+
+// 处理匹配预览搜索
+function handleMatchingPreviewSearch() {
+    const searchInput = document.getElementById('matchingPreviewSearchInput');
+    const clearBtn = document.getElementById('clearMatchingPreviewSearchBtn');
+    
+    if (searchInput && searchInput.value.trim()) {
+        if (clearBtn) clearBtn.style.display = 'flex';
+    } else {
+        if (clearBtn) clearBtn.style.display = 'none';
+    }
+    
+    // 重新渲染预览
+    if (currentMatchingPreviewData) {
+        if (currentMatchingPreviewData.isSimulate) {
+            // 模拟匹配预览
+            renderSimulateMatchingPreview(currentMatchingPreviewData);
+        } else {
+            // 正式匹配预览
+            if (currentMatchingPreviewData.type === 'grouping') {
+                renderGroupingPreview(currentMatchingPreviewData.result, currentMatchingPreviewData.config);
+            } else {
+                renderChatPreview(currentMatchingPreviewData.result, currentMatchingPreviewData.config);
+            }
+        }
+    }
+}
+
+// 清除匹配预览搜索
+function clearMatchingPreviewSearch() {
+    const searchInput = document.getElementById('matchingPreviewSearchInput');
+    const clearBtn = document.getElementById('clearMatchingPreviewSearchBtn');
+    
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+    }
+    if (clearBtn) clearBtn.style.display = 'none';
+    
+    // 重新渲染预览
+    if (currentMatchingPreviewData) {
+        if (currentMatchingPreviewData.isSimulate) {
+            // 模拟匹配预览
+            renderSimulateMatchingPreview(currentMatchingPreviewData);
+        } else {
+            // 正式匹配预览
+            if (currentMatchingPreviewData.type === 'grouping') {
+                renderGroupingPreview(currentMatchingPreviewData.result, currentMatchingPreviewData.config);
+            } else {
+                renderChatPreview(currentMatchingPreviewData.result, currentMatchingPreviewData.config);
             }
         }
     }
@@ -5310,6 +5643,20 @@ async function openResultsModal(type) {
     // 存储类型
     modal.dataset.type = type;
     
+    // 设置搜索事件监听器
+    const searchInput = document.getElementById('matchingResultsSearchInput');
+    const clearBtn = document.getElementById('clearMatchingResultsSearchBtn');
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.removeEventListener('input', handleMatchingResultsSearch);
+        searchInput.addEventListener('input', handleMatchingResultsSearch);
+    }
+    if (clearBtn) {
+        clearBtn.style.display = 'none';
+        clearBtn.removeEventListener('click', clearMatchingResultsSearch);
+        clearBtn.addEventListener('click', clearMatchingResultsSearch);
+    }
+    
     // 显示模态框
     modal.style.display = 'block';
     
@@ -5325,6 +5672,53 @@ function closeResultsModal() {
     const modal = document.getElementById('matchingResultsModal');
     if (modal) {
         modal.style.display = 'none';
+    }
+    // 清除搜索
+    const searchInput = document.getElementById('matchingResultsSearchInput');
+    if (searchInput) searchInput.value = '';
+    const clearBtn = document.getElementById('clearMatchingResultsSearchBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+}
+
+// 处理匹配结果搜索
+function handleMatchingResultsSearch() {
+    const searchInput = document.getElementById('matchingResultsSearchInput');
+    const clearBtn = document.getElementById('clearMatchingResultsSearchBtn');
+    
+    if (searchInput && searchInput.value.trim()) {
+        if (clearBtn) clearBtn.style.display = 'flex';
+    } else {
+        if (clearBtn) clearBtn.style.display = 'none';
+    }
+    
+    // 重新渲染当前显示的结果
+    if (currentMatchingResultsData) {
+        if (currentMatchingResultsData.type === 'grouping') {
+            renderGroupingResults(currentMatchingResultsData.data);
+        } else {
+            renderChatResults(currentMatchingResultsData.data);
+        }
+    }
+}
+
+// 清除匹配结果搜索
+function clearMatchingResultsSearch() {
+    const searchInput = document.getElementById('matchingResultsSearchInput');
+    const clearBtn = document.getElementById('clearMatchingResultsSearchBtn');
+    
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+    }
+    if (clearBtn) clearBtn.style.display = 'none';
+    
+    // 重新渲染当前显示的结果
+    if (currentMatchingResultsData) {
+        if (currentMatchingResultsData.type === 'grouping') {
+            renderGroupingResults(currentMatchingResultsData.data);
+        } else {
+            renderChatResults(currentMatchingResultsData.data);
+        }
     }
 }
 
@@ -5424,6 +5818,12 @@ async function loadSelectedBatchResult() {
         loadingDiv.style.display = 'none';
         
         if (data.success) {
+            // 保存原始数据
+            currentMatchingResultsData = {
+                type: type,
+                data: data.data
+            };
+            
             if (type === 'grouping') {
                 renderGroupingResults(data.data);
             } else {
@@ -5450,11 +5850,35 @@ function renderGroupingResults(resultData) {
         return;
     }
     
+    // 应用搜索过滤
+    let filteredGroups = groups;
+    const searchInput = document.getElementById('matchingResultsSearchInput');
+    if (searchInput && searchInput.value.trim()) {
+        const searchValue = searchInput.value.trim().toLowerCase();
+        filteredGroups = groups.filter(group => {
+            // 检查组内任何成员是否匹配搜索条件
+            const maleMatch = group.male_members.some(member => 
+                (member.username && member.username.toLowerCase().includes(searchValue)) ||
+                (member.name && member.name.toLowerCase().includes(searchValue))
+            );
+            const femaleMatch = group.female_members.some(member => 
+                (member.username && member.username.toLowerCase().includes(searchValue)) ||
+                (member.name && member.name.toLowerCase().includes(searchValue))
+            );
+            return maleMatch || femaleMatch;
+        });
+    }
+    
+    if (filteredGroups.length === 0) {
+        contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">没有找到符合条件的分组</div>';
+        return;
+    }
+    
     let html = `<div style="margin-bottom: 20px; text-align: center;">
-        <h4>第 ${runBatch} 轮分组匹配结果（共 ${groups.length} 组）</h4>
+        <h4>第 ${runBatch} 轮分组匹配结果（共 ${filteredGroups.length} 组）</h4>
     </div>`;
     
-    groups.forEach(group => {
+    filteredGroups.forEach(group => {
         html += `
             <div class="group-result-item">
                 <div class="group-result-header">
@@ -5514,9 +5938,27 @@ function renderChatResults(resultData) {
         return;
     }
     
+    // 应用搜索过滤
+    let filteredChatLists = chatLists;
+    const searchInput = document.getElementById('matchingResultsSearchInput');
+    if (searchInput && searchInput.value.trim()) {
+        const searchValue = searchInput.value.trim().toLowerCase();
+        filteredChatLists = chatLists.filter(item => 
+            (item.user_id && item.user_id.toLowerCase().includes(searchValue)) ||
+            (item.user_name && item.user_name.toLowerCase().includes(searchValue)) ||
+            (item.target_id && item.target_id.toLowerCase().includes(searchValue)) ||
+            (item.target_name && item.target_name.toLowerCase().includes(searchValue))
+        );
+    }
+    
+    if (filteredChatLists.length === 0) {
+        contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">没有找到符合条件的聊天匹配</div>';
+        return;
+    }
+    
     // 按用户分组
     const userGroups = {};
-    chatLists.forEach(item => {
+    filteredChatLists.forEach(item => {
         if (!userGroups[item.user_id]) {
             userGroups[item.user_id] = {
                 user_name: item.user_name,
@@ -5529,7 +5971,7 @@ function renderChatResults(resultData) {
     });
     
     let html = `<div style="margin-bottom: 20px; text-align: center;">
-        <h4>第 ${runBatch} 轮聊天匹配结果</h4>
+        <h4>第 ${runBatch} 轮聊天匹配结果（共 ${Object.keys(userGroups).length} 人）</h4>
     </div>`;
     
     Object.keys(userGroups).forEach(userId => {
@@ -5641,6 +6083,18 @@ async function openMatchmakingStatsModal() {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
     
+    // 设置搜索事件监听器
+    const searchInput = document.getElementById('matchmakingStatsSearchInput');
+    const clearBtn = document.getElementById('clearMatchmakingStatsSearchBtn');
+    if (searchInput) {
+        searchInput.removeEventListener('input', handleMatchmakingStatsSearch);
+        searchInput.addEventListener('input', handleMatchmakingStatsSearch);
+    }
+    if (clearBtn) {
+        clearBtn.removeEventListener('click', clearMatchmakingStatsSearch);
+        clearBtn.addEventListener('click', clearMatchmakingStatsSearch);
+    }
+    
     // 显示加载状态
     loadingEl.style.display = 'flex';
     tableContainer.style.display = 'none';
@@ -5677,6 +6131,39 @@ function closeMatchmakingStatsModal() {
     const modal = document.getElementById('matchmakingStatsModal');
     modal.classList.remove('active');
     document.body.style.overflow = '';
+    // 清除搜索
+    const searchInput = document.getElementById('matchmakingStatsSearchInput');
+    if (searchInput) searchInput.value = '';
+    const clearBtn = document.getElementById('clearMatchmakingStatsSearchBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+}
+
+// 处理配对统计搜索
+function handleMatchmakingStatsSearch() {
+    const searchInput = document.getElementById('matchmakingStatsSearchInput');
+    const clearBtn = document.getElementById('clearMatchmakingStatsSearchBtn');
+    
+    if (searchInput && searchInput.value.trim()) {
+        if (clearBtn) clearBtn.style.display = 'flex';
+    } else {
+        if (clearBtn) clearBtn.style.display = 'none';
+    }
+    
+    renderMatchmakingStats();
+}
+
+// 清除配对统计搜索
+function clearMatchmakingStatsSearch() {
+    const searchInput = document.getElementById('matchmakingStatsSearchInput');
+    const clearBtn = document.getElementById('clearMatchmakingStatsSearchBtn');
+    
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+    }
+    if (clearBtn) clearBtn.style.display = 'none';
+    
+    renderMatchmakingStats();
 }
 
 // 渲染配对统计
@@ -5685,7 +6172,21 @@ function renderMatchmakingStats() {
     const tableContainer = document.querySelector('.stats-table-container');
     const emptyEl = document.querySelector('.stats-empty');
     
-    if (matchmakingStatsData.length === 0) {
+    let data = matchmakingStatsData;
+    
+    // 应用搜索过滤
+    const searchInput = document.getElementById('matchmakingStatsSearchInput');
+    if (searchInput && searchInput.value.trim()) {
+        const searchValue = searchInput.value.trim().toLowerCase();
+        data = data.filter(item => 
+            (item.person1_id && item.person1_id.toLowerCase().includes(searchValue)) ||
+            (item.person1_name && item.person1_name.toLowerCase().includes(searchValue)) ||
+            (item.person2_id && item.person2_id.toLowerCase().includes(searchValue)) ||
+            (item.person2_name && item.person2_name.toLowerCase().includes(searchValue))
+        );
+    }
+    
+    if (data.length === 0) {
         tableContainer.style.display = 'none';
         emptyEl.style.display = 'block';
         return;
@@ -5695,7 +6196,7 @@ function renderMatchmakingStats() {
     emptyEl.style.display = 'none';
     
     let html = '';
-    matchmakingStatsData.forEach((item, index) => {
+    data.forEach((item, index) => {
         const starClass = item.total_stars === 0 ? 'zero' : '';
         
         // 确定男性和女性参与者
@@ -5785,6 +6286,18 @@ async function openFavoriteStatsModal() {
     tableContainer.style.display = 'none';
     emptyEl.style.display = 'none';
     
+    // 设置搜索事件监听器
+    const searchInput = document.getElementById('favoriteStatsSearchInput');
+    const clearBtn = document.getElementById('clearFavoriteStatsSearchBtn');
+    if (searchInput) {
+        searchInput.removeEventListener('input', handleFavoriteStatsSearch);
+        searchInput.addEventListener('input', handleFavoriteStatsSearch);
+    }
+    if (clearBtn) {
+        clearBtn.removeEventListener('click', clearFavoriteStatsSearch);
+        clearBtn.addEventListener('click', clearFavoriteStatsSearch);
+    }
+    
     // 设置选项卡点击事件
     const tabBtns = modal.querySelectorAll('.tab-btn');
     tabBtns.forEach(btn => {
@@ -5827,6 +6340,39 @@ function closeFavoriteStatsModal() {
     const modal = document.getElementById('favoriteStatsModal');
     modal.classList.remove('active');
     document.body.style.overflow = '';
+    // 清除搜索
+    const searchInput = document.getElementById('favoriteStatsSearchInput');
+    if (searchInput) searchInput.value = '';
+    const clearBtn = document.getElementById('clearFavoriteStatsSearchBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+}
+
+// 处理被收藏情况搜索
+function handleFavoriteStatsSearch() {
+    const searchInput = document.getElementById('favoriteStatsSearchInput');
+    const clearBtn = document.getElementById('clearFavoriteStatsSearchBtn');
+    
+    if (searchInput && searchInput.value.trim()) {
+        if (clearBtn) clearBtn.style.display = 'flex';
+    } else {
+        if (clearBtn) clearBtn.style.display = 'none';
+    }
+    
+    renderFavoriteStats();
+}
+
+// 清除被收藏情况搜索
+function clearFavoriteStatsSearch() {
+    const searchInput = document.getElementById('favoriteStatsSearchInput');
+    const clearBtn = document.getElementById('clearFavoriteStatsSearchBtn');
+    
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+    }
+    if (clearBtn) clearBtn.style.display = 'none';
+    
+    renderFavoriteStats();
 }
 
 // 渲染收藏情况
@@ -5835,7 +6381,17 @@ function renderFavoriteStats() {
     const tableContainer = document.querySelector('#favoriteStatsModal .stats-table-container');
     const emptyEl = document.querySelector('#favoriteStatsModal .stats-empty');
     
-    const data = favoriteStatsData[currentFavoriteGender] || [];
+    let data = favoriteStatsData[currentFavoriteGender] || [];
+    
+    // 应用搜索过滤
+    const searchInput = document.getElementById('favoriteStatsSearchInput');
+    if (searchInput && searchInput.value.trim()) {
+        const searchValue = searchInput.value.trim().toLowerCase();
+        data = data.filter(item => 
+            (item.username && item.username.toLowerCase().includes(searchValue)) ||
+            (item.name && item.name.toLowerCase().includes(searchValue))
+        );
+    }
     
     if (data.length === 0) {
         tableContainer.style.display = 'none';
@@ -5910,6 +6466,18 @@ async function openParticipantStatsModal() {
     tableContainer.style.display = 'none';
     emptyEl.style.display = 'none';
     
+    // 设置搜索事件监听器
+    const searchInput = document.getElementById('participantStatsSearchInput');
+    const clearBtn = document.getElementById('clearParticipantStatsSearchBtn');
+    if (searchInput) {
+        searchInput.removeEventListener('input', handleParticipantStatsSearch);
+        searchInput.addEventListener('input', handleParticipantStatsSearch);
+    }
+    if (clearBtn) {
+        clearBtn.removeEventListener('click', clearParticipantStatsSearch);
+        clearBtn.addEventListener('click', clearParticipantStatsSearch);
+    }
+    
     // 设置选项卡点击事件
     const tabBtns = modal.querySelectorAll('.tab-btn');
     tabBtns.forEach(btn => {
@@ -5952,6 +6520,39 @@ function closeParticipantStatsModal() {
     const modal = document.getElementById('participantStatsModal');
     modal.classList.remove('active');
     document.body.style.overflow = '';
+    // 清除搜索
+    const searchInput = document.getElementById('participantStatsSearchInput');
+    if (searchInput) searchInput.value = '';
+    const clearBtn = document.getElementById('clearParticipantStatsSearchBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+}
+
+// 处理被终选情况搜索
+function handleParticipantStatsSearch() {
+    const searchInput = document.getElementById('participantStatsSearchInput');
+    const clearBtn = document.getElementById('clearParticipantStatsSearchBtn');
+    
+    if (searchInput && searchInput.value.trim()) {
+        if (clearBtn) clearBtn.style.display = 'flex';
+    } else {
+        if (clearBtn) clearBtn.style.display = 'none';
+    }
+    
+    renderParticipantStats();
+}
+
+// 清除被终选情况搜索
+function clearParticipantStatsSearch() {
+    const searchInput = document.getElementById('participantStatsSearchInput');
+    const clearBtn = document.getElementById('clearParticipantStatsSearchBtn');
+    
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.focus();
+    }
+    if (clearBtn) clearBtn.style.display = 'none';
+    
+    renderParticipantStats();
 }
 
 // 渲染人员情况
@@ -5960,7 +6561,17 @@ function renderParticipantStats() {
     const tableContainer = document.querySelector('#participantStatsModal .stats-table-container');
     const emptyEl = document.querySelector('#participantStatsModal .stats-empty');
     
-    const data = participantStatsData[currentGender] || [];
+    let data = participantStatsData[currentGender] || [];
+    
+    // 应用搜索过滤
+    const searchInput = document.getElementById('participantStatsSearchInput');
+    if (searchInput && searchInput.value.trim()) {
+        const searchValue = searchInput.value.trim().toLowerCase();
+        data = data.filter(item => 
+            (item.username && item.username.toLowerCase().includes(searchValue)) ||
+            (item.name && item.name.toLowerCase().includes(searchValue))
+        );
+    }
     
     if (data.length === 0) {
         tableContainer.style.display = 'none';

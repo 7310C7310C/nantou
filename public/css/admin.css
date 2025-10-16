@@ -3553,6 +3553,28 @@ input[type="checkbox"]:checked + .toggle-slider:before {
     min-width: 150px;
 }
 
+.results-search {
+    padding: 15px 20px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.results-search .search-container {
+    max-width: 400px;
+}
+
+.results-search .search-input {
+    width: 100%;
+    padding: 12px 40px 12px 12px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    font-size: 14px;
+    text-align: center;
+}
+
 .results-display {
     flex: 1;
     overflow-y: auto;
@@ -3818,6 +3840,27 @@ input[type="checkbox"]:checked + .toggle-slider:before {
     color: #333;
 }
 
+.matchmaking-stats-search {
+    padding: 15px 24px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.matchmaking-stats-search .search-container {
+    max-width: 400px;
+}
+
+.matchmaking-stats-search .search-input {
+    width: 100%;
+    padding: 12px 40px 12px 12px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    font-size: 14px;
+    text-align: center;
+}
+
 .matchmaking-stats-body {
     flex: 1;
     overflow-y: auto;
@@ -4022,6 +4065,27 @@ input[type="checkbox"]:checked + .toggle-slider:before {
     background-color: #8b6f47;
     border-color: #8b6f47;
     color: white;
+}
+
+.participant-stats-search {
+    padding: 15px 24px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.participant-stats-search .search-container {
+    max-width: 400px;
+}
+
+.participant-stats-search .search-input {
+    width: 100%;
+    padding: 12px 40px 12px 12px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    font-size: 14px;
+    text-align: center;
 }
 
 .participant-stats-body {

@@ -590,8 +590,6 @@ function generateChatLists(participants, selections, matchmakerPicks, options, c
       }
     }
     bidirectionalPairs = bidirectionalPairs / 2;
-  
-    debugLog('info:', `聊天名单生成完成；总推荐数: ${totalMatches}, 双向配对数: ${bidirectionalPairs}`);
     
     return { 
       chatLists,

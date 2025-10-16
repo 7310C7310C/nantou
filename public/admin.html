@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>管理后台</title>
-    <link rel="stylesheet" href="css/style.css?v=20251016b">
-    <link rel="stylesheet" href="css/admin.css?v=20251016b">
+    <link rel="stylesheet" href="css/style.css?v=20251016c">
+    <link rel="stylesheet" href="css/admin.css?v=20251016c">
 </head>
 <body>
     <div class="admin-container">
@@ -891,6 +891,13 @@
                 <button class="close-btn" id="closePreviewBtn">&times;</button>
             </div>
             
+            <div class="results-search">
+                <div class="search-container">
+                    <input type="text" id="matchingPreviewSearchInput" placeholder="搜索编号或姓名..." class="search-input">
+                    <button class="clear-search-btn" id="clearMatchingPreviewSearchBtn" style="display: none;">&times;</button>
+                </div>
+            </div>
+            
             <div class="results-display" id="previewDisplay">
                 <div class="results-loading" style="display:none;">正在生成预览...</div>
                 <div class="results-content-area"></div>
@@ -989,6 +996,13 @@
                 </select>
             </div>
             
+            <div class="results-search">
+                <div class="search-container">
+                    <input type="text" id="matchingResultsSearchInput" placeholder="搜索编号或姓名..." class="search-input">
+                    <button class="clear-search-btn" id="clearMatchingResultsSearchBtn" style="display: none;">&times;</button>
+                </div>
+            </div>
+            
             <div class="results-display" id="resultsDisplay">
                 <div class="results-loading" style="display:none;">加载中...</div>
                 <div class="results-content-area"></div>
@@ -1002,6 +1016,13 @@
             <div class="matchmaking-stats-header">
                 <h3>💕 配对统计</h3>
                 <button class="close-btn" id="closeMatchmakingStatsBtn">&times;</button>
+            </div>
+            
+            <div class="matchmaking-stats-search">
+                <div class="search-container">
+                    <input type="text" id="matchmakingStatsSearchInput" placeholder="搜索编号或姓名..." class="search-input">
+                    <button class="clear-search-btn" id="clearMatchmakingStatsSearchBtn" style="display: none;">&times;</button>
+                </div>
             </div>
             
             <div class="matchmaking-stats-body">
@@ -1042,6 +1063,13 @@
                 <button class="tab-btn" data-gender="male">男</button>
             </div>
             
+            <div class="participant-stats-search">
+                <div class="search-container">
+                    <input type="text" id="favoriteStatsSearchInput" placeholder="搜索编号或姓名..." class="search-input">
+                    <button class="clear-search-btn" id="clearFavoriteStatsSearchBtn" style="display: none;">&times;</button>
+                </div>
+            </div>
+            
             <div class="participant-stats-body">
                 <div class="stats-loading" style="display:none;">
                     <div class="loading-spinner"></div>
@@ -1075,6 +1103,13 @@
             <div class="participant-stats-tabs">
                 <button class="tab-btn active" data-gender="female">女</button>
                 <button class="tab-btn" data-gender="male">男</button>
+            </div>
+            
+            <div class="participant-stats-search">
+                <div class="search-container">
+                    <input type="text" id="participantStatsSearchInput" placeholder="搜索编号或姓名..." class="search-input">
+                    <button class="clear-search-btn" id="clearParticipantStatsSearchBtn" style="display: none;">&times;</button>
+                </div>
             </div>
             
             <div class="participant-stats-body">
@@ -1253,6 +1288,6 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script src="js/Sortable.min.js"></script>
-    <script src="js/admin.js?v=20251016b"></script>
+    <script src="js/admin.js?v=20251016c"></script>
 </body>
 </html>
