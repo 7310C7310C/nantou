@@ -189,19 +189,23 @@ class MatchmakerRecommendation {
           p1.name as person1_name,
           p1.baptismal_name as person1_baptismal_name,
           p1.gender as person1_gender,
+          pp1.photo_url as person1_photo,
           p2.id as person2_participant_id,
           p2.name as person2_name,
           p2.baptismal_name as person2_baptismal_name,
           p2.gender as person2_gender,
+          pp2.photo_url as person2_photo,
           SUM(mr.stars) as total_stars,
           COUNT(DISTINCT mr.matchmaker_id) as matchmaker_count,
           GROUP_CONCAT(DISTINCT s.username ORDER BY s.username SEPARATOR ', ') as matchmakers
         FROM matchmaker_recommendations mr
         INNER JOIN participants p1 ON mr.person1_id = p1.username
         INNER JOIN participants p2 ON mr.person2_id = p2.username
+        LEFT JOIN participant_photos pp1 ON pp1.participant_id = p1.id AND pp1.is_primary = 1
+        LEFT JOIN participant_photos pp2 ON pp2.participant_id = p2.id AND pp2.is_primary = 1
         LEFT JOIN staff_users s ON mr.matchmaker_id = s.username
-        GROUP BY mr.person1_id, mr.person2_id, p1.id, p1.name, p1.baptismal_name, p1.gender,
-                 p2.id, p2.name, p2.baptismal_name, p2.gender
+        GROUP BY mr.person1_id, mr.person2_id, p1.id, p1.name, p1.baptismal_name, p1.gender, pp1.photo_url,
+                 p2.id, p2.name, p2.baptismal_name, p2.gender, pp2.photo_url
         ORDER BY total_stars DESC, mr.person1_id, mr.person2_id`
       );
       return rows;

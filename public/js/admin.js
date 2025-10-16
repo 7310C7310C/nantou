@@ -3971,7 +3971,8 @@ function renderSelectionsParticipants() {
                         }
                     </div>
                     <div class="selections-user-info">
-                        <div class="selections-user-name">${participant.name} (${participant.username})</div>
+                        <div class="selections-user-name">${participant.name}</div>
+                        <div class="selections-user-username">${participant.username}</div>
                     </div>
                 </div>
                 ${userSelections.length > 0 ? `
@@ -3986,7 +3987,13 @@ function renderSelectionsParticipants() {
                                 return `
                                     <div class="selections-target-item ${isMutual ? 'mutual-selection' : ''}">
                                         <div class="selections-target-priority">${selection.priority}</div>
-                                        <span>${selection.target_name} (${selection.target_username})</span>
+                                        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                                            <img src="${selection.target_photo || '/images/default-avatar.png'}" alt="${selection.target_name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                                <span style="font-weight: 500;">${selection.target_name}</span>
+                                                <span style="font-size: 12px; color: #666;">${selection.target_username}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 `;
                             }).join('')}
@@ -4071,6 +4078,7 @@ function setupMatchingEventListeners() {
     // 分组匹配模态框
     const closeGroupMatchingBtn = document.getElementById('closeGroupMatchingBtn');
     const cancelGroupMatchingBtn = document.getElementById('cancelGroupMatchingBtn');
+    const previewGroupMatchingBtn = document.getElementById('previewGroupMatchingBtn');
     const executeGroupMatchingConfirmBtn = document.getElementById('executeGroupMatchingConfirmBtn');
     
     if (closeGroupMatchingBtn) {
@@ -4079,6 +4087,9 @@ function setupMatchingEventListeners() {
     if (cancelGroupMatchingBtn) {
         cancelGroupMatchingBtn.addEventListener('click', closeGroupMatchingModal);
     }
+    if (previewGroupMatchingBtn) {
+        previewGroupMatchingBtn.addEventListener('click', previewGroupMatching);
+    }
     if (executeGroupMatchingConfirmBtn) {
         executeGroupMatchingConfirmBtn.addEventListener('click', executeGroupMatchingConfirm);
     }
@@ -4086,6 +4097,7 @@ function setupMatchingEventListeners() {
     // 聊天匹配模态框
     const closeChatMatchingBtn = document.getElementById('closeChatMatchingBtn');
     const cancelChatMatchingBtn = document.getElementById('cancelChatMatchingBtn');
+    const previewChatMatchingBtn = document.getElementById('previewChatMatchingBtn');
     const executeChatMatchingConfirmBtn = document.getElementById('executeChatMatchingConfirmBtn');
     
     if (closeChatMatchingBtn) {
@@ -4093,6 +4105,9 @@ function setupMatchingEventListeners() {
     }
     if (cancelChatMatchingBtn) {
         cancelChatMatchingBtn.addEventListener('click', closeChatMatchingModal);
+    }
+    if (previewChatMatchingBtn) {
+        previewChatMatchingBtn.addEventListener('click', previewChatMatching);
     }
     if (executeChatMatchingConfirmBtn) {
         executeChatMatchingConfirmBtn.addEventListener('click', executeChatMatchingConfirm);
@@ -4147,6 +4162,27 @@ function setupMatchingEventListeners() {
     if (matchingResultsModal) {
         matchingResultsModal.addEventListener('click', (e) => {
             if (e.target === matchingResultsModal) closeResultsModal();
+        });
+    }
+    
+    // 预览模态框
+    const closePreviewBtn = document.getElementById('closePreviewBtn');
+    const closePreviewBtn2 = document.getElementById('closePreviewBtn2');
+    const executeFromPreviewBtn = document.getElementById('executeFromPreviewBtn');
+    const matchingPreviewModal = document.getElementById('matchingPreviewModal');
+    
+    if (closePreviewBtn) {
+        closePreviewBtn.addEventListener('click', closePreviewModal);
+    }
+    if (closePreviewBtn2) {
+        closePreviewBtn2.addEventListener('click', closePreviewModal);
+    }
+    if (executeFromPreviewBtn) {
+        executeFromPreviewBtn.addEventListener('click', executeFromPreview);
+    }
+    if (matchingPreviewModal) {
+        matchingPreviewModal.addEventListener('click', (e) => {
+            if (e.target === matchingPreviewModal) closePreviewModal();
         });
     }
 }
@@ -4305,6 +4341,7 @@ function closeChatMatchingModal() {
 async function validateGroupMatching() {
     const statusDiv = document.getElementById('groupValidationStatus');
     const executeBtn = document.getElementById('executeGroupMatchingConfirmBtn');
+    const previewBtn = document.getElementById('previewGroupMatchingBtn');
     const loadingSpinner = statusDiv.querySelector('.loading-spinner');
     const resultDiv = statusDiv.querySelector('.validation-result');
     
@@ -4313,6 +4350,7 @@ async function validateGroupMatching() {
     resultDiv.innerHTML = '';
     resultDiv.className = 'validation-result';
     executeBtn.disabled = true;
+    previewBtn.disabled = true;
     
     try {
         const response = await fetch('/api/admin/validate-selections', {
@@ -4331,13 +4369,17 @@ async function validateGroupMatching() {
         
         loadingSpinner.style.display = 'none';
         
+        // 存储验证结果，供执行确认时使用
+        window.groupMatchingValidation = data.data;
+        
         if (data.success && data.data.isValid) {
             resultDiv.className = 'validation-result success';
             resultDiv.innerHTML = '<p>✅ 所有已签到用户都已完成选择，可以执行分组匹配</p>';
             executeBtn.disabled = false;
+            previewBtn.disabled = false;
         } else {
-            resultDiv.className = 'validation-result error';
-            let html = '<p>❌ 存在未完成选择的用户，无法执行分组匹配</p>';
+            resultDiv.className = 'validation-result warning';
+            let html = '<p>⚠️ 存在未完成选择的用户，匹配结果可能不佳</p>';
             
             if (data.data && data.data.missingUsers && data.data.missingUsers.length > 0) {
                 html += '<div class="missing-users-list">';
@@ -4359,6 +4401,9 @@ async function validateGroupMatching() {
             }
             
             resultDiv.innerHTML = html;
+            // 仍然允许执行，但用户会看到警告
+            executeBtn.disabled = false;
+            previewBtn.disabled = false;
         }
         
     } catch (error) {
@@ -4373,6 +4418,7 @@ async function validateGroupMatching() {
 async function validateChatMatching() {
     const statusDiv = document.getElementById('chatValidationStatus');
     const executeBtn = document.getElementById('executeChatMatchingConfirmBtn');
+    const previewBtn = document.getElementById('previewChatMatchingBtn');
     const loadingSpinner = statusDiv.querySelector('.loading-spinner');
     const resultDiv = statusDiv.querySelector('.validation-result');
     
@@ -4381,6 +4427,7 @@ async function validateChatMatching() {
     resultDiv.innerHTML = '';
     resultDiv.className = 'validation-result';
     executeBtn.disabled = true;
+    previewBtn.disabled = true;
     
     try {
         const response = await fetch('/api/admin/validate-selections', {
@@ -4399,13 +4446,17 @@ async function validateChatMatching() {
         
         loadingSpinner.style.display = 'none';
         
+        // 存储验证结果，供执行确认时使用
+        window.chatMatchingValidation = data.data;
+        
         if (data.success && data.data.isValid) {
             resultDiv.className = 'validation-result success';
             resultDiv.innerHTML = '<p>✅ 所有已签到用户都已完成选择，可以执行聊天匹配</p>';
             executeBtn.disabled = false;
+            previewBtn.disabled = false;
         } else {
-            resultDiv.className = 'validation-result error';
-            let html = '<p>❌ 存在未完成选择的用户，无法执行聊天匹配</p>';
+            resultDiv.className = 'validation-result warning';
+            let html = '<p>⚠️ 存在未完成选择的用户，匹配结果可能不佳</p>';
             
             if (data.data && data.data.missingUsers && data.data.missingUsers.length > 0) {
                 html += '<div class="missing-users-list">';
@@ -4427,6 +4478,9 @@ async function validateChatMatching() {
             }
             
             resultDiv.innerHTML = html;
+            // 仍然允许执行，但用户会看到警告
+            executeBtn.disabled = false;
+            previewBtn.disabled = false;
         }
         
     } catch (error) {
@@ -4451,7 +4505,19 @@ function executeGroupMatchingConfirm() {
     const infoEl = document.getElementById('matchingConfirmInfo');
     
     titleEl.textContent = '确认执行分组匹配';
+    
+    let warningHtml = '';
+    // 检查是否有未完成选择的用户
+    if (window.groupMatchingValidation && !window.groupMatchingValidation.isValid) {
+        warningHtml = `
+            <div style="color: #721c24; background-color: #f8d7da; padding: 15px; border-radius: 5px; border: 1px solid #f5c6cb; margin-bottom: 20px;">
+                <strong>⚠️ 警告：</strong>存在未完成选择的用户，匹配结果可能不佳，是否坚持执行？
+            </div>
+        `;
+    }
+    
     infoEl.innerHTML = `
+        ${warningHtml}
         <div style="margin-bottom: 15px;">
             <strong>配置信息：</strong>
         </div>
@@ -4489,7 +4555,19 @@ function executeChatMatchingConfirm() {
     const infoEl = document.getElementById('matchingConfirmInfo');
     
     titleEl.textContent = '确认执行聊天匹配';
+    
+    let warningHtml = '';
+    // 检查是否有未完成选择的用户
+    if (window.chatMatchingValidation && !window.chatMatchingValidation.isValid) {
+        warningHtml = `
+            <div style="color: #721c24; background-color: #f8d7da; padding: 15px; border-radius: 5px; border: 1px solid #f5c6cb; margin-bottom: 20px;">
+                <strong>⚠️ 警告：</strong>存在未完成选择的用户，匹配结果可能不佳，是否坚持执行？
+            </div>
+        `;
+    }
+    
     infoEl.innerHTML = `
+        ${warningHtml}
         <div style="margin-bottom: 15px;">
             <strong>配置信息：</strong>
         </div>
@@ -4526,6 +4604,292 @@ async function executeMatching() {
     
     // 关闭确认模态框
     closeMatchingConfirmModal();
+    
+    // 显示加载提示
+    showLoadingOverlay('正在执行匹配算法，请稍候...');
+    
+    try {
+        const endpoint = type === 'grouping' ? '/api/admin/execute-group-matching' : '/api/admin/execute-chat-matching';
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        hideLoadingOverlay();
+        
+        if (data.success) {
+            const typeName = type === 'grouping' ? '分组匹配' : '聊天匹配';
+            showToast(`${data.message}`, 'success');
+        } else {
+            throw new Error(data.message || '执行失败');
+        }
+        
+    } catch (error) {
+        console.error('执行匹配算法失败:', error);
+        hideLoadingOverlay();
+        showToast(error.message || '执行匹配算法失败，请稍后重试', 'error');
+    }
+}
+
+// 预览分组匹配
+async function previewGroupMatching() {
+    const maleSize = parseInt(document.getElementById('groupMaleSize').value);
+    const femaleSize = parseInt(document.getElementById('groupFemaleSize').value);
+    
+    const config = {
+        group_size_male: maleSize,
+        group_size_female: femaleSize
+    };
+    
+    await showMatchingPreview('grouping', config);
+}
+
+// 预览聊天匹配
+async function previewChatMatching() {
+    const listSize = parseInt(document.getElementById('chatListSize').value);
+    
+    const config = {
+        list_size: listSize
+    };
+    
+    await showMatchingPreview('chat', config);
+}
+
+// 显示匹配预览
+async function showMatchingPreview(type, config) {
+    // 关闭配置模态框
+    if (type === 'grouping') {
+        closeGroupMatchingModal();
+    } else {
+        closeChatMatchingModal();
+    }
+    
+    // 打开预览模态框
+    const modal = document.getElementById('matchingPreviewModal');
+    const titleEl = document.getElementById('previewTitle');
+    const displayDiv = document.getElementById('previewDisplay');
+    const loadingDiv = displayDiv.querySelector('.results-loading');
+    const contentArea = displayDiv.querySelector('.results-content-area');
+    const executeBtn = document.getElementById('executeFromPreviewBtn');
+    
+    titleEl.textContent = type === 'grouping' ? '分组匹配预览' : '聊天匹配预览';
+    modal.style.display = 'block';
+    loadingDiv.style.display = 'block';
+    contentArea.innerHTML = '';
+    
+    // 存储配置供后续执行使用
+    modal.dataset.type = type;
+    modal.dataset.config = JSON.stringify(config);
+    
+    try {
+        const endpoint = type === 'grouping' ? '/api/admin/preview-group-matching' : '/api/admin/preview-chat-matching';
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        loadingDiv.style.display = 'none';
+        
+        if (data.success) {
+            // 渲染预览结果
+            if (type === 'grouping') {
+                renderGroupingPreview(data.result, config);
+            } else {
+                renderChatPreview(data.result, config);
+            }
+        } else {
+            throw new Error(data.message || '生成预览失败');
+        }
+        
+    } catch (error) {
+        console.error('获取预览失败:', error);
+        loadingDiv.style.display = 'none';
+        contentArea.innerHTML = `<div style="text-align: center; padding: 40px; color: #dc3545;">获取预览失败：${error.message}</div>`;
+        executeBtn.disabled = true;
+    }
+}
+
+// 渲染分组匹配预览
+function renderGroupingPreview(result, config) {
+    const contentArea = document.getElementById('previewDisplay').querySelector('.results-content-area');
+    const { groups } = result;
+    
+    if (!groups || groups.length === 0) {
+        contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">无法生成分组结果</div>';
+        return;
+    }
+    
+    let html = `
+        <div style="margin-bottom: 20px; padding: 15px; background-color: #e7f3ff; border-radius: 5px; border: 1px solid #b3d9ff;">
+            <strong>配置参数：</strong>每组男性 ${config.group_size_male} 人，女性 ${config.group_size_female} 人
+        </div>
+        <div style="margin-bottom: 20px; text-align: center;">
+            <h4>预览结果（共 ${groups.length} 组）</h4>
+            <p style="color: #856404;">⚠️ 这是预览结果，尚未保存到数据库</p>
+        </div>
+    `;
+    
+    groups.forEach(group => {
+        html += `
+            <div class="group-result-item">
+                <div class="group-result-header">
+                    第 ${group.group_id} 组（男 ${group.male_members.length} 人，女 ${group.female_members.length} 人）
+                </div>
+                <div class="group-result-body">
+                    <div class="group-members-grid">
+        `;
+        
+        // 显示男性成员
+        group.male_members.forEach(member => {
+            html += `
+                <div class="member-card male">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${member.photo}" alt="${member.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${member.name}</span>
+                            <span style="font-size: 12px; color: #666;">${member.username}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        // 显示女性成员
+        group.female_members.forEach(member => {
+            html += `
+                <div class="member-card female">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${member.photo}" alt="${member.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${member.name}</span>
+                            <span style="font-size: 12px; color: #666;">${member.username}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    contentArea.innerHTML = html;
+}
+
+// 渲染聊天匹配预览
+function renderChatPreview(result, config) {
+    const contentArea = document.getElementById('previewDisplay').querySelector('.results-content-area');
+    const { chatLists, chatListsWithNames, userNames, userInfo } = result;
+    
+    if (!chatLists || Object.keys(chatLists).length === 0) {
+        contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">无法生成聊天匹配结果</div>';
+        return;
+    }
+    
+    let html = `
+        <div style="margin-bottom: 20px; padding: 15px; background-color: #e7f3ff; border-radius: 5px; border: 1px solid #b3d9ff;">
+            <strong>配置参数：</strong>每人推荐 ${config.list_size} 人
+        </div>
+        <div style="margin-bottom: 20px; text-align: center;">
+            <h4>预览结果</h4>
+            <p style="color: #856404;">⚠️ 这是预览结果，尚未保存到数据库</p>
+        </div>
+    `;
+    
+    Object.keys(chatLists).forEach(userId => {
+        const targetIds = chatLists[userId];
+        const targetsWithNames = chatListsWithNames && chatListsWithNames[userId] ? chatListsWithNames[userId] : [];
+        const userDetail = userInfo && userInfo[userId] ? userInfo[userId] : { name: userId, photo: '/images/default-avatar.png' };
+        
+        html += `
+            <div class="group-result-item">
+                <div class="group-result-header">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${userDetail.photo}" alt="${userDetail.name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${userDetail.name}</span>
+                            <span style="font-size: 12px; color: #666;">${userId}</span>
+                        </div>
+                    </div>
+                    <span style="font-size: 14px; color: #666;">的推荐名单（${targetIds.length} 人）</span>
+                </div>
+                <div class="group-result-body">
+                    <div class="chat-result-grid">
+        `;
+        
+        targetIds.forEach((targetId, index) => {
+            const targetDetail = targetsWithNames[index] || { target_name: targetId, target_gender: null, target_photo: '/images/default-avatar.png' };
+            const genderClass = targetDetail.target_gender === 'male' ? 'male' : 'female';
+            html += `
+                <div class="chat-target-card ${genderClass}">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${targetDetail.target_photo}" alt="${targetDetail.target_name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${targetDetail.target_name}</span>
+                            <span style="font-size: 12px; color: #666;">${targetId}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    contentArea.innerHTML = html;
+}
+
+// 关闭预览模态框
+function closePreviewModal() {
+    const modal = document.getElementById('matchingPreviewModal');
+    if (modal) {
+        const type = modal.dataset.type;
+        modal.style.display = 'none';
+        
+        // 返回到之前的配置模态框
+        if (type === 'grouping') {
+            const groupMatchingModal = document.getElementById('groupMatchingModal');
+            if (groupMatchingModal) {
+                groupMatchingModal.style.display = 'block';
+            }
+        } else if (type === 'chat') {
+            const chatMatchingModal = document.getElementById('chatMatchingModal');
+            if (chatMatchingModal) {
+                chatMatchingModal.style.display = 'block';
+            }
+        }
+    }
+}
+
+// 从预览执行匹配
+async function executeFromPreview() {
+    const modal = document.getElementById('matchingPreviewModal');
+    const type = modal.dataset.type;
+    const config = JSON.parse(modal.dataset.config);
+    
+    // 关闭预览模态框
+    closePreviewModal();
     
     // 显示加载提示
     showLoadingOverlay('正在执行匹配算法，请稍候...');
@@ -4732,8 +5096,13 @@ function renderGroupingResults(resultData) {
         group.male_members.forEach(member => {
             html += `
                 <div class="member-card male">
-                    <div class="member-name">${member.name}（${member.username}）</div>
-                    <div class="member-details">男</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${member.photo}" alt="${member.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${member.name}</span>
+                            <span style="font-size: 12px; color: #666;">${member.username}</span>
+                        </div>
+                    </div>
                 </div>
             `;
         });
@@ -4742,8 +5111,13 @@ function renderGroupingResults(resultData) {
         group.female_members.forEach(member => {
             html += `
                 <div class="member-card female">
-                    <div class="member-name">${member.name}（${member.username}）</div>
-                    <div class="member-details">女</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${member.photo}" alt="${member.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${member.name}</span>
+                            <span style="font-size: 12px; color: #666;">${member.username}</span>
+                        </div>
+                    </div>
                 </div>
             `;
         });
@@ -4772,9 +5146,14 @@ function renderChatResults(resultData) {
     const userGroups = {};
     chatLists.forEach(item => {
         if (!userGroups[item.user_id]) {
-            userGroups[item.user_id] = [];
+            userGroups[item.user_id] = {
+                user_name: item.user_name,
+                user_photo: item.user_photo,
+                user_gender: item.user_gender,
+                targets: []
+            };
         }
-        userGroups[item.user_id].push(item);
+        userGroups[item.user_id].targets.push(item);
     });
     
     let html = `<div style="margin-bottom: 20px; text-align: center;">
@@ -4782,12 +5161,19 @@ function renderChatResults(resultData) {
     </div>`;
     
     Object.keys(userGroups).forEach(userId => {
-        const userTargets = userGroups[userId];
-        const userName = userTargets[0].user_name;
+        const userGroup = userGroups[userId];
+        const userTargets = userGroup.targets;
         html += `
             <div class="group-result-item">
                 <div class="group-result-header">
-                    ${userName}（${userId}）的推荐名单（${userTargets.length} 人）
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${userGroup.user_photo}" alt="${userGroup.user_name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${userGroup.user_name}</span>
+                            <span style="font-size: 12px; color: #666;">${userId}</span>
+                        </div>
+                    </div>
+                    <span style="font-size: 14px; color: #666;">的推荐名单（${userTargets.length} 人）</span>
                 </div>
                 <div class="group-result-body">
                     <div class="chat-result-grid">
@@ -4796,11 +5182,18 @@ function renderChatResults(resultData) {
         userTargets.forEach(target => {
             const statusClass = target.is_completed ? 'completed' : 'pending';
             const statusText = target.is_completed ? '已聊' : '未聊';
+            const genderClass = target.target_gender === 'male' ? 'male' : 'female';
             
             html += `
-                <div class="chat-target-card">
-                    <div class="member-name">${target.target_name}（${target.target_id}）</div>
-                    <div class="chat-status ${statusClass}">${statusText}</div>
+                <div class="chat-target-card ${genderClass}">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${target.target_photo}" alt="${target.target_name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px; flex: 1;">
+                            <span style="font-weight: 500;">${target.target_name}</span>
+                            <span style="font-size: 12px; color: #666;">${target.target_id}</span>
+                            <div class="chat-status ${statusClass}" style="display: inline-block; margin-top: 4px;">${statusText}</div>
+                        </div>
+                    </div>
                 </div>
             `;
         });
@@ -4938,28 +5331,48 @@ function renderMatchmakingStats() {
         if (item.person1_gender === 'male') {
             malePerson = {
                 name: item.person1_name || '未知',
-                username: item.person1_id
+                username: item.person1_id,
+                photo: item.person1_photo || '/images/default-avatar.png'
             };
             femalePerson = {
                 name: item.person2_name || '未知',
-                username: item.person2_id
+                username: item.person2_id,
+                photo: item.person2_photo || '/images/default-avatar.png'
             };
         } else {
             malePerson = {
                 name: item.person2_name || '未知',
-                username: item.person2_id
+                username: item.person2_id,
+                photo: item.person2_photo || '/images/default-avatar.png'
             };
             femalePerson = {
                 name: item.person1_name || '未知',
-                username: item.person1_id
+                username: item.person1_id,
+                photo: item.person1_photo || '/images/default-avatar.png'
             };
         }
         
         html += `
             <tr>
                 <td>${index + 1}</td>
-                <td>${malePerson.name}（${malePerson.username}）</td>
-                <td>${femalePerson.name}（${femalePerson.username}）</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${malePerson.photo}" alt="${malePerson.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${malePerson.name}</span>
+                            <span style="font-size: 12px; color: #666;">${malePerson.username}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${femalePerson.photo}" alt="${femalePerson.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${femalePerson.name}</span>
+                            <span style="font-size: 12px; color: #666;">${femalePerson.username}</span>
+                        </div>
+                    </div>
+                </td>
                 <td>
                     <div class="star-count ${starClass}">
                         ${item.total_stars} ⭐
@@ -6104,7 +6517,8 @@ function renderFavoriteMutualParticipants() {
                         }
                     </div>
                     <div class="selections-user-info">
-                        <div class="selections-user-name">${participant.name} (${participant.username})</div>
+                        <div class="selections-user-name">${participant.name}</div>
+                        <div class="selections-user-username">${participant.username}</div>
                     </div>
                 </div>
                 ${userFavorites.length > 0 ? `
@@ -6118,7 +6532,13 @@ function renderFavoriteMutualParticipants() {
                                 
                                 return `
                                     <div class="selections-target-item ${isMutual ? 'mutual-selection' : ''}">
-                                        <span>${favorite.target_name} (${favorite.target_username})</span>
+                                        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                                            <img src="${favorite.target_photo || '/images/default-avatar.png'}" alt="${favorite.target_name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                                <span style="font-weight: 500;">${favorite.target_name}</span>
+                                                <span style="font-size: 12px; color: #666;">${favorite.target_username}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 `;
                             }).join('')}

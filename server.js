@@ -163,6 +163,8 @@ app.get('/api/admin/favorite-mutual-data', protect, restrictTo('admin', 'staff',
 
 // 匹配算法管理API路由（仅管理员可访问）
 app.get('/api/admin/validate-selections', protect, restrictTo('admin'), adminController.validateUserSelections);
+app.post('/api/admin/preview-group-matching', protect, restrictTo('admin'), adminController.previewGroupMatching);
+app.post('/api/admin/preview-chat-matching', protect, restrictTo('admin'), adminController.previewChatMatching);
 app.post('/api/admin/execute-group-matching', protect, restrictTo('admin'), adminController.executeGroupMatching);
 app.post('/api/admin/execute-chat-matching', protect, restrictTo('admin'), adminController.executeChatMatching);
 app.get('/api/admin/grouping-history', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getGroupingHistory);
