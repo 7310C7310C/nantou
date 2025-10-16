@@ -619,7 +619,7 @@ function controlUIByRole(role) {
     // 根据角色修改算法操作的标题
     if (algorithmOperationTitle) {
         if (role === 'staff' || role === 'matchmaker') {
-            algorithmOperationTitle.innerHTML = '🧮 算法模拟<br><small style="font-size: 12px; color: #666; font-weight: normal;">（基于收藏顺序，准确性有限，活动当天会有入口给参与者选出 7 人手动排序）</small>';
+            algorithmOperationTitle.innerHTML = '🧮 算法模拟<br><small style="font-size: 12px; color: #666; font-weight: normal;">（基于参与者收藏顺序，准确性有限，活动当天会有入口给参与者选出 7 人手动排序）</small>';
         } else {
             algorithmOperationTitle.innerHTML = '🧮 算法操作';
         }
