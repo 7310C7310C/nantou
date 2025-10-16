@@ -820,7 +820,7 @@ async function simulateGroupMatching(options) {
     `);
     
     // 将收藏数据转换为选择数据格式，使用序号作为选择顺序
-    const simulatedSelections = [];
+    const simulatedSelections = {};
     const userFavoritesMap = {};
     
     favoriteRows.forEach(fav => {
@@ -830,16 +830,13 @@ async function simulateGroupMatching(options) {
       userFavoritesMap[fav.user_id].push(fav.target_id);
     });
     
-    // 转换为选择格式
+    // 转换为选择格式（对象格式，与正式版保持一致）
     Object.keys(userFavoritesMap).forEach(userId => {
       const targets = userFavoritesMap[userId];
-      targets.forEach((targetId, index) => {
-        simulatedSelections.push({
-          user_id: userId,
-          target_id: targetId,
-          selection_order: index + 1 // 收藏越早，序号越小
-        });
-      });
+      simulatedSelections[userId] = targets.map((targetId, index) => ({
+        id: targetId,           // 使用 id 字段
+        priority: index + 1     // 使用 priority 字段，收藏越早，序号越小
+      }));
     });
     
     // 获取所有参与者的用户名（从转换后的participantRows中获取id，即username）
@@ -981,7 +978,7 @@ async function simulateChatMatching(options) {
     `);
     
     // 将收藏数据转换为选择数据格式
-    const simulatedSelections = [];
+    const simulatedSelections = {};
     const userFavoritesMap = {};
     
     favoriteRows.forEach(fav => {
@@ -991,16 +988,13 @@ async function simulateChatMatching(options) {
       userFavoritesMap[fav.user_id].push(fav.target_id);
     });
     
-    // 转换为选择格式
+    // 转换为选择格式（对象格式，与正式版保持一致）
     Object.keys(userFavoritesMap).forEach(userId => {
       const targets = userFavoritesMap[userId];
-      targets.forEach((targetId, index) => {
-        simulatedSelections.push({
-          user_id: userId,
-          target_id: targetId,
-          selection_order: index + 1
-        });
-      });
+      simulatedSelections[userId] = targets.map((targetId, index) => ({
+        id: targetId,           // 使用 id 字段
+        priority: index + 1     // 使用 priority 字段，收藏越早，序号越小
+      }));
     });
     
     // 获取所有参与者的用户名（从转换后的participantRows中获取id，即username）

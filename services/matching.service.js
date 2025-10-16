@@ -66,7 +66,7 @@ function calculateMutualAffinityScore(person1Id, person2Id, selections, matchmak
     // 计算 person1 → person2 的用户选择分数
     let userScore1to2 = 0;
     if (selections[person1Id]) {
-        const selection = selections[person1Id].find(s => (s.id || s.target_id) === person2Id);
+        const selection = selections[person1Id].find(s => s.id === person2Id);
         if (selection) {
             userScore1to2 = calculateUserSelectionScore(selection.priority);
         }
@@ -75,7 +75,7 @@ function calculateMutualAffinityScore(person1Id, person2Id, selections, matchmak
     // 计算 person2 → person1 的用户选择分数
     let userScore2to1 = 0;
     if (selections[person2Id]) {
-        const selection = selections[person2Id].find(s => (s.id || s.target_id) === person1Id);
+        const selection = selections[person2Id].find(s => s.id === person1Id);
         if (selection) {
             userScore2to1 = calculateUserSelectionScore(selection.priority);
         }
