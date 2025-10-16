@@ -881,7 +881,7 @@ async function clearAllCheckins(req, res) {
 async function getFeatureFlags(req, res) {
   try {
     const [rows] = await pool.execute(
-      'SELECT grouping_enabled, chat_enabled FROM feature_flags LIMIT 1'
+      'SELECT grouping_enabled, chat_enabled, simulation_enabled FROM feature_flags LIMIT 1'
     );
 
     let featureFlags;
@@ -889,12 +889,14 @@ async function getFeatureFlags(req, res) {
       // 如果没有记录，返回默认值
       featureFlags = {
         grouping_enabled: false,
-        chat_enabled: false
+        chat_enabled: false,
+        simulation_enabled: false
       };
     } else {
       featureFlags = {
         grouping_enabled: Boolean(rows[0].grouping_enabled),
-        chat_enabled: Boolean(rows[0].chat_enabled)
+        chat_enabled: Boolean(rows[0].chat_enabled),
+        simulation_enabled: Boolean(rows[0].simulation_enabled)
       };
     }
 
@@ -921,10 +923,10 @@ async function getFeatureFlags(req, res) {
  */
 async function updateFeatureFlags(req, res) {
   try {
-    const { grouping_enabled, chat_enabled } = req.body;
+    const { grouping_enabled, chat_enabled, simulation_enabled } = req.body;
 
     // 验证输入
-    if (typeof grouping_enabled !== 'boolean' || typeof chat_enabled !== 'boolean') {
+    if (typeof grouping_enabled !== 'boolean' || typeof chat_enabled !== 'boolean' || typeof simulation_enabled !== 'boolean') {
       return res.status(400).json({
         success: false,
         message: '功能开关状态必须是布尔值'
@@ -947,14 +949,14 @@ async function updateFeatureFlags(req, res) {
     if (existingRows.length === 0) {
       // 插入新记录
       await pool.execute(
-        'INSERT INTO feature_flags (grouping_enabled, chat_enabled) VALUES (?, ?)',
-        [grouping_enabled, chat_enabled]
+        'INSERT INTO feature_flags (grouping_enabled, chat_enabled, simulation_enabled) VALUES (?, ?, ?)',
+        [grouping_enabled, chat_enabled, simulation_enabled]
       );
     } else {
       // 更新现有记录
       await pool.execute(
-        'UPDATE feature_flags SET grouping_enabled = ?, chat_enabled = ? WHERE id = ?',
-        [grouping_enabled, chat_enabled, existingRows[0].id]
+        'UPDATE feature_flags SET grouping_enabled = ?, chat_enabled = ?, simulation_enabled = ? WHERE id = ?',
+        [grouping_enabled, chat_enabled, simulation_enabled, existingRows[0].id]
       );
     }
 
