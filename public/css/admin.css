@@ -294,6 +294,15 @@ img {
     display: none;
 }
 
+.info-message {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
 /* 按钮样式 */
 .btn {
     padding: 10px 20px;

@@ -1279,6 +1279,85 @@ async function previewChatMatching(req, res) {
 }
 
 /**
+ * 模拟分组匹配（使用收藏数据，不检查签到）
+ */
+async function simulateGroupMatching(req, res) {
+  try {
+    logger.info('收到模拟分组匹配请求', { body: req.body, user: req.user?.username });
+    
+    const { group_size_male = 3, group_size_female = 3 } = req.body;
+
+    // 验证输入
+    if (!Number.isInteger(group_size_male) || group_size_male < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '男性组大小必须是大于等于1的整数'
+      });
+    }
+
+    if (!Number.isInteger(group_size_female) || group_size_female < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '女性组大小必须是大于等于1的整数'
+      });
+    }
+
+    const options = { group_size_male, group_size_female };
+    const result = await matchingAdminService.simulateGroupMatching(options);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    logger.error('模拟分组匹配失败', error);
+    res.status(500).json({
+      success: false,
+      message: '模拟分组匹配失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
+ * 模拟聊天匹配（使用收藏数据，不检查签到）
+ */
+async function simulateChatMatching(req, res) {
+  try {
+    logger.info('收到模拟聊天匹配请求', { body: req.body, user: req.user?.username });
+    
+    const { list_size = 5 } = req.body;
+
+    // 验证输入
+    if (!Number.isInteger(list_size) || list_size < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '名单大小必须是大于等于1的整数'
+      });
+    }
+
+    const options = { list_size };
+    const result = await matchingAdminService.simulateChatMatching(options);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    logger.error('模拟聊天匹配失败', error);
+    res.status(500).json({
+      success: false,
+      message: '模拟聊天匹配失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
  * 获取分组匹配历史
  */
 async function getGroupingHistory(req, res) {
@@ -1775,6 +1854,8 @@ module.exports = {
   executeChatMatching,
   previewGroupMatching,
   previewChatMatching,
+  simulateGroupMatching,
+  simulateChatMatching,
   getGroupingHistory,
   getChatHistory,
   getGroupingResult,

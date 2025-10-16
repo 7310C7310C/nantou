@@ -776,6 +776,302 @@ async function previewChatMatching(options) {
   }
 }
 
+/**
+ * 模拟分组匹配（使用收藏数据代替终选数据，不检查签到状态）
+ * @param {Object} options 配置选项 {group_size_male, group_size_female}
+ * @returns {Object} 模拟结果
+ */
+async function simulateGroupMatching(options) {
+  const { generateGroups } = require('./matching.service');
+  
+  try {
+    logger.info('开始模拟分组匹配', { options });
+    
+    // 获取所有参与者（不检查签到）
+    const [rawParticipantRows] = await pool.execute(`
+      SELECT username, name, baptismal_name, gender 
+      FROM participants 
+      ORDER BY username
+    `);
+    
+    if (rawParticipantRows.length === 0) {
+      return {
+        success: false,
+        message: '没有参与者数据'
+      };
+    }
+    
+    // 转换为算法需要的格式：{id: username, gender: gender}
+    const participantRows = rawParticipantRows.map(row => ({
+      id: row.username,  // 算法需要的id字段使用username
+      gender: row.gender
+    }));
+    
+    // 获取所有收藏数据，按创建时间排序，并转换为 username
+    const [favoriteRows] = await pool.execute(`
+      SELECT 
+        u.username as user_id, 
+        t.username as target_id, 
+        f.created_at
+      FROM favorites f
+      JOIN participants u ON f.user_id = u.id
+      JOIN participants t ON f.favorited_participant_id = t.id
+      ORDER BY u.username, f.created_at ASC
+    `);
+    
+    // 将收藏数据转换为选择数据格式，使用序号作为选择顺序
+    const simulatedSelections = [];
+    const userFavoritesMap = {};
+    
+    favoriteRows.forEach(fav => {
+      if (!userFavoritesMap[fav.user_id]) {
+        userFavoritesMap[fav.user_id] = [];
+      }
+      userFavoritesMap[fav.user_id].push(fav.target_id);
+    });
+    
+    // 转换为选择格式
+    Object.keys(userFavoritesMap).forEach(userId => {
+      const targets = userFavoritesMap[userId];
+      targets.forEach((targetId, index) => {
+        simulatedSelections.push({
+          user_id: userId,
+          target_id: targetId,
+          selection_order: index + 1 // 收藏越早，序号越小
+        });
+      });
+    });
+    
+    // 获取所有参与者的用户名（从转换后的participantRows中获取id，即username）
+    const participantUsernames = participantRows.map(p => p.id);
+    
+    // 获取红娘推荐数据（不限制签到状态）
+    const matchmakerPicks = [];
+    if (participantUsernames.length > 0) {
+      const placeholders = participantUsernames.map(() => '?').join(',');
+      const [pickRows] = await pool.execute(`
+        SELECT person1_id, person2_id, stars, matchmaker_id
+        FROM matchmaker_recommendations
+        WHERE person1_id IN (${placeholders}) 
+          AND person2_id IN (${placeholders})
+      `, [...participantUsernames, ...participantUsernames]);
+      
+      matchmakerPicks.push(...pickRows);
+    }
+    
+    logger.info('模拟分组匹配数据统计', { 
+      participants: participantRows.length,
+      selections: simulatedSelections.length,
+      matchmakerPicks: matchmakerPicks.length
+    });
+    
+    // 调用核心算法（包含红娘推荐）
+    const algorithmResult = generateGroups(participantRows, simulatedSelections, matchmakerPicks, options);
+    
+    // 获取所有涉及的用户名
+    const allUsernames = new Set();
+    algorithmResult.groups.forEach(group => {
+      group.male_ids.forEach(username => allUsernames.add(username));
+      group.female_ids.forEach(username => allUsernames.add(username));
+    });
+    
+    // 获取用户信息和照片
+    const userInfoMap = {};
+    if (allUsernames.size > 0) {
+      const placeholders = Array.from(allUsernames).map(() => '?').join(',');
+      const [userRows] = await pool.execute(`
+        SELECT p.username, p.name, p.baptismal_name, p.gender, pp.photo_url
+        FROM participants p
+        LEFT JOIN participant_photos pp ON pp.participant_id = p.id AND pp.is_primary = 1
+        WHERE p.username IN (${placeholders})
+      `, Array.from(allUsernames));
+      
+      userRows.forEach(user => {
+        userInfoMap[user.username] = {
+          name: user.name || user.baptismal_name || user.username,
+          gender: user.gender,
+          photo: user.photo_url || '/images/default-avatar.png'
+        };
+      });
+    }
+    
+    // 格式化结果
+    const groupingResults = algorithmResult.groups.map(group => ({
+      group_id: group.group_id,
+      male_ids: group.male_ids,
+      female_ids: group.female_ids,
+      male_members: group.male_ids.map(username => ({
+        username,
+        name: (userInfoMap[username] || {}).name || username,
+        photo: (userInfoMap[username] || {}).photo || '/images/default-avatar.png'
+      })),
+      female_members: group.female_ids.map(username => ({
+        username,
+        name: (userInfoMap[username] || {}).name || username,
+        photo: (userInfoMap[username] || {}).photo || '/images/default-avatar.png'
+      }))
+    }));
+    
+    return {
+      success: true,
+      message: '模拟分组匹配成功',
+      groupingResults: groupingResults,
+      userInfo: userInfoMap
+    };
+    
+  } catch (error) {
+    logger.error('模拟分组匹配失败', error);
+    throw error;
+  }
+}
+
+/**
+ * 模拟聊天匹配（使用收藏数据代替终选数据，不检查签到状态）
+ * @param {Object} options 配置选项 {list_size}
+ * @returns {Object} 模拟结果
+ */
+async function simulateChatMatching(options) {
+  const { generateChatLists } = require('./matching.service');
+  
+  try {
+    logger.info('开始模拟聊天匹配', { options });
+    
+    // 获取所有参与者（不检查签到）
+    const [rawParticipantRows] = await pool.execute(`
+      SELECT username, name, baptismal_name, gender 
+      FROM participants 
+      ORDER BY username
+    `);
+    
+    if (rawParticipantRows.length === 0) {
+      return {
+        success: false,
+        message: '没有参与者数据'
+      };
+    }
+    
+    // 转换为算法需要的格式：{id: username, gender: gender}
+    const participantRows = rawParticipantRows.map(row => ({
+      id: row.username,  // 算法需要的id字段使用username
+      gender: row.gender
+    }));
+    
+    // 获取所有收藏数据，按创建时间排序，并转换为 username
+    const [favoriteRows] = await pool.execute(`
+      SELECT 
+        u.username as user_id, 
+        t.username as target_id, 
+        f.created_at
+      FROM favorites f
+      JOIN participants u ON f.user_id = u.id
+      JOIN participants t ON f.favorited_participant_id = t.id
+      ORDER BY u.username, f.created_at ASC
+    `);
+    
+    // 将收藏数据转换为选择数据格式
+    const simulatedSelections = [];
+    const userFavoritesMap = {};
+    
+    favoriteRows.forEach(fav => {
+      if (!userFavoritesMap[fav.user_id]) {
+        userFavoritesMap[fav.user_id] = [];
+      }
+      userFavoritesMap[fav.user_id].push(fav.target_id);
+    });
+    
+    // 转换为选择格式
+    Object.keys(userFavoritesMap).forEach(userId => {
+      const targets = userFavoritesMap[userId];
+      targets.forEach((targetId, index) => {
+        simulatedSelections.push({
+          user_id: userId,
+          target_id: targetId,
+          selection_order: index + 1
+        });
+      });
+    });
+    
+    // 获取所有参与者的用户名（从转换后的participantRows中获取id，即username）
+    const participantUsernames = participantRows.map(p => p.id);
+    
+    // 获取红娘推荐数据（不限制签到状态）
+    const matchmakerPicks = [];
+    if (participantUsernames.length > 0) {
+      const placeholders = participantUsernames.map(() => '?').join(',');
+      const [pickRows] = await pool.execute(`
+        SELECT person1_id, person2_id, stars, matchmaker_id
+        FROM matchmaker_recommendations
+        WHERE person1_id IN (${placeholders}) 
+          AND person2_id IN (${placeholders})
+      `, [...participantUsernames, ...participantUsernames]);
+      
+      matchmakerPicks.push(...pickRows);
+    }
+    
+    logger.info('模拟聊天匹配数据统计', { 
+      participants: participantRows.length,
+      selections: simulatedSelections.length,
+      matchmakerPicks: matchmakerPicks.length
+    });
+    
+    // 调用核心算法（包含红娘推荐，但使用空的聊天历史）
+    // 参数顺序：participants, selections, matchmakerPicks, options, completedChatHistory
+    const algorithmResult = generateChatLists(participantRows, simulatedSelections, matchmakerPicks, options, []);
+    
+    // 获取所有涉及的用户
+    const allUsernames = new Set();
+    Object.keys(algorithmResult.chatLists).forEach(username => {
+      allUsernames.add(username);
+      algorithmResult.chatLists[username].forEach(target => allUsernames.add(target));
+    });
+    
+    // 获取用户信息和照片
+    const userInfoMap = {};
+    const chatListsWithNames = {};
+    
+    if (allUsernames.size > 0) {
+      const placeholders = Array.from(allUsernames).map(() => '?').join(',');
+      const [userRows] = await pool.execute(`
+        SELECT p.username, p.name, p.baptismal_name, p.gender, pp.photo_url
+        FROM participants p
+        LEFT JOIN participant_photos pp ON pp.participant_id = p.id AND pp.is_primary = 1
+        WHERE p.username IN (${placeholders})
+      `, Array.from(allUsernames));
+      
+      userRows.forEach(user => {
+        userInfoMap[user.username] = {
+          name: user.name || user.baptismal_name || user.username,
+          gender: user.gender,
+          photo: user.photo_url || '/images/default-avatar.png'
+        };
+      });
+    }
+    
+    // 转换聊天列表格式
+    Object.keys(algorithmResult.chatLists).forEach(username => {
+      chatListsWithNames[username] = algorithmResult.chatLists[username].map(targetUsername => ({
+        target_id: targetUsername,
+        target_name: (userInfoMap[targetUsername] || {}).name || targetUsername,
+        target_gender: (userInfoMap[targetUsername] || {}).gender,
+        target_photo: (userInfoMap[targetUsername] || {}).photo || '/images/default-avatar.png',
+        has_chatted: false // 模拟模式没有聊天历史
+      }));
+    });
+    
+    return {
+      success: true,
+      message: '模拟聊天匹配成功',
+      chatLists: algorithmResult.chatLists,
+      chatListsWithNames: chatListsWithNames,
+      userInfo: userInfoMap
+    };
+    
+  } catch (error) {
+    logger.error('模拟聊天匹配失败', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getCheckedInParticipants,
   getValidSelections,
@@ -786,6 +1082,8 @@ module.exports = {
   executeChatMatching,
   previewGroupMatching,
   previewChatMatching,
+  simulateGroupMatching,
+  simulateChatMatching,
   getGroupingHistory,
   getChatHistory,
   getGroupingResult,

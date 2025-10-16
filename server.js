@@ -167,6 +167,8 @@ app.post('/api/admin/preview-group-matching', protect, restrictTo('admin'), admi
 app.post('/api/admin/preview-chat-matching', protect, restrictTo('admin'), adminController.previewChatMatching);
 app.post('/api/admin/execute-group-matching', protect, restrictTo('admin'), adminController.executeGroupMatching);
 app.post('/api/admin/execute-chat-matching', protect, restrictTo('admin'), adminController.executeChatMatching);
+app.post('/api/admin/simulate-group-matching', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.simulateGroupMatching);
+app.post('/api/admin/simulate-chat-matching', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.simulateChatMatching);
 app.get('/api/admin/grouping-history', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getGroupingHistory);
 app.get('/api/admin/chat-history', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getChatHistory);
 app.get('/api/admin/grouping-result/:runBatch', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getGroupingResult);
