@@ -3971,7 +3971,8 @@ function renderSelectionsParticipants() {
                         }
                     </div>
                     <div class="selections-user-info">
-                        <div class="selections-user-name">${participant.name} (${participant.username})</div>
+                        <div class="selections-user-name">${participant.name}</div>
+                        <div class="selections-user-username">${participant.username}</div>
                     </div>
                 </div>
                 ${userSelections.length > 0 ? `
@@ -3986,7 +3987,13 @@ function renderSelectionsParticipants() {
                                 return `
                                     <div class="selections-target-item ${isMutual ? 'mutual-selection' : ''}">
                                         <div class="selections-target-priority">${selection.priority}</div>
-                                        <span>${selection.target_name} (${selection.target_username})</span>
+                                        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                                            <img src="${selection.target_photo || '/images/default-avatar.png'}" alt="${selection.target_name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                                <span style="font-weight: 500;">${selection.target_name}</span>
+                                                <span style="font-size: 12px; color: #666;">${selection.target_username}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 `;
                             }).join('')}
@@ -6510,7 +6517,8 @@ function renderFavoriteMutualParticipants() {
                         }
                     </div>
                     <div class="selections-user-info">
-                        <div class="selections-user-name">${participant.name} (${participant.username})</div>
+                        <div class="selections-user-name">${participant.name}</div>
+                        <div class="selections-user-username">${participant.username}</div>
                     </div>
                 </div>
                 ${userFavorites.length > 0 ? `
@@ -6524,7 +6532,13 @@ function renderFavoriteMutualParticipants() {
                                 
                                 return `
                                     <div class="selections-target-item ${isMutual ? 'mutual-selection' : ''}">
-                                        <span>${favorite.target_name} (${favorite.target_username})</span>
+                                        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                                            <img src="${favorite.target_photo || '/images/default-avatar.png'}" alt="${favorite.target_name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                                <span style="font-weight: 500;">${favorite.target_name}</span>
+                                                <span style="font-size: 12px; color: #666;">${favorite.target_username}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 `;
                             }).join('')}

@@ -992,10 +992,12 @@ async function getSelectionsData(req, res) {
         t.name as target_name,
         t.baptismal_name as target_baptismal,
         t.username as target_username,
-        t.gender as target_gender
+        t.gender as target_gender,
+        tp.photo_url as target_photo
       FROM selections s
       JOIN participants u ON s.user_id = u.id
       JOIN participants t ON s.target_id = t.id
+      LEFT JOIN participant_photos tp ON t.id = tp.participant_id AND tp.is_primary = 1
       WHERE u.is_checked_in = 1 AND t.is_checked_in = 1
       ORDER BY s.user_id ASC, s.priority ASC
     `);
@@ -1626,10 +1628,12 @@ async function getFavoriteMutualData(req, res) {
           t.name as target_name,
           t.baptismal_name as target_baptismal,
           t.username as target_username,
-          t.gender as target_gender
+          t.gender as target_gender,
+          tp.photo_url as target_photo
         FROM favorites f
         JOIN participants u ON f.user_id = u.id
         JOIN participants t ON f.favorited_participant_id = t.id
+        LEFT JOIN participant_photos tp ON t.id = tp.participant_id AND tp.is_primary = 1
         ORDER BY f.user_id ASC
       `);
 
