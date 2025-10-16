@@ -4750,8 +4750,13 @@ function renderGroupingPreview(result, config) {
         group.male_members.forEach(member => {
             html += `
                 <div class="member-card male">
-                    <div class="member-name">${member.name}（${member.username}）</div>
-                    <div class="member-details">男</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${member.photo}" alt="${member.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${member.name}</span>
+                            <span style="font-size: 12px; color: #666;">${member.username}</span>
+                        </div>
+                    </div>
                 </div>
             `;
         });
@@ -4760,8 +4765,13 @@ function renderGroupingPreview(result, config) {
         group.female_members.forEach(member => {
             html += `
                 <div class="member-card female">
-                    <div class="member-name">${member.name}（${member.username}）</div>
-                    <div class="member-details">女</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${member.photo}" alt="${member.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${member.name}</span>
+                            <span style="font-size: 12px; color: #666;">${member.username}</span>
+                        </div>
+                    </div>
                 </div>
             `;
         });
@@ -4779,7 +4789,7 @@ function renderGroupingPreview(result, config) {
 // 渲染聊天匹配预览
 function renderChatPreview(result, config) {
     const contentArea = document.getElementById('previewDisplay').querySelector('.results-content-area');
-    const { chatLists, chatListsWithNames, userNames } = result;
+    const { chatLists, chatListsWithNames, userNames, userInfo } = result;
     
     if (!chatLists || Object.keys(chatLists).length === 0) {
         contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">无法生成聊天匹配结果</div>';
@@ -4799,22 +4809,36 @@ function renderChatPreview(result, config) {
     Object.keys(chatLists).forEach(userId => {
         const targetIds = chatLists[userId];
         const targetsWithNames = chatListsWithNames && chatListsWithNames[userId] ? chatListsWithNames[userId] : [];
-        const userName = userNames && userNames[userId] ? userNames[userId] : userId;
+        const userDetail = userInfo && userInfo[userId] ? userInfo[userId] : { name: userId, photo: '/images/default-avatar.png' };
         
         html += `
             <div class="group-result-item">
                 <div class="group-result-header">
-                    ${userName}（${userId}）的推荐名单（${targetIds.length} 人）
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${userDetail.photo}" alt="${userDetail.name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${userDetail.name}</span>
+                            <span style="font-size: 12px; color: #666;">${userId}</span>
+                        </div>
+                    </div>
+                    <span style="font-size: 14px; color: #666;">的推荐名单（${targetIds.length} 人）</span>
                 </div>
                 <div class="group-result-body">
                     <div class="chat-result-grid">
         `;
         
         targetIds.forEach((targetId, index) => {
-            const targetName = targetsWithNames[index] ? targetsWithNames[index].target_name : targetId;
+            const targetDetail = targetsWithNames[index] || { target_name: targetId, target_gender: null, target_photo: '/images/default-avatar.png' };
+            const genderClass = targetDetail.target_gender === 'male' ? 'male' : 'female';
             html += `
-                <div class="chat-target-card">
-                    <div class="member-name">${targetName}（${targetId}）</div>
+                <div class="chat-target-card ${genderClass}">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${targetDetail.target_photo}" alt="${targetDetail.target_name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${targetDetail.target_name}</span>
+                            <span style="font-size: 12px; color: #666;">${targetId}</span>
+                        </div>
+                    </div>
                 </div>
             `;
         });
@@ -5065,8 +5089,13 @@ function renderGroupingResults(resultData) {
         group.male_members.forEach(member => {
             html += `
                 <div class="member-card male">
-                    <div class="member-name">${member.name}（${member.username}）</div>
-                    <div class="member-details">男</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${member.photo}" alt="${member.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${member.name}</span>
+                            <span style="font-size: 12px; color: #666;">${member.username}</span>
+                        </div>
+                    </div>
                 </div>
             `;
         });
@@ -5075,8 +5104,13 @@ function renderGroupingResults(resultData) {
         group.female_members.forEach(member => {
             html += `
                 <div class="member-card female">
-                    <div class="member-name">${member.name}（${member.username}）</div>
-                    <div class="member-details">女</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${member.photo}" alt="${member.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${member.name}</span>
+                            <span style="font-size: 12px; color: #666;">${member.username}</span>
+                        </div>
+                    </div>
                 </div>
             `;
         });
@@ -5105,9 +5139,14 @@ function renderChatResults(resultData) {
     const userGroups = {};
     chatLists.forEach(item => {
         if (!userGroups[item.user_id]) {
-            userGroups[item.user_id] = [];
+            userGroups[item.user_id] = {
+                user_name: item.user_name,
+                user_photo: item.user_photo,
+                user_gender: item.user_gender,
+                targets: []
+            };
         }
-        userGroups[item.user_id].push(item);
+        userGroups[item.user_id].targets.push(item);
     });
     
     let html = `<div style="margin-bottom: 20px; text-align: center;">
@@ -5115,12 +5154,19 @@ function renderChatResults(resultData) {
     </div>`;
     
     Object.keys(userGroups).forEach(userId => {
-        const userTargets = userGroups[userId];
-        const userName = userTargets[0].user_name;
+        const userGroup = userGroups[userId];
+        const userTargets = userGroup.targets;
         html += `
             <div class="group-result-item">
                 <div class="group-result-header">
-                    ${userName}（${userId}）的推荐名单（${userTargets.length} 人）
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${userGroup.user_photo}" alt="${userGroup.user_name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${userGroup.user_name}</span>
+                            <span style="font-size: 12px; color: #666;">${userId}</span>
+                        </div>
+                    </div>
+                    <span style="font-size: 14px; color: #666;">的推荐名单（${userTargets.length} 人）</span>
                 </div>
                 <div class="group-result-body">
                     <div class="chat-result-grid">
@@ -5129,11 +5175,18 @@ function renderChatResults(resultData) {
         userTargets.forEach(target => {
             const statusClass = target.is_completed ? 'completed' : 'pending';
             const statusText = target.is_completed ? '已聊' : '未聊';
+            const genderClass = target.target_gender === 'male' ? 'male' : 'female';
             
             html += `
-                <div class="chat-target-card">
-                    <div class="member-name">${target.target_name}（${target.target_id}）</div>
-                    <div class="chat-status ${statusClass}">${statusText}</div>
+                <div class="chat-target-card ${genderClass}">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${target.target_photo}" alt="${target.target_name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px; flex: 1;">
+                            <span style="font-weight: 500;">${target.target_name}</span>
+                            <span style="font-size: 12px; color: #666;">${target.target_id}</span>
+                            <div class="chat-status ${statusClass}" style="display: inline-block; margin-top: 4px;">${statusText}</div>
+                        </div>
+                    </div>
                 </div>
             `;
         });
