@@ -271,6 +271,68 @@ class MatchmakerController {
       });
     }
   }
+
+  /**
+   * 获取按红娘分组的配对统计
+   */
+  static async getMatchmakingStatsByMatchmaker(req, res) {
+    try {
+      // 验证权限 - 只有管理员和工作人员可以访问
+      if (!['admin', 'staff'].includes(req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: '权限不足'
+        });
+      }
+
+      const stats = await MatchmakerService.getMatchmakingStatsByMatchmaker();
+
+      logger.info(`${req.user.username} (${req.user.role}) 查看按红娘分组的配对统计`);
+
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      logger.error('获取配对统计失败:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || '获取配对统计失败'
+      });
+    }
+  }
+
+  /**
+   * 获取某个红娘的所有配对详情
+   */
+  static async getMatchmakerPairings(req, res) {
+    try {
+      const { matchmaker_username } = req.params;
+
+      // 验证权限 - 只有管理员和工作人员可以访问
+      if (!['admin', 'staff'].includes(req.user.role)) {
+        return res.status(403).json({
+          success: false,
+          message: '权限不足'
+        });
+      }
+
+      const pairings = await MatchmakerService.getMatchmakerPairings(matchmaker_username);
+
+      logger.info(`${req.user.username} (${req.user.role}) 查看红娘 ${matchmaker_username} 的配对详情`);
+
+      res.json({
+        success: true,
+        data: pairings
+      });
+    } catch (error) {
+      logger.error('获取红娘配对详情失败:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || '获取红娘配对详情失败'
+      });
+    }
+  }
 }
 
 module.exports = MatchmakerController;

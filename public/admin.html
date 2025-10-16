@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>管理后台</title>
-    <link rel="stylesheet" href="css/style.css?v=20251016d">
-    <link rel="stylesheet" href="css/admin.css?v=20251016d">
+    <link rel="stylesheet" href="css/style.css?v=20251016e">
+    <link rel="stylesheet" href="css/admin.css?v=20251016e">
 </head>
 <body>
     <div class="admin-container">
@@ -1020,7 +1020,7 @@
             
             <div class="matchmaking-stats-search">
                 <div class="search-container">
-                    <input type="text" id="matchmakingStatsSearchInput" placeholder="搜索编号或姓名..." class="search-input">
+                    <input type="text" id="matchmakingStatsSearchInput" placeholder="搜索红娘账号..." class="search-input">
                     <button class="clear-search-btn" id="clearMatchmakingStatsSearchBtn" style="display: none;">&times;</button>
                 </div>
             </div>
@@ -1034,11 +1034,9 @@
                     <table class="stats-table">
                         <thead>
                             <tr>
-                                <th>编号</th>
-                                <th>男</th>
-                                <th>女</th>
-                                <th>总星数</th>
-                                <th>作此配对的红娘人数</th>
+                                <th>红娘账号</th>
+                                <th>完成配对数</th>
+                                <th>详情</th>
                             </tr>
                         </thead>
                         <tbody id="matchmakingStatsTableBody">
@@ -1046,6 +1044,44 @@
                     </table>
                 </div>
                 <div class="stats-empty" style="display:none;">暂无配对数据</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 红娘配对详情模态框 -->
+    <div class="matchmaker-pairings-modal" id="matchmakerPairingsModal">
+        <div class="matchmaker-pairings-content">
+            <div class="matchmaker-pairings-header">
+                <h3 id="matchmakerPairingsTitle">配对详情</h3>
+                <button class="close-btn" id="closeMatchmakerPairingsBtn">&times;</button>
+            </div>
+            
+            <div class="matchmaker-pairings-search">
+                <div class="search-container">
+                    <input type="text" id="matchmakerPairingsSearchInput" placeholder="搜索编号或姓名..." class="search-input">
+                    <button class="clear-search-btn" id="clearMatchmakerPairingsSearchBtn" style="display: none;">&times;</button>
+                </div>
+            </div>
+            
+            <div class="matchmaker-pairings-body">
+                <div class="pairings-loading" style="display:none;">
+                    <div class="loading-spinner"></div>
+                    <p>加载中...</p>
+                </div>
+                <div class="pairings-table-container">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>女</th>
+                                <th>男</th>
+                                <th>星数</th>
+                            </tr>
+                        </thead>
+                        <tbody id="matchmakerPairingsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pairings-empty" style="display:none;">暂无配对数据</div>
             </div>
         </div>
     </div>
@@ -1243,7 +1279,7 @@
             <div class="modal-body">
                 <!-- 搜索筛选区域 -->
                 <div class="profile-edit-search">
-                    <input type="text" id="profileEditSearchInput" placeholder="输入账号筛选..." />
+                    <input type="text" id="profileEditSearchInput" placeholder="输入账号或姓名筛选..." />
                 </div>
                 
                 <!-- 表格容器 -->
@@ -1288,6 +1324,6 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script src="js/Sortable.min.js"></script>
-    <script src="js/admin.js?v=20251016d"></script>
+    <script src="js/admin.js?v=20251016e"></script>
 </body>
 </html>

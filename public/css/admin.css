@@ -359,6 +359,12 @@ img {
     background-color: #138496;
 }
 
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 4px;
+}
+
 /* 录入界面样式 */
 .registration-modal {
     display: none;
@@ -4618,6 +4624,136 @@ input[type="checkbox"]:checked + .toggle-slider:before {
     .detail-user-id {
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+}
+
+/* ============ 红娘配对详情模态框样式 ============ */
+.matchmaker-pairings-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 2001;
+    overflow-y: auto;
+}
+
+.matchmaker-pairings-modal.active {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+}
+
+.matchmaker-pairings-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 900px;
+    margin: 20px auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.matchmaker-pairings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.matchmaker-pairings-header h3 {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+}
+
+.matchmaker-pairings-search {
+    padding: 15px 24px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.matchmaker-pairings-search .search-container {
+    max-width: 400px;
+}
+
+.matchmaker-pairings-search .search-input {
+    width: 100%;
+    padding: 12px 40px 12px 12px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.matchmaker-pairings-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+}
+
+.pairings-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.pairings-loading .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #8b6f47;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+.pairings-table-container {
+    overflow-x: auto;
+}
+
+.pairings-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+    font-size: 16px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .matchmaker-pairings-modal.active {
+        padding: 0;
+        align-items: stretch;
+    }
+    
+    .matchmaker-pairings-content {
+        margin: 0;
+        border-radius: 0;
+        max-height: 100vh;
+        height: 100vh;
+    }
+    
+    .matchmaker-pairings-header {
+        padding: 15px;
+    }
+    
+    .matchmaker-pairings-header h3 {
+        font-size: 18px;
+    }
+    
+    .matchmaker-pairings-body {
+        padding: 15px;
     }
 }
 

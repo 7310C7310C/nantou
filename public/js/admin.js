@@ -211,6 +211,12 @@ function setupEventListeners() {
         closeMatchmakingStatsBtn.addEventListener('click', closeMatchmakingStatsModal);
     }
     
+    // 红娘配对详情
+    const closeMatchmakerPairingsBtn = document.getElementById('closeMatchmakerPairingsBtn');
+    if (closeMatchmakerPairingsBtn) {
+        closeMatchmakerPairingsBtn.addEventListener('click', closeMatchmakerPairingsModal);
+    }
+    
     // 配对统计（数据统计卡片中的副本）
     const viewMatchmakingStatsBtn2 = document.getElementById('viewMatchmakingStatsBtn2');
     if (viewMatchmakingStatsBtn2) {
@@ -396,6 +402,46 @@ function setupEventListeners() {
     if (selectionsModal) {
         selectionsModal.addEventListener('click', (e) => {
             if (e.target === selectionsModal) closeSelectionsModal();
+        });
+    }
+    
+    // 配对统计模态框点击外部关闭
+    const matchmakingStatsModal = document.getElementById('matchmakingStatsModal');
+    if (matchmakingStatsModal) {
+        matchmakingStatsModal.addEventListener('click', (e) => {
+            if (e.target === matchmakingStatsModal) closeMatchmakingStatsModal();
+        });
+    }
+    
+    // 被收藏情况模态框点击外部关闭
+    const favoriteStatsModal = document.getElementById('favoriteStatsModal');
+    if (favoriteStatsModal) {
+        favoriteStatsModal.addEventListener('click', (e) => {
+            if (e.target === favoriteStatsModal) closeFavoriteStatsModal();
+        });
+    }
+    
+    // 被终选情况模态框点击外部关闭
+    const participantStatsModal = document.getElementById('participantStatsModal');
+    if (participantStatsModal) {
+        participantStatsModal.addEventListener('click', (e) => {
+            if (e.target === participantStatsModal) closeParticipantStatsModal();
+        });
+    }
+    
+    // 收藏互选情况模态框点击外部关闭
+    const favoriteMutualModal = document.getElementById('favoriteMutualModal');
+    if (favoriteMutualModal) {
+        favoriteMutualModal.addEventListener('click', (e) => {
+            if (e.target === favoriteMutualModal) closeFavoriteMutualModal();
+        });
+    }
+    
+    // 红娘配对详情模态框点击外部关闭
+    const matchmakerPairingsModal = document.getElementById('matchmakerPairingsModal');
+    if (matchmakerPairingsModal) {
+        matchmakerPairingsModal.addEventListener('click', (e) => {
+            if (e.target === matchmakerPairingsModal) closeMatchmakerPairingsModal();
         });
     }
 }
@@ -6102,6 +6148,8 @@ function hideLoadingOverlay() {
 // ============ 配对统计功能 ============
 
 let matchmakingStatsData = [];
+let currentMatchmakerPairings = [];
+let currentMatchmakerUsername = '';
 
 // 打开配对统计模态框
 async function openMatchmakingStatsModal() {
@@ -6132,7 +6180,7 @@ async function openMatchmakingStatsModal() {
     
     try {
         const authToken = getAuthToken();
-        const response = await fetch('/api/matchmaker/stats', {
+        const response = await fetch('/api/matchmaker/stats-by-matchmaker', {
             headers: {
                 'Authorization': `Bearer ${authToken}`
             }
@@ -6209,10 +6257,7 @@ function renderMatchmakingStats() {
     if (searchInput && searchInput.value.trim()) {
         const searchValue = searchInput.value.trim().toLowerCase();
         data = data.filter(item => 
-            (item.person1_id && item.person1_id.toLowerCase().includes(searchValue)) ||
-            (item.person1_name && item.person1_name.toLowerCase().includes(searchValue)) ||
-            (item.person2_id && item.person2_id.toLowerCase().includes(searchValue)) ||
-            (item.person2_name && item.person2_name.toLowerCase().includes(searchValue))
+            item.matchmaker_username && item.matchmaker_username.toLowerCase().includes(searchValue)
         );
     }
     
@@ -6226,47 +6271,150 @@ function renderMatchmakingStats() {
     emptyEl.style.display = 'none';
     
     let html = '';
-    data.forEach((item, index) => {
-        const starClass = item.total_stars === 0 ? 'zero' : '';
+    data.forEach((item) => {
+        const hasMatches = item.match_count > 0;
         
-        // 确定男性和女性参与者
-        let malePerson, femalePerson;
-        if (item.person1_gender === 'male') {
-            malePerson = {
-                name: item.person1_name || '未知',
-                username: item.person1_id,
-                photo: item.person1_photo || '/images/default-avatar.png'
-            };
+        html += `
+            <tr>
+                <td style="font-weight: 500;">${item.matchmaker_username}</td>
+                <td style="text-align: center;">${item.match_count}</td>
+                <td style="text-align: center;">
+                    ${hasMatches ? `<button class="btn btn-primary btn-sm" onclick="viewMatchmakerPairings('${item.matchmaker_username}')">查看</button>` : ''}
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+}
+
+// 查看红娘配对详情
+async function viewMatchmakerPairings(matchmaker_username) {
+    const modal = document.getElementById('matchmakerPairingsModal');
+    const titleEl = document.getElementById('matchmakerPairingsTitle');
+    const loadingEl = modal.querySelector('.pairings-loading');
+    const tableContainer = modal.querySelector('.pairings-table-container');
+    const emptyEl = modal.querySelector('.pairings-empty');
+    
+    // 保存当前查看的红娘
+    currentMatchmakerUsername = matchmaker_username;
+    
+    // 设置标题
+    titleEl.textContent = `红娘 ${matchmaker_username} 的配对详情`;
+    
+    // 显示模态框
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // 设置搜索事件监听器
+    const searchInput = document.getElementById('matchmakerPairingsSearchInput');
+    const clearBtn = document.getElementById('clearMatchmakerPairingsSearchBtn');
+    if (searchInput) {
+        searchInput.removeEventListener('input', handleMatchmakerPairingsSearch);
+        searchInput.addEventListener('input', handleMatchmakerPairingsSearch);
+        searchInput.value = ''; // 清空搜索框
+    }
+    if (clearBtn) {
+        clearBtn.removeEventListener('click', clearMatchmakerPairingsSearch);
+        clearBtn.addEventListener('click', clearMatchmakerPairingsSearch);
+        clearBtn.style.display = 'none'; // 隐藏清除按钮
+    }
+    
+    // 显示加载状态
+    loadingEl.style.display = 'flex';
+    tableContainer.style.display = 'none';
+    emptyEl.style.display = 'none';
+    
+    try {
+        const authToken = getAuthToken();
+        const response = await fetch(`/api/matchmaker/${encodeURIComponent(matchmaker_username)}/pairings`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            currentMatchmakerPairings = result.data || [];
+            renderMatchmakerPairings();
+        } else {
+            const error = await response.json();
+            alert(error.message || '获取配对详情失败');
+            closeMatchmakerPairingsModal();
+        }
+    } catch (error) {
+        console.error('获取配对详情失败:', error);
+        alert('网络错误，请重试');
+        closeMatchmakerPairingsModal();
+    } finally {
+        loadingEl.style.display = 'none';
+    }
+}
+
+// 渲染红娘配对详情
+function renderMatchmakerPairings() {
+    const tableContainer = document.querySelector('.pairings-table-container');
+    const emptyEl = document.querySelector('.pairings-empty');
+    const tableBody = document.getElementById('matchmakerPairingsTableBody');
+    
+    let pairings = currentMatchmakerPairings;
+    
+    // 应用搜索过滤
+    const searchInput = document.getElementById('matchmakerPairingsSearchInput');
+    if (searchInput && searchInput.value.trim()) {
+        const searchValue = searchInput.value.trim().toLowerCase();
+        pairings = pairings.filter(pairing => {
+            const person1Name = pairing.person1_name || '';
+            const person1Id = pairing.person1_id || '';
+            const person2Name = pairing.person2_name || '';
+            const person2Id = pairing.person2_id || '';
+            
+            return person1Name.toLowerCase().includes(searchValue) ||
+                   person1Id.toLowerCase().includes(searchValue) ||
+                   person2Name.toLowerCase().includes(searchValue) ||
+                   person2Id.toLowerCase().includes(searchValue);
+        });
+    }
+    
+    if (pairings.length === 0) {
+        tableContainer.style.display = 'none';
+        emptyEl.style.display = 'block';
+        return;
+    }
+    
+    tableContainer.style.display = 'block';
+    emptyEl.style.display = 'none';
+    
+    let html = '';
+    pairings.forEach(pairing => {
+        // 确定女性和男性参与者
+        let femalePerson, malePerson;
+        if (pairing.person1_gender === 'female') {
             femalePerson = {
-                name: item.person2_name || '未知',
-                username: item.person2_id,
-                photo: item.person2_photo || '/images/default-avatar.png'
+                name: pairing.person1_name || '未知',
+                username: pairing.person1_id,
+                photo: pairing.person1_photo || '/images/default-avatar.png'
+            };
+            malePerson = {
+                name: pairing.person2_name || '未知',
+                username: pairing.person2_id,
+                photo: pairing.person2_photo || '/images/default-avatar.png'
             };
         } else {
-            malePerson = {
-                name: item.person2_name || '未知',
-                username: item.person2_id,
-                photo: item.person2_photo || '/images/default-avatar.png'
-            };
             femalePerson = {
-                name: item.person1_name || '未知',
-                username: item.person1_id,
-                photo: item.person1_photo || '/images/default-avatar.png'
+                name: pairing.person2_name || '未知',
+                username: pairing.person2_id,
+                photo: pairing.person2_photo || '/images/default-avatar.png'
+            };
+            malePerson = {
+                name: pairing.person1_name || '未知',
+                username: pairing.person1_id,
+                photo: pairing.person1_photo || '/images/default-avatar.png'
             };
         }
         
         html += `
             <tr>
-                <td>${index + 1}</td>
-                <td>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <img src="${malePerson.photo}" alt="${malePerson.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
-                        <div style="display: flex; flex-direction: column; gap: 2px;">
-                            <span style="font-weight: 500;">${malePerson.name}</span>
-                            <span style="font-size: 12px; color: #666;">${malePerson.username}</span>
-                        </div>
-                    </div>
-                </td>
                 <td>
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <img src="${femalePerson.photo}" alt="${femalePerson.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
@@ -6277,13 +6425,17 @@ function renderMatchmakingStats() {
                     </div>
                 </td>
                 <td>
-                    <div class="star-count ${starClass}">
-                        ${item.total_stars} ⭐
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${malePerson.photo}" alt="${malePerson.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${malePerson.name}</span>
+                            <span style="font-size: 12px; color: #666;">${malePerson.username}</span>
+                        </div>
                     </div>
                 </td>
-                <td>
-                    <div class="matchmaker-count">
-                        ${item.matchmaker_count}
+                <td style="text-align: center;">
+                    <div class="star-count">
+                        ${pairing.stars} ⭐
                     </div>
                 </td>
             </tr>
@@ -6291,6 +6443,48 @@ function renderMatchmakingStats() {
     });
     
     tableBody.innerHTML = html;
+}
+
+// 处理配对详情搜索
+function handleMatchmakerPairingsSearch() {
+    const searchInput = document.getElementById('matchmakerPairingsSearchInput');
+    const clearBtn = document.getElementById('clearMatchmakerPairingsSearchBtn');
+    
+    if (searchInput.value.trim()) {
+        clearBtn.style.display = 'block';
+    } else {
+        clearBtn.style.display = 'none';
+    }
+    
+    renderMatchmakerPairings();
+}
+
+// 清除配对详情搜索
+function clearMatchmakerPairingsSearch() {
+    const searchInput = document.getElementById('matchmakerPairingsSearchInput');
+    const clearBtn = document.getElementById('clearMatchmakerPairingsSearchBtn');
+    
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    if (clearBtn) {
+        clearBtn.style.display = 'none';
+    }
+    
+    renderMatchmakerPairings();
+}
+
+// 关闭红娘配对详情模态框
+function closeMatchmakerPairingsModal() {
+    const modal = document.getElementById('matchmakerPairingsModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+    
+    // 清空搜索框
+    const searchInput = document.getElementById('matchmakerPairingsSearchInput');
+    if (searchInput) searchInput.value = '';
+    const clearBtn = document.getElementById('clearMatchmakerPairingsSearchBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
 }
 
 // ============ 收藏情况功能 ============
@@ -7146,7 +7340,8 @@ function filterProfiles(keyword) {
     }
     
     const filtered = allProfilesData.filter(p => 
-        p.username.toLowerCase().includes(keyword.toLowerCase())
+        p.username.toLowerCase().includes(keyword.toLowerCase()) ||
+        (p.name && p.name.toLowerCase().includes(keyword.toLowerCase()))
     );
     
     renderProfileTable(filtered);
