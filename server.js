@@ -179,6 +179,8 @@ app.delete('/api/matchmaker/recommendations', protect, restrictTo('matchmaker'),
 app.delete('/api/matchmaker/recommendations/:id', protect, restrictTo('matchmaker'), matchmakerController.deleteRecommendationById);
 app.get('/api/matchmaker/my-recommendations', protect, restrictTo('matchmaker'), matchmakerController.getMatchmakerRecommendations);
 app.get('/api/matchmaker/stats', protect, restrictTo('admin', 'staff', 'matchmaker'), matchmakerController.getMatchmakingStats);
+app.get('/api/matchmaker/stats-by-matchmaker', protect, restrictTo('admin', 'staff'), matchmakerController.getMatchmakingStatsByMatchmaker);
+app.get('/api/matchmaker/:matchmaker_username/pairings', protect, restrictTo('admin', 'staff'), matchmakerController.getMatchmakerPairings);
 
 // 公开API路由
 app.get('/api/participants', optionalAuth, participantsController.getParticipants);

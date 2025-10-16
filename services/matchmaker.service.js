@@ -251,6 +251,22 @@ class MatchmakerService {
     const stats = await MatchmakerRecommendation.getAllMatchmakingStats();
     return stats;
   }
+
+  /**
+   * 获取按红娘分组的配对统计
+   */
+  static async getMatchmakingStatsByMatchmaker() {
+    const stats = await MatchmakerRecommendation.getMatchmakingStatsByMatchmaker();
+    return stats;
+  }
+
+  /**
+   * 获取某个红娘的所有配对详情
+   */
+  static async getMatchmakerPairings(matchmaker_username) {
+    const pairings = await MatchmakerRecommendation.getMatchmakerPairings(matchmaker_username);
+    return pairings;
+  }
 }
 
 module.exports = MatchmakerService;
