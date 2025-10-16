@@ -608,19 +608,15 @@ function controlUIByRole(role) {
                 // 只有admin和staff能用
                 shouldShow = role === 'admin' || role === 'staff';
                 break;
-            case '🧮 算法操作':
-                // admin、staff和matchmaker都能看到
-                shouldShow = role === 'admin' || role === 'staff' || role === 'matchmaker';
-                break;
             case '💕 红娘操作':
                 // 只有matchmaker能用
                 shouldShow = role === 'matchmaker';
                 break;
-            case '📊 数据统计':
+            case '� 数据统计':
                 // admin、staff和matchmaker都能用
                 shouldShow = role === 'admin' || role === 'staff' || role === 'matchmaker';
                 break;
-            case '📋 系统日志':
+            case '� 系统日志':
                 // 只有admin能用
                 shouldShow = role === 'admin';
                 break;
@@ -629,6 +625,11 @@ function controlUIByRole(role) {
                 shouldShow = role === 'admin';
                 break;
             default:
+                // 对于"算法操作"卡片，不在这里设置显示状态
+                // 它的显示状态会在后面根据角色和功能开关单独处理
+                if (cardTitle.includes('算法')) {
+                    return; // 跳过这个卡片，不设置display
+                }
                 shouldShow = true;
         }
         
@@ -657,6 +658,7 @@ function controlUIByRole(role) {
     const executeMatchingBtns = document.getElementById('executeMatchingBtns');
     const simulateMatchingBtns = document.getElementById('simulateMatchingBtns');
     const algorithmOperationTitle = document.getElementById('algorithmOperationTitle');
+    const algorithmCard = document.querySelector('.dashboard-card:has(#algorithmOperationTitle)');
     
     if (executeMatchingBtns) {
         // 执行匹配按钮：只有admin可见
@@ -664,16 +666,82 @@ function controlUIByRole(role) {
     }
     
     if (simulateMatchingBtns) {
-        // 模拟匹配按钮：admin、staff和matchmaker都可见
-        simulateMatchingBtns.style.display = (role === 'admin' || role === 'staff' || role === 'matchmaker') ? 'flex' : 'none';
+        // 模拟匹配按钮：admin总是可见，staff和matchmaker需要检查算法模拟开关
+        if (role === 'admin') {
+            simulateMatchingBtns.style.display = 'flex';
+        } else {
+            // staff和matchmaker需要等待功能开关加载后决定显示
+            simulateMatchingBtns.style.display = 'none';
+        }
     }
     
-    // 根据角色修改算法操作的标题
-    if (algorithmOperationTitle) {
-        if (role === 'staff' || role === 'matchmaker') {
+    // 根据角色修改算法操作的标题和卡片显示
+    if (role === 'staff' || role === 'matchmaker') {
+        if (algorithmOperationTitle) {
             algorithmOperationTitle.innerHTML = '🧮 算法模拟<br><small style="font-size: 12px; color: #666; font-weight: normal;">（基于参与者收藏顺序，准确性有限，活动当天会有入口给参与者选出 7 人手动排序）</small>';
-        } else {
+        }
+        // 对于staff和matchmaker，初始隐藏卡片，等待功能开关加载后决定是否显示
+        if (algorithmCard) {
+            algorithmCard.style.display = 'none';
+        }
+        // 加载功能开关后更新显示
+        updateSimulationButtonsVisibility(role);
+    } else {
+        if (algorithmOperationTitle) {
             algorithmOperationTitle.innerHTML = '🧮 算法操作';
+        }
+        // admin总是显示卡片
+        if (algorithmCard) {
+            algorithmCard.style.display = 'block';
+        }
+    }
+}
+
+// 根据功能开关更新模拟按钮的可见性
+async function updateSimulationButtonsVisibility(role) {
+    // admin总是可以看到所有按钮，不需要检查开关
+    if (role === 'admin') {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/feature-flags', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.featureFlags) {
+            const simulationEnabled = data.featureFlags.simulation_enabled;
+            
+            const simulateMatchingBtns = document.getElementById('simulateMatchingBtns');
+            const algorithmCard = document.querySelector('.dashboard-card:has(#algorithmOperationTitle)');
+            
+            if (role === 'staff' || role === 'matchmaker') {
+                // staff和matchmaker只能看到模拟按钮，不能看到执行按钮
+                // 控制模拟按钮的显示
+                if (simulateMatchingBtns) {
+                    simulateMatchingBtns.style.display = simulationEnabled ? 'flex' : 'none';
+                }
+                
+                // 只有当算法模拟功能启用时才显示整个卡片
+                if (algorithmCard) {
+                    algorithmCard.style.display = simulationEnabled ? 'block' : 'none';
+                }
+            }
+        }
+    } catch (error) {
+        console.error('获取功能开关状态失败:', error);
+        // 出错时默认隐藏模拟按钮和卡片（对于非admin用户）
+        if (role !== 'admin') {
+            const simulateMatchingBtns = document.getElementById('simulateMatchingBtns');
+            const algorithmCard = document.querySelector('.dashboard-card:has(#algorithmOperationTitle)');
+            
+            if (simulateMatchingBtns) simulateMatchingBtns.style.display = 'none';
+            if (algorithmCard) algorithmCard.style.display = 'none';
         }
     }
 }
@@ -3742,6 +3810,7 @@ const closeFeatureFlagsBtn = document.getElementById('closeFeatureFlagsBtn');
 const closeFeatureFlagsConfirmBtn = document.getElementById('closeFeatureFlagsConfirmBtn');
 const groupingToggle = document.getElementById('groupingToggle');
 const chatToggle = document.getElementById('chatToggle');
+const simulationToggle = document.getElementById('simulationToggle');
 
 // 打开功能开关模态框
 if (openFeatureFlagsBtn) {
@@ -3793,6 +3862,7 @@ async function loadFeatureFlags() {
             // 设置开关状态
             groupingToggle.checked = flags.grouping_enabled;
             chatToggle.checked = flags.chat_enabled;
+            simulationToggle.checked = flags.simulation_enabled;
         } else {
             throw new Error(data.message || '获取功能开关状态失败');
         }
@@ -3803,14 +3873,16 @@ async function loadFeatureFlags() {
         // 默认设置为关闭状态
         groupingToggle.checked = false;
         chatToggle.checked = false;
+        simulationToggle.checked = false;
     }
 }
 
 // 更新功能开关状态
 async function updateFeatureFlag(flagType, enabled) {
     try {
-        let groupingEnabled = false;
-        let chatEnabled = false;
+        let groupingEnabled = groupingToggle.checked;
+        let chatEnabled = chatToggle.checked;
+        let simulationEnabled = simulationToggle.checked;
         
         if (flagType === 'grouping') {
             groupingEnabled = enabled;
@@ -3818,6 +3890,8 @@ async function updateFeatureFlag(flagType, enabled) {
         } else if (flagType === 'chat') {
             groupingEnabled = false; // 确保互斥
             chatEnabled = enabled;
+        } else if (flagType === 'simulation') {
+            simulationEnabled = enabled;
         }
         
         const response = await fetch('/api/admin/feature-flags', {
@@ -3828,7 +3902,8 @@ async function updateFeatureFlag(flagType, enabled) {
             },
             body: JSON.stringify({
                 grouping_enabled: groupingEnabled,
-                chat_enabled: chatEnabled
+                chat_enabled: chatEnabled,
+                simulation_enabled: simulationEnabled
             })
         });
 
@@ -3838,9 +3913,20 @@ async function updateFeatureFlag(flagType, enabled) {
             // 更新UI状态以确保互斥
             groupingToggle.checked = groupingEnabled;
             chatToggle.checked = chatEnabled;
+            simulationToggle.checked = simulationEnabled;
+            
+            // 刷新算法操作卡片和按钮的显示（分组、聊天或模拟开关变化都会影响）
+            const role = currentUser ? currentUser.role : localStorage.getItem('userRole');
+            updateSimulationButtonsVisibility(role);
             
             // 显示成功提示
-            if (enabled) {
+            if (flagType === 'simulation') {
+                if (enabled) {
+                    showToast('算法模拟功能 已启用', 'success');
+                } else {
+                    showToast('算法模拟功能 已关闭', 'info');
+                }
+            } else if (enabled) {
                 showToast(`${flagType === 'grouping' ? '分组匹配功能' : '聊天匹配功能'} 已启用`, 'success');
             } else {
                 showToast(`${flagType === 'grouping' ? '分组匹配功能' : '聊天匹配功能'} 已关闭`, 'info');
@@ -3868,6 +3954,13 @@ if (groupingToggle) {
 if (chatToggle) {
     chatToggle.addEventListener('change', function() {
         updateFeatureFlag('chat', this.checked);
+    });
+}
+
+// 算法模拟功能开关事件
+if (simulationToggle) {
+    simulationToggle.addEventListener('change', function() {
+        updateFeatureFlag('simulation', this.checked);
     });
 }
 
