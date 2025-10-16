@@ -3811,6 +3811,7 @@ const closeFeatureFlagsConfirmBtn = document.getElementById('closeFeatureFlagsCo
 const groupingToggle = document.getElementById('groupingToggle');
 const chatToggle = document.getElementById('chatToggle');
 const simulationToggle = document.getElementById('simulationToggle');
+const sortByIdToggle = document.getElementById('sortByIdToggle');
 
 // 打开功能开关模态框
 if (openFeatureFlagsBtn) {
@@ -3863,6 +3864,7 @@ async function loadFeatureFlags() {
             groupingToggle.checked = flags.grouping_enabled;
             chatToggle.checked = flags.chat_enabled;
             simulationToggle.checked = flags.simulation_enabled;
+            sortByIdToggle.checked = flags.sort_by_id_enabled;
         } else {
             throw new Error(data.message || '获取功能开关状态失败');
         }
@@ -3874,6 +3876,7 @@ async function loadFeatureFlags() {
         groupingToggle.checked = false;
         chatToggle.checked = false;
         simulationToggle.checked = false;
+        sortByIdToggle.checked = false;
     }
 }
 
@@ -3883,6 +3886,7 @@ async function updateFeatureFlag(flagType, enabled) {
         let groupingEnabled = groupingToggle.checked;
         let chatEnabled = chatToggle.checked;
         let simulationEnabled = simulationToggle.checked;
+        let sortByIdEnabled = sortByIdToggle.checked;
         
         if (flagType === 'grouping') {
             groupingEnabled = enabled;
@@ -3892,6 +3896,8 @@ async function updateFeatureFlag(flagType, enabled) {
             chatEnabled = enabled;
         } else if (flagType === 'simulation') {
             simulationEnabled = enabled;
+        } else if (flagType === 'sortById') {
+            sortByIdEnabled = enabled;
         }
         
         const response = await fetch('/api/admin/feature-flags', {
@@ -3903,7 +3909,8 @@ async function updateFeatureFlag(flagType, enabled) {
             body: JSON.stringify({
                 grouping_enabled: groupingEnabled,
                 chat_enabled: chatEnabled,
-                simulation_enabled: simulationEnabled
+                simulation_enabled: simulationEnabled,
+                sort_by_id_enabled: sortByIdEnabled
             })
         });
 
@@ -3914,6 +3921,7 @@ async function updateFeatureFlag(flagType, enabled) {
             groupingToggle.checked = groupingEnabled;
             chatToggle.checked = chatEnabled;
             simulationToggle.checked = simulationEnabled;
+            sortByIdToggle.checked = sortByIdEnabled;
             
             // 刷新算法操作卡片和按钮的显示（分组、聊天或模拟开关变化都会影响）
             const role = currentUser ? currentUser.role : localStorage.getItem('userRole');
@@ -3925,6 +3933,12 @@ async function updateFeatureFlag(flagType, enabled) {
                     showToast('算法模拟功能 已启用', 'success');
                 } else {
                     showToast('算法模拟功能 已关闭', 'info');
+                }
+            } else if (flagType === 'sortById') {
+                if (enabled) {
+                    showToast('首页按编号顺序显示 已启用', 'success');
+                } else {
+                    showToast('首页按编号顺序显示 已关闭', 'info');
                 }
             } else if (enabled) {
                 showToast(`${flagType === 'grouping' ? '分组匹配功能' : '聊天匹配功能'} 已启用`, 'success');
@@ -3961,6 +3975,13 @@ if (chatToggle) {
 if (simulationToggle) {
     simulationToggle.addEventListener('change', function() {
         updateFeatureFlag('simulation', this.checked);
+    });
+}
+
+// 首页按编号顺序显示功能开关事件
+if (sortByIdToggle) {
+    sortByIdToggle.addEventListener('change', function() {
+        updateFeatureFlag('sortById', this.checked);
     });
 }
 

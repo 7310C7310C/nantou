@@ -16,6 +16,20 @@ async function getParticipants(req, res) {
     const limitNumInt = parseInt(limitNum) || 10;
     const offsetInt = parseInt(offset) || 0;
     
+    // 检查功能开关：是否按编号顺序显示
+    let sortByIdEnabled = false;
+    try {
+      const [featureFlagRows] = await pool.query(
+        'SELECT sort_by_id_enabled FROM feature_flags LIMIT 1'
+      );
+      if (featureFlagRows.length > 0) {
+        sortByIdEnabled = Boolean(featureFlagRows[0].sort_by_id_enabled);
+      }
+    } catch (e) {
+      // 如果查询失败，使用默认值 false
+      logger.error('查询功能开关失败', e);
+    }
+    
     let participants;
     let pinnedParticipants = [];
     let normalParticipants = [];
@@ -38,6 +52,23 @@ async function getParticipants(req, res) {
         ORDER BY p.created_at DESC
         LIMIT ? OFFSET ?
       `, params1);
+      participants = rows;
+    } else if (sortByIdEnabled) {
+      // 启用按编号顺序显示：忽略置顶，直接按 participant_id 升序排序
+      const [rows] = await pool.query(`
+        SELECT 
+          p.id,
+          p.username,
+          p.name,
+          p.baptismal_name,
+          p.gender,
+          p.is_pinned,
+          p.created_at
+        FROM participants p
+        WHERE p.gender = ?
+        ORDER BY p.id ASC
+        LIMIT ? OFFSET ?
+      `, [genderParam, limitNumInt, offsetInt]);
       participants = rows;
     } else {
       // 无搜索条件时，置顶用户优先显示
