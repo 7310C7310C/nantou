@@ -1214,6 +1214,20 @@ function updateEditPhotoPreview() {
     
     editPhotoPreview.innerHTML = '';
 
+    // 如果没有现有照片，但有新照片，自动将第一张新照片设为主图
+    const hasExistingPrimary = editExistingPhotos.some(p => p.is_primary);
+    if (!hasExistingPrimary && editExistingPhotos.length === 0 && editSelectedPhotos.length > 0) {
+        // 将第一张新照片转换为"现有照片"并设为主图
+        const firstNewPhoto = editSelectedPhotos.shift();
+        const previewUrl = typeof URL !== 'undefined' ? URL.createObjectURL(firstNewPhoto) : '';
+        editExistingPhotos.unshift({
+            file: firstNewPhoto,
+            is_primary: true,
+            isNew: true,
+            previewUrl
+        });
+    }
+
     const attachPhotoControls = (photoItem) => {
         const primaryBtn = photoItem.querySelector('.primary-btn');
         const removeBtn = photoItem.querySelector('.remove-btn');
@@ -1580,26 +1594,39 @@ async function handleEditParticipantSubmit(e) {
         return;
     }
     
-    // 检查是否有主图
-    const hasPrimary = editExistingPhotos.some(p => p.is_primary);
-    if (!hasPrimary && editExistingPhotos.length > 0) {
-        showToast('请设置一张主图', 'error');
-        return;
+    // 检查是否有主图（只有当有照片时才需要检查）
+    const totalPhotos = editExistingPhotos.length + editSelectedPhotos.length;
+    if (totalPhotos > 0) {
+        const hasPrimary = editExistingPhotos.some(p => p.is_primary);
+        if (!hasPrimary) {
+            showToast('请设置一张主图', 'error');
+            return;
+        }
     }
     
     try {
         showLoadingOverlay('提交中...');
         
-        // 收集所有需要上传的新照片
+        // 收集所有需要上传的新照片，并记录哪些应该是主图
         const filesToUpload = [];
-        editExistingPhotos.forEach(photo => {
+        const newPhotoInfo = []; // 记录新照片的信息（是否为主图、排序）
+        
+        editExistingPhotos.forEach((photo, index) => {
             if (photo && photo.file instanceof File) {
                 filesToUpload.push(photo.file);
+                newPhotoInfo.push({
+                    is_primary: photo.is_primary || false,
+                    sort_order: index + 1
+                });
             }
         });
-        editSelectedPhotos.forEach(file => {
+        editSelectedPhotos.forEach((file, index) => {
             if (file instanceof File) {
                 filesToUpload.push(file);
+                newPhotoInfo.push({
+                    is_primary: false,
+                    sort_order: editExistingPhotos.length + index + 1
+                });
             }
         });
         
@@ -1622,7 +1649,7 @@ async function handleEditParticipantSubmit(e) {
         // 添加删除的照片ID
         formData.append('deletedPhotoIds', JSON.stringify(editDeletedPhotoIds));
         
-        // 添加照片顺序信息
+        // 添加照片顺序信息（现有照片）
         const photoOrder = editExistingPhotos
             .filter(photo => photo && photo.id)
             .map((photo, index) => ({
@@ -1631,6 +1658,9 @@ async function handleEditParticipantSubmit(e) {
                 is_primary: photo.is_primary
             }));
         formData.append('photoOrder', JSON.stringify(photoOrder));
+        
+        // 添加新照片的信息（是否为主图、排序）
+        formData.append('newPhotoInfo', JSON.stringify(newPhotoInfo));
         
         const response = await fetch(`/api/admin/participants/${participantId}`, {
             method: 'PUT',

@@ -394,7 +394,7 @@ async function updateParticipant(req, res) {
       }
 
       const { participant_id } = req.params;
-      const { name, baptismal_name, gender, phone, deletedPhotoIds, photoOrder } = req.body;
+      const { name, baptismal_name, gender, phone, deletedPhotoIds, photoOrder, newPhotoInfo } = req.body;
       
       logger.operation('更新参与者信息', req.user?.id, { participant_id });
 
@@ -480,6 +480,16 @@ async function updateParticipant(req, res) {
         if (req.files && req.files.length > 0) {
           const { uploadPhoto } = require('../services/oss.service');
           
+          // 解析新照片信息
+          let newPhotosData = [];
+          if (newPhotoInfo) {
+            try {
+              newPhotosData = JSON.parse(newPhotoInfo);
+            } catch (e) {
+              logger.warn('解析newPhotoInfo失败，使用默认值', { error: e.message });
+            }
+          }
+          
           // 获取参与者用户名用于生成文件名
           const [participantInfo] = await connection.execute(
             'SELECT username FROM participants WHERE id = ?',
@@ -494,19 +504,12 @@ async function updateParticipant(req, res) {
           );
           let currentPhotoCount = photoCountResult[0].count;
 
-          // 确定新照片的起始sort_order
-          const [maxSortResult] = await connection.execute(
-            'SELECT MAX(sort_order) as max_sort FROM participant_photos WHERE participant_id = ?',
-            [participant_id]
-          );
-          let nextSortOrder = (maxSortResult[0].max_sort || 0) + 1;
-
           logger.info('准备上传新照片', { 
             participant_id, 
             username,
             new_photos: req.files.length, 
             current_count: currentPhotoCount,
-            next_sort_order: nextSortOrder
+            new_photos_data: newPhotosData
           });
 
           for (let i = 0; i < req.files.length; i++) {
@@ -520,19 +523,27 @@ async function updateParticipant(req, res) {
             try {
               // 生成文件名：{username}_{timestamp}.{extension}
               const fileExtension = file.originalname.split('.').pop().toLowerCase();
-              const fileName = `${username}_${Date.now()}.${fileExtension}`;
+              const fileName = `${username}_${Date.now()}_${i}.${fileExtension}`;
               
               const photoUrl = await uploadPhoto(file.buffer, fileName);
               logger.info('上传照片到 OSS 成功', { participant_id, fileName, url: photoUrl });
               
+              // 从newPhotosData获取该照片的信息
+              const photoInfo = newPhotosData[i] || { is_primary: false, sort_order: currentPhotoCount + 1 };
+              
               await connection.execute(
                 `INSERT INTO participant_photos (participant_id, photo_url, is_primary, sort_order)
                  VALUES (?, ?, ?, ?)`,
-                [participant_id, photoUrl, false, nextSortOrder]
+                [participant_id, photoUrl, photoInfo.is_primary, photoInfo.sort_order]
               );
 
               currentPhotoCount++;
-              nextSortOrder++;
+              
+              logger.info('新照片插入数据库', { 
+                participant_id, 
+                is_primary: photoInfo.is_primary, 
+                sort_order: photoInfo.sort_order 
+              });
             } catch (uploadError) {
               logger.error('照片上传失败', { participant_id, error: uploadError.message });
               // 继续处理其他照片
@@ -552,7 +563,7 @@ async function updateParticipant(req, res) {
         );
 
         if (primaryCheck[0].count === 0) {
-          // 如果没有主图，将第一张照片设为主图
+          // 如果没有主图，将第一张照片（按sort_order排序）设为主图
           await connection.execute(
             `UPDATE participant_photos 
              SET is_primary = TRUE 
@@ -561,6 +572,24 @@ async function updateParticipant(req, res) {
              LIMIT 1`,
             [participant_id]
           );
+          logger.info('自动设置第一张照片为主图', { participant_id });
+        } else if (primaryCheck[0].count > 1) {
+          // 如果有多张主图，只保留sort_order最小的那张
+          await connection.execute(
+            `UPDATE participant_photos 
+             SET is_primary = FALSE 
+             WHERE participant_id = ? AND is_primary = TRUE 
+             AND id NOT IN (
+               SELECT id FROM (
+                 SELECT id FROM participant_photos 
+                 WHERE participant_id = ? AND is_primary = TRUE 
+                 ORDER BY sort_order ASC 
+                 LIMIT 1
+               ) AS temp
+             )`,
+            [participant_id, participant_id]
+          );
+          logger.info('移除多余的主图标记', { participant_id });
         }
 
         await connection.commit();
