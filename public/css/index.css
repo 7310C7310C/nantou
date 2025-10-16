@@ -1094,8 +1094,14 @@ img, a, .user-photo {
     .title {
         text-align: center;
     }
-    
-    .login-btn,
+
+    /* 桌面端让登录按钮与页面整体留出 20px 边距，不再贴左 */
+    .login-btn {
+        position: absolute;
+        left: 20px;
+    }
+
+    /* 用户信息区域保持原有靠左定位 */
     #userInfo {
         position: absolute;
         left: 0;
