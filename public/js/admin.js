@@ -300,6 +300,8 @@ function setupEventListeners() {
     // 匹配算法功能
     const executeGroupMatchingBtn = document.getElementById('executeGroupMatchingBtn');
     const executeChatMatchingBtn = document.getElementById('executeChatMatchingBtn');
+    const simulateGroupMatchingBtn = document.getElementById('simulateGroupMatchingBtn');
+    const simulateChatMatchingBtn = document.getElementById('simulateChatMatchingBtn');
     const viewGroupingResultsBtn = document.getElementById('viewGroupingResultsBtn');
     const viewChatResultsBtn = document.getElementById('viewChatResultsBtn');
     
@@ -309,6 +311,12 @@ function setupEventListeners() {
     if (executeChatMatchingBtn) {
         executeChatMatchingBtn.addEventListener('click', openChatMatchingModal);
     }
+    if (simulateGroupMatchingBtn) {
+        simulateGroupMatchingBtn.addEventListener('click', openSimulateGroupMatchingModal);
+    }
+    if (simulateChatMatchingBtn) {
+        simulateChatMatchingBtn.addEventListener('click', openSimulateChatMatchingModal);
+    }
     if (viewGroupingResultsBtn) {
         viewGroupingResultsBtn.addEventListener('click', () => openResultsModal('grouping'));
     }
@@ -317,6 +325,7 @@ function setupEventListeners() {
     }
     
     setupMatchingEventListeners();
+    setupSimulateMatchingEventListeners();
 
     // 照片上传相关 - 录入界面
     if (photoUpload && photoInput) {
@@ -548,8 +557,8 @@ function controlUIByRole(role) {
                 shouldShow = role === 'admin' || role === 'staff';
                 break;
             case '🧮 算法操作':
-                // 只有admin能用
-                shouldShow = role === 'admin';
+                // admin、staff和matchmaker都能看到
+                shouldShow = role === 'admin' || role === 'staff' || role === 'matchmaker';
                 break;
             case '💕 红娘操作':
                 // 只有matchmaker能用
@@ -590,6 +599,30 @@ function controlUIByRole(role) {
     const matchmakingStatsRow = document.getElementById('matchmakingStatsRow');
     if (matchmakingStatsRow) {
         matchmakingStatsRow.style.display = (role === 'admin' || role === 'staff') ? 'flex' : 'none';
+    }
+    
+    // 控制算法操作按钮的显示
+    const executeMatchingBtns = document.getElementById('executeMatchingBtns');
+    const simulateMatchingBtns = document.getElementById('simulateMatchingBtns');
+    const algorithmOperationTitle = document.getElementById('algorithmOperationTitle');
+    
+    if (executeMatchingBtns) {
+        // 执行匹配按钮：只有admin可见
+        executeMatchingBtns.style.display = (role === 'admin') ? 'flex' : 'none';
+    }
+    
+    if (simulateMatchingBtns) {
+        // 模拟匹配按钮：admin、staff和matchmaker都可见
+        simulateMatchingBtns.style.display = (role === 'admin' || role === 'staff' || role === 'matchmaker') ? 'flex' : 'none';
+    }
+    
+    // 根据角色修改算法操作的标题
+    if (algorithmOperationTitle) {
+        if (role === 'staff' || role === 'matchmaker') {
+            algorithmOperationTitle.innerHTML = '🧮 算法模拟<br><small style="font-size: 12px; color: #666; font-weight: normal;">（基于收藏顺序，准确性有限，活动当天会有入口给参与者选出 7 人手动排序）</small>';
+        } else {
+            algorithmOperationTitle.innerHTML = '🧮 算法操作';
+        }
     }
 }
 
@@ -4237,6 +4270,91 @@ function adjustNumber(inputId, delta) {
         validateGroupMatching();
     } else if (inputId.startsWith('chat')) {
         validateChatMatching();
+    } else if (inputId.startsWith('simulateGroup')) {
+        // 模拟分组匹配不需要验证，直接可以预览
+    } else if (inputId.startsWith('simulateChat')) {
+        // 模拟聊天匹配不需要验证，直接可以预览
+    }
+}
+
+// 设置模拟匹配事件监听器
+function setupSimulateMatchingEventListeners() {
+    // 模拟分组匹配模态框
+    const closeSimulateGroupMatchingBtn = document.getElementById('closeSimulateGroupMatchingBtn');
+    const cancelSimulateGroupMatchingBtn = document.getElementById('cancelSimulateGroupMatchingBtn');
+    const previewSimulateGroupMatchingBtn = document.getElementById('previewSimulateGroupMatchingBtn');
+    
+    if (closeSimulateGroupMatchingBtn) {
+        closeSimulateGroupMatchingBtn.addEventListener('click', closeSimulateGroupMatchingModal);
+    }
+    if (cancelSimulateGroupMatchingBtn) {
+        cancelSimulateGroupMatchingBtn.addEventListener('click', closeSimulateGroupMatchingModal);
+    }
+    if (previewSimulateGroupMatchingBtn) {
+        previewSimulateGroupMatchingBtn.addEventListener('click', previewSimulateGroupMatching);
+    }
+    
+    // 模拟聊天匹配模态框
+    const closeSimulateChatMatchingBtn = document.getElementById('closeSimulateChatMatchingBtn');
+    const cancelSimulateChatMatchingBtn = document.getElementById('cancelSimulateChatMatchingBtn');
+    const previewSimulateChatMatchingBtn = document.getElementById('previewSimulateChatMatchingBtn');
+    
+    if (closeSimulateChatMatchingBtn) {
+        closeSimulateChatMatchingBtn.addEventListener('click', closeSimulateChatMatchingModal);
+    }
+    if (cancelSimulateChatMatchingBtn) {
+        cancelSimulateChatMatchingBtn.addEventListener('click', closeSimulateChatMatchingModal);
+    }
+    if (previewSimulateChatMatchingBtn) {
+        previewSimulateChatMatchingBtn.addEventListener('click', previewSimulateChatMatching);
+    }
+    
+    // 数字输入按钮
+    setupSimulateNumberInputs();
+    
+    // 模态框外部点击关闭
+    const simulateGroupMatchingModal = document.getElementById('simulateGroupMatchingModal');
+    const simulateChatMatchingModal = document.getElementById('simulateChatMatchingModal');
+    
+    if (simulateGroupMatchingModal) {
+        simulateGroupMatchingModal.addEventListener('click', (e) => {
+            if (e.target === simulateGroupMatchingModal) closeSimulateGroupMatchingModal();
+        });
+    }
+    if (simulateChatMatchingModal) {
+        simulateChatMatchingModal.addEventListener('click', (e) => {
+            if (e.target === simulateChatMatchingModal) closeSimulateChatMatchingModal();
+        });
+    }
+}
+
+// 设置模拟匹配数字输入控件
+function setupSimulateNumberInputs() {
+    // 模拟分组匹配 - 男性数量
+    const simulateGroupMaleDecBtn = document.getElementById('simulateGroupMaleDecBtn');
+    const simulateGroupMaleIncBtn = document.getElementById('simulateGroupMaleIncBtn');
+    
+    if (simulateGroupMaleDecBtn && simulateGroupMaleIncBtn) {
+        simulateGroupMaleDecBtn.addEventListener('click', () => adjustNumber('simulateGroupMaleSize', -1));
+        simulateGroupMaleIncBtn.addEventListener('click', () => adjustNumber('simulateGroupMaleSize', 1));
+    }
+    
+    // 模拟分组匹配 - 女性数量
+    const simulateGroupFemaleDecBtn = document.getElementById('simulateGroupFemaleDecBtn');
+    const simulateGroupFemaleIncBtn = document.getElementById('simulateGroupFemaleIncBtn');
+    
+    if (simulateGroupFemaleDecBtn && simulateGroupFemaleIncBtn) {
+        simulateGroupFemaleDecBtn.addEventListener('click', () => adjustNumber('simulateGroupFemaleSize', -1));
+        simulateGroupFemaleIncBtn.addEventListener('click', () => adjustNumber('simulateGroupFemaleSize', 1));
+    }
+    
+    // 模拟聊天匹配 - 名单大小
+    const simulateChatListDecBtn = document.getElementById('simulateChatListDecBtn');
+    const simulateChatListIncBtn = document.getElementById('simulateChatListIncBtn');
+    
+    if (simulateChatListDecBtn && simulateChatListIncBtn) {
+        simulateChatListDecBtn.addEventListener('click', () => adjustNumber('simulateChatListSize', -1));
+        simulateChatListIncBtn.addEventListener('click', () => adjustNumber('simulateChatListSize', 1));
     }
 }
 
@@ -4332,6 +4450,55 @@ async function openChatMatchingModal() {
 // 关闭聊天匹配配置模态框
 function closeChatMatchingModal() {
     const modal = document.getElementById('chatMatchingModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// 打开模拟分组匹配配置模态框
+function openSimulateGroupMatchingModal() {
+    const modal = document.getElementById('simulateGroupMatchingModal');
+    if (modal) {
+        modal.style.display = 'block';
+        
+        // 重置配置值
+        document.getElementById('simulateGroupMaleSize').value = 3;
+        document.getElementById('simulateGroupFemaleSize').value = 3;
+        
+        // 显示提示信息
+        const statusDiv = document.getElementById('simulateGroupValidationStatus');
+        const resultDiv = statusDiv.querySelector('.validation-result');
+        resultDiv.innerHTML = '<div class="info-message">ℹ️ 模拟匹配使用收藏数据，不检查签到状态。收藏越早，优先级越高。</div>';
+    }
+}
+
+// 关闭模拟分组匹配配置模态框
+function closeSimulateGroupMatchingModal() {
+    const modal = document.getElementById('simulateGroupMatchingModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// 打开模拟聊天匹配配置模态框
+function openSimulateChatMatchingModal() {
+    const modal = document.getElementById('simulateChatMatchingModal');
+    if (modal) {
+        modal.style.display = 'block';
+        
+        // 重置配置值
+        document.getElementById('simulateChatListSize').value = 5;
+        
+        // 显示提示信息
+        const statusDiv = document.getElementById('simulateChatValidationStatus');
+        const resultDiv = statusDiv.querySelector('.validation-result');
+        resultDiv.innerHTML = '<div class="info-message">ℹ️ 模拟匹配使用收藏数据，不检查签到状态。收藏越早，优先级越高。</div>';
+    }
+}
+
+// 关闭模拟聊天匹配配置模态框
+function closeSimulateChatMatchingModal() {
+    const modal = document.getElementById('simulateChatMatchingModal');
     if (modal) {
         modal.style.display = 'none';
     }
@@ -4660,6 +4827,211 @@ async function previewChatMatching() {
     };
     
     await showMatchingPreview('chat', config);
+}
+
+// 预览模拟分组匹配
+async function previewSimulateGroupMatching() {
+    const maleSize = parseInt(document.getElementById('simulateGroupMaleSize').value);
+    const femaleSize = parseInt(document.getElementById('simulateGroupFemaleSize').value);
+    
+    const config = {
+        group_size_male: maleSize,
+        group_size_female: femaleSize
+    };
+    
+    await showSimulateMatchingPreview('grouping', config);
+}
+
+// 预览模拟聊天匹配
+async function previewSimulateChatMatching() {
+    const listSize = parseInt(document.getElementById('simulateChatListSize').value);
+    
+    const config = {
+        list_size: listSize
+    };
+    
+    await showSimulateMatchingPreview('chat', config);
+}
+
+// 显示模拟匹配预览
+async function showSimulateMatchingPreview(type, config) {
+    // 关闭配置模态框
+    if (type === 'grouping') {
+        closeSimulateGroupMatchingModal();
+    } else {
+        closeSimulateChatMatchingModal();
+    }
+    
+    // 打开预览模态框
+    const modal = document.getElementById('matchingPreviewModal');
+    const titleEl = document.getElementById('previewTitle');
+    const displayDiv = document.getElementById('previewDisplay');
+    const loadingDiv = displayDiv.querySelector('.results-loading');
+    const contentArea = displayDiv.querySelector('.results-content-area');
+    const executeBtn = document.getElementById('executeFromPreviewBtn');
+    
+    titleEl.textContent = type === 'grouping' ? '模拟分组匹配预览' : '模拟聊天匹配预览';
+    modal.style.display = 'block';
+    loadingDiv.style.display = 'block';
+    contentArea.innerHTML = '';
+    
+    // 隐藏执行按钮（模拟模式不需要执行）
+    if (executeBtn) {
+        executeBtn.style.display = 'none';
+    }
+    
+    // 存储配置供后续使用
+    modal.dataset.type = 'simulate_' + type;
+    modal.dataset.config = JSON.stringify(config);
+    
+    try {
+        const endpoint = type === 'grouping' ? '/api/admin/simulate-group-matching' : '/api/admin/simulate-chat-matching';
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+        
+        const data = await response.json();
+        
+        loadingDiv.style.display = 'none';
+        
+        if (data.success) {
+            if (type === 'grouping') {
+                // 渲染分组结果
+                const groups = data.groupingResults;
+                if (!groups || groups.length === 0) {
+                    contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">暂无分组结果</div>';
+                } else {
+                    let html = `<div style="margin-bottom: 20px; text-align: center;">
+                        <h4>模拟分组匹配结果（共 ${groups.length} 组）</h4>
+                    </div>`;
+                    
+                    groups.forEach(group => {
+                        html += `
+                            <div class="group-result-item">
+                                <div class="group-result-header">
+                                    第 ${group.group_id} 组（男 ${group.male_members.length} 人，女 ${group.female_members.length} 人）
+                                </div>
+                                <div class="group-result-body">
+                                    <div class="group-members-grid">
+                        `;
+                        
+                        // 显示男性成员
+                        group.male_members.forEach(member => {
+                            html += `
+                                <div class="member-card male">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <img src="${member.photo}" alt="${member.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                                            <span style="font-weight: 500;">${member.name}</span>
+                                            <span style="font-size: 12px; color: #666;">${member.username}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        // 显示女性成员
+                        group.female_members.forEach(member => {
+                            html += `
+                                <div class="member-card female">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <img src="${member.photo}" alt="${member.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                                            <span style="font-weight: 500;">${member.name}</span>
+                                            <span style="font-size: 12px; color: #666;">${member.username}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    contentArea.innerHTML = html;
+                }
+            } else {
+                // 渲染聊天结果
+                const chatLists = data.chatLists;
+                const chatListsWithNames = data.chatListsWithNames;
+                const userInfo = data.userInfo;
+                
+                if (!chatLists || Object.keys(chatLists).length === 0) {
+                    contentArea.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">暂无聊天匹配结果</div>';
+                } else {
+                    let html = `<div style="margin-bottom: 20px; text-align: center;">
+                        <h4>模拟聊天匹配结果（共 ${Object.keys(chatLists).length} 人）</h4>
+                    </div>`;
+                    
+                    Object.keys(chatLists).forEach(userId => {
+                        const targetIds = chatLists[userId];
+                        const targetsWithNames = chatListsWithNames && chatListsWithNames[userId] ? chatListsWithNames[userId] : [];
+                        const userDetail = userInfo && userInfo[userId] ? userInfo[userId] : { name: userId, photo: '/images/default-avatar.png' };
+                        
+                        html += `
+                            <div class="group-result-item">
+                                <div class="group-result-header">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <img src="${userDetail.photo}" alt="${userDetail.name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                                            <span style="font-weight: 500;">${userDetail.name}</span>
+                                            <span style="font-size: 12px; color: #666;">${userId}</span>
+                                        </div>
+                                    </div>
+                                    <span style="font-size: 14px; color: #666;">的推荐名单（${targetIds.length} 人）</span>
+                                </div>
+                                <div class="group-result-body">
+                                    <div class="chat-result-grid">
+                        `;
+                        
+                        targetIds.forEach((targetId, index) => {
+                            const targetDetail = targetsWithNames[index] || { target_name: targetId, target_gender: null, target_photo: '/images/default-avatar.png' };
+                            const genderClass = targetDetail.target_gender === 'male' ? 'male' : 'female';
+                            html += `
+                                <div class="chat-target-card ${genderClass}">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <img src="${targetDetail.target_photo}" alt="${targetDetail.target_name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                                            <span style="font-weight: 500; font-size: 14px;">${targetDetail.target_name}</span>
+                                            <span style="font-size: 12px; color: #666;">${targetId}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    contentArea.innerHTML = html;
+                }
+            }
+            showToast('模拟预览生成成功', 'success');
+        } else {
+            contentArea.innerHTML = `<div class="error-message">❌ ${data.message || '生成预览失败'}</div>`;
+            showToast(data.message || '生成预览失败', 'error');
+        }
+        
+    } catch (error) {
+        loadingDiv.style.display = 'none';
+        contentArea.innerHTML = `<div class="error-message">❌ ${error.message || '生成预览时发生错误'}</div>`;
+        console.error('生成预览失败:', error);
+        showToast('生成预览失败，请稍后重试', 'error');
+    }
 }
 
 // 显示匹配预览
