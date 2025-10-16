@@ -5271,28 +5271,48 @@ function renderMatchmakingStats() {
         if (item.person1_gender === 'male') {
             malePerson = {
                 name: item.person1_name || '未知',
-                username: item.person1_id
+                username: item.person1_id,
+                photo: item.person1_photo || '/images/default-avatar.png'
             };
             femalePerson = {
                 name: item.person2_name || '未知',
-                username: item.person2_id
+                username: item.person2_id,
+                photo: item.person2_photo || '/images/default-avatar.png'
             };
         } else {
             malePerson = {
                 name: item.person2_name || '未知',
-                username: item.person2_id
+                username: item.person2_id,
+                photo: item.person2_photo || '/images/default-avatar.png'
             };
             femalePerson = {
                 name: item.person1_name || '未知',
-                username: item.person1_id
+                username: item.person1_id,
+                photo: item.person1_photo || '/images/default-avatar.png'
             };
         }
         
         html += `
             <tr>
                 <td>${index + 1}</td>
-                <td>${malePerson.name}（${malePerson.username}）</td>
-                <td>${femalePerson.name}（${femalePerson.username}）</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${malePerson.photo}" alt="${malePerson.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${malePerson.name}</span>
+                            <span style="font-size: 12px; color: #666;">${malePerson.username}</span>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${femalePerson.photo}" alt="${femalePerson.name}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <span style="font-weight: 500;">${femalePerson.name}</span>
+                            <span style="font-size: 12px; color: #666;">${femalePerson.username}</span>
+                        </div>
+                    </div>
+                </td>
                 <td>
                     <div class="star-count ${starClass}">
                         ${item.total_stars} ⭐
