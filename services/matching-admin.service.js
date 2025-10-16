@@ -220,12 +220,17 @@ async function executeGroupMatching(options) {
           message: '没有已签到的参与者'
         };
       }
-      // 如果有用户未完成选择
-      return {
-        success: false,
-        message: '存在未完成选择的用户',
-        missingUsers: validation.missingUsers
-      };
+      // 如果有用户未完成选择，记录警告日志但继续执行
+      if (validation.missingUsers && validation.missingUsers.length > 0) {
+        logger.warn('存在未完成选择的用户，但仍继续执行分组匹配', {
+          missingUsersCount: validation.missingUsers.length,
+          missingUsers: validation.missingUsers.map(u => ({
+            username: u.username,
+            name: u.name,
+            currentSelections: u.currentSelections
+          }))
+        });
+      }
     }
     
     // 获取算法输入数据
@@ -314,12 +319,17 @@ async function executeChatMatching(options) {
           message: '没有已签到的参与者'
         };
       }
-      // 如果有用户未完成选择
-      return {
-        success: false,
-        message: '存在未完成选择的用户',
-        missingUsers: validation.missingUsers
-      };
+      // 如果有用户未完成选择，记录警告日志但继续执行
+      if (validation.missingUsers && validation.missingUsers.length > 0) {
+        logger.warn('存在未完成选择的用户，但仍继续执行聊天匹配', {
+          missingUsersCount: validation.missingUsers.length,
+          missingUsers: validation.missingUsers.map(u => ({
+            username: u.username,
+            name: u.name,
+            currentSelections: u.currentSelections
+          }))
+        });
+      }
     }
     
     // 获取算法输入数据
@@ -554,11 +564,12 @@ async function previewGroupMatching(options) {
           message: '没有已签到的参与者'
         };
       }
-      return {
-        success: false,
-        message: '存在未完成选择的用户',
-        missingUsers: validation.missingUsers
-      };
+      // 如果有用户未完成选择，继续生成预览，但在结果中标记警告
+      if (validation.missingUsers && validation.missingUsers.length > 0) {
+        logger.warn('预览分组匹配：存在未完成选择的用户', {
+          missingUsersCount: validation.missingUsers.length
+        });
+      }
     }
     
     // 获取算法输入数据
@@ -648,11 +659,12 @@ async function previewChatMatching(options) {
           message: '没有已签到的参与者'
         };
       }
-      return {
-        success: false,
-        message: '存在未完成选择的用户',
-        missingUsers: validation.missingUsers
-      };
+      // 如果有用户未完成选择，继续生成预览，但在结果中标记警告
+      if (validation.missingUsers && validation.missingUsers.length > 0) {
+        logger.warn('预览聊天匹配：存在未完成选择的用户', {
+          missingUsersCount: validation.missingUsers.length
+        });
+      }
     }
     
     // 获取算法输入数据

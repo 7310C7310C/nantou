@@ -4362,14 +4362,17 @@ async function validateGroupMatching() {
         
         loadingSpinner.style.display = 'none';
         
+        // 存储验证结果，供执行确认时使用
+        window.groupMatchingValidation = data.data;
+        
         if (data.success && data.data.isValid) {
             resultDiv.className = 'validation-result success';
             resultDiv.innerHTML = '<p>✅ 所有已签到用户都已完成选择，可以执行分组匹配</p>';
             executeBtn.disabled = false;
             previewBtn.disabled = false;
         } else {
-            resultDiv.className = 'validation-result error';
-            let html = '<p>❌ 存在未完成选择的用户，无法执行分组匹配</p>';
+            resultDiv.className = 'validation-result warning';
+            let html = '<p>⚠️ 存在未完成选择的用户，匹配结果可能不佳</p>';
             
             if (data.data && data.data.missingUsers && data.data.missingUsers.length > 0) {
                 html += '<div class="missing-users-list">';
@@ -4391,6 +4394,9 @@ async function validateGroupMatching() {
             }
             
             resultDiv.innerHTML = html;
+            // 仍然允许执行，但用户会看到警告
+            executeBtn.disabled = false;
+            previewBtn.disabled = false;
         }
         
     } catch (error) {
@@ -4433,14 +4439,17 @@ async function validateChatMatching() {
         
         loadingSpinner.style.display = 'none';
         
+        // 存储验证结果，供执行确认时使用
+        window.chatMatchingValidation = data.data;
+        
         if (data.success && data.data.isValid) {
             resultDiv.className = 'validation-result success';
             resultDiv.innerHTML = '<p>✅ 所有已签到用户都已完成选择，可以执行聊天匹配</p>';
             executeBtn.disabled = false;
             previewBtn.disabled = false;
         } else {
-            resultDiv.className = 'validation-result error';
-            let html = '<p>❌ 存在未完成选择的用户，无法执行聊天匹配</p>';
+            resultDiv.className = 'validation-result warning';
+            let html = '<p>⚠️ 存在未完成选择的用户，匹配结果可能不佳</p>';
             
             if (data.data && data.data.missingUsers && data.data.missingUsers.length > 0) {
                 html += '<div class="missing-users-list">';
@@ -4462,6 +4471,9 @@ async function validateChatMatching() {
             }
             
             resultDiv.innerHTML = html;
+            // 仍然允许执行，但用户会看到警告
+            executeBtn.disabled = false;
+            previewBtn.disabled = false;
         }
         
     } catch (error) {
@@ -4486,7 +4498,19 @@ function executeGroupMatchingConfirm() {
     const infoEl = document.getElementById('matchingConfirmInfo');
     
     titleEl.textContent = '确认执行分组匹配';
+    
+    let warningHtml = '';
+    // 检查是否有未完成选择的用户
+    if (window.groupMatchingValidation && !window.groupMatchingValidation.isValid) {
+        warningHtml = `
+            <div style="color: #721c24; background-color: #f8d7da; padding: 15px; border-radius: 5px; border: 1px solid #f5c6cb; margin-bottom: 20px;">
+                <strong>⚠️ 警告：</strong>存在未完成选择的用户，匹配结果可能不佳，是否坚持执行？
+            </div>
+        `;
+    }
+    
     infoEl.innerHTML = `
+        ${warningHtml}
         <div style="margin-bottom: 15px;">
             <strong>配置信息：</strong>
         </div>
@@ -4524,7 +4548,19 @@ function executeChatMatchingConfirm() {
     const infoEl = document.getElementById('matchingConfirmInfo');
     
     titleEl.textContent = '确认执行聊天匹配';
+    
+    let warningHtml = '';
+    // 检查是否有未完成选择的用户
+    if (window.chatMatchingValidation && !window.chatMatchingValidation.isValid) {
+        warningHtml = `
+            <div style="color: #721c24; background-color: #f8d7da; padding: 15px; border-radius: 5px; border: 1px solid #f5c6cb; margin-bottom: 20px;">
+                <strong>⚠️ 警告：</strong>存在未完成选择的用户，匹配结果可能不佳，是否坚持执行？
+            </div>
+        `;
+    }
+    
     infoEl.innerHTML = `
+        ${warningHtml}
         <div style="margin-bottom: 15px;">
             <strong>配置信息：</strong>
         </div>
