@@ -452,7 +452,7 @@ function generateGroups(participants, selections, matchmakerPicks, options) {
  * @param {Object} selections - 用户选择数据
  * @param {Array} matchmakerPicks - 红娘推荐数据
  * @param {Object} options - 配置选项
- * @param {Array} completedChatHistory - 已完成聊天的历史记录 [{user_id, target_id}, ...]
+ * @param {Array} completedChatHistory - 已完成聊天的历史记录 [{user_id, target_id}, ...],case举例:[{1001, 2001} {1001, 2002}, {1002, 2003}, {1002, 2004},.... ]
  * @returns {Object} 聊天名单结果
  */
 function generateChatLists(participants, selections, matchmakerPicks, options, completedChatHistory = []) {
@@ -472,125 +472,135 @@ function generateChatLists(participants, selections, matchmakerPicks, options, c
     if (!Array.isArray(completedChatHistory)) {
         throw new Error('completedChatHistory 必须是数组');
     }
-    
-    const chatLists = {};
     const listSize = options.list_size || 5;
-
-    // 构建已完成聊天的映射表 {userId: Set([targetId1, targetId2, ...])}
-    const completedChatMap = {};
-    for (const record of completedChatHistory) {
-        if (!completedChatMap[record.user_id]) {
-            completedChatMap[record.user_id] = new Set();
-        }
-        completedChatMap[record.user_id].add(record.target_id);
+    
+    const userIds = participants.map(p => p.id);
+    const chattedUsersMap = {};
+    // 仅使用本地 completedChatHistory（双向）
+    if (Array.isArray(completedChatHistory) && completedChatHistory.length > 0) {
+      for (const { user_id, target_id } of completedChatHistory) {
+        if (!user_id || !target_id) continue;
+        if (!chattedUsersMap[user_id]) chattedUsersMap[user_id] = new Set();
+        if (!chattedUsersMap[target_id]) chattedUsersMap[target_id] = new Set();
+        chattedUsersMap[user_id].add(target_id);
+        chattedUsersMap[target_id].add(user_id);
+      }
     }
-
-    // 第一步：为每个参与者计算与所有异性的互有好感分数
-    const allScores = {};
-
-    for (const participant of participants) {
-        const participantId = participant.id;
-        const oppositeGender = participant.gender === 'male' ? 'female' : 'male';
-        const oppositeParticipants = participants.filter(p => p.gender === oppositeGender);
-
-        allScores[participantId] = {};
-
-        // 计算与所有异性的互有好感分数
-        for (const opp of oppositeParticipants) {
-            const mutualScore = calculateMutualAffinityScore(participantId, opp.id, selections, matchmakerPicks);
-            allScores[participantId][opp.id] = mutualScore;
-        }
+  
+    // 构建所有跨性别候选边及分数（排除已聊过）
+    const males = participants.filter(p => p.gender === 'male').map(p => p.id);
+    const females = participants.filter(p => p.gender === 'female').map(p => p.id);
+    const edges = [];
+    for (const m of males) {
+      const chattedM = chattedUsersMap[m] || new Set();
+      for (const f of females) {
+        if (chattedM.has(f)) continue;
+        const score = calculateMutualAffinityScore(m, f, selections, matchmakerPicks);
+        if (score > 0) edges.push({ a: m, b: f, score });
+      }
     }
-
-    // 第二步：生成初始聊天名单（按分数排序，排除已完成聊天的人）
-    for (const participant of participants) {
-        const participantId = participant.id;
-        const scores = allScores[participantId];
-        
-        // 获取该用户已完成聊天的对象集合
-        const completedSet = completedChatMap[participantId] || new Set();
-
-        // 按分数排序，排除已完成聊天的人，并取前N个
-        const sortedScores = Object.entries(scores)
-            .filter(([id, score]) => !completedSet.has(id))
-            .map(([id, score]) => ({ id, score }))
-            .sort((a, b) => b.score - a.score);
-
-        chatLists[participantId] = sortedScores.slice(0, listSize).map(item => item.id);
-    }
-
-    // 第三步：确保双向匹配（如果A在B的list里，B也应该在A的list里）
-    const bidirectionalLists = {};
-
-    for (const participant of participants) {
-        const participantId = participant.id;
-        const currentList = chatLists[participantId] || [];
-        const bidirectionalMatches = new Set();
-
-        // 添加当前名单中的人
-        for (const matchId of currentList) {
-            bidirectionalMatches.add(matchId);
-
-            // 检查对方是否也将当前用户加入名单
-            const matchList = chatLists[matchId] || [];
-            if (!matchList.includes(participantId)) {
-                // 检查对方是否已经和当前用户完成聊天
-                const targetCompletedSet = completedChatMap[matchId] || new Set();
-                if (targetCompletedSet.has(participantId)) {
-                    // 对方已经和当前用户完成聊天，跳过
-                    continue;
-                }
-                
-                // 如果对方没有将当前用户加入名单，将当前用户加入对方的名单
-                if (matchList.length < listSize) {
-                    matchList.push(participantId);
-                } else {
-                    // 如果对方名单已满，替换分数最低的
-                    const matchScores = allScores[matchId];
-                    if (matchScores && matchList.length > 0) {
-                        const lowestScoreMatch = matchList.reduce((lowest, id) => {
-                            const currentScore = matchScores[id] || 0;
-                            const lowestScore = matchScores[lowest] || 0;
-                            return currentScore < lowestScore ? id : lowest;
-                        });
-
-                        const participantScore = matchScores[participantId] || 0;
-                        const lowestScore = matchScores[lowestScoreMatch] || 0;
-                        if (participantScore > lowestScore) {
-                            const index = matchList.indexOf(lowestScoreMatch);
-                            matchList[index] = participantId;
-                        }
-                    }
-                }
-                chatLists[matchId] = matchList;
-            }
+  
+    // 全局按分数降序
+    edges.sort((x, y) => y.score - x.score);
+  
+    // 按新规则设置容量：男生 cap = listSize；女生 cap = 2*listSize
+    const cap = new Map(userIds.map(id => [id, males.includes(id) ? listSize : (2 * listSize)]));
+    const chatLists = Object.fromEntries(userIds.map(id => [id, []]));
+  
+    // 第一阶段：尽量双向加入；若受容量限制冲突，允许单向加入（舍弃原则3）
+    for (const e of edges) {
+      const a = e.a; // male
+      const b = e.b; // female
+      const hasAB = chatLists[a].includes(b);
+      const hasBA = chatLists[b].includes(a);
+      if (!hasAB || !hasBA) {
+        const canA = chatLists[a].length < cap.get(a);
+        const canB = chatLists[b].length < cap.get(b);
+        if (canA && canB) {
+          if (!hasAB) chatLists[a].push(b);
+          if (!hasBA) chatLists[b].push(a);
+        } else if (canA && !hasAB) {
+          // 男方有容量，女方已满：允许单向加入到男方，舍弃双向
+          chatLists[a].push(b);
+        } else if (canB && !hasBA) {
+          // 女方有容量，男方已满：允许单向加入到女方
+          chatLists[b].push(a);
         }
-
-        // 检查哪些人将当前用户加入了名单，但当前用户没有将他们加入名单
-        const currentCompletedSet = completedChatMap[participantId] || new Set();
-        for (const otherParticipant of participants) {
-            const otherId = otherParticipant.id;
-            if (otherId === participantId) continue;
-
-            const otherList = chatLists[otherId] || [];
-            if (otherList.includes(participantId) && !currentList.includes(otherId)) {
-                // 检查当前用户是否已经和对方完成聊天
-                if (!currentCompletedSet.has(otherId)) {
-                    bidirectionalMatches.add(otherId);
-                }
-            }
-        }
-
-        // 将双向匹配的人按分数排序，取前N个
-        const bidirectionalScores = Array.from(bidirectionalMatches)
-            .map(id => ({ id, score: allScores[participantId][id] || 0 }))
-            .sort((a, b) => b.score - a.score);
-
-        bidirectionalLists[participantId] = bidirectionalScores.slice(0, listSize).map(item => item.id);
+      }
     }
-
-    return { chatLists: bidirectionalLists };
-}
+  
+    // 第二阶段：对仍未满编（长度 < listSize）的人做容量感知补满（允许单向）
+    const needLeft = new Map(userIds.map(id => [id, Math.max(0, listSize - chatLists[id].length)]));
+  
+    // 为快速选择候选，准备每个用户的候选列表（含分数）
+    const scoreLookup = (x, y) => {
+      return males.includes(x)
+        ? (edges.find(e => e.a === x && e.b === y)?.score || calculateMutualAffinityScore(x, y, selections, matchmakerPicks))
+        : (edges.find(e => e.a === y && e.b === x)?.score || calculateMutualAffinityScore(y, x, selections, matchmakerPicks));
+    };
+  
+    for (const id of userIds) {
+      while (needLeft.get(id) > 0) {
+        const isMale = males.includes(id);
+        const oppList = isMale ? females : males;
+        const chattedSet = chattedUsersMap[id] || new Set();
+        const candidates = oppList
+          .filter(opp => !chattedSet.has(opp) && !chatLists[id].includes(opp))
+          .map(opp => ({ id: opp, deg: chatLists[opp].length, score: scoreLookup(id, opp), capLeft: cap.get(opp) - chatLists[opp].length }))
+          .sort((a, b) => (a.deg - b.deg) || (b.score - a.score));
+  
+        if (candidates.length === 0) break;
+  
+        // 先尝试双向（双方均未超 cap），否则退化为单向只加在 id 上
+        let picked = false;
+        for (const c of candidates) {
+          const selfCapOk = chatLists[id].length < cap.get(id);
+          const otherCapOk = chatLists[c.id].length < cap.get(c.id);
+          if (selfCapOk && otherCapOk) {
+            chatLists[id].push(c.id);
+            chatLists[c.id].push(id);
+            needLeft.set(id, Math.max(0, needLeft.get(id) - 1));
+            picked = true;
+            break;
+          }
+        }
+        if (picked) continue;
+  
+        // 单向：只往自己的列表里加（舍弃原则3），但严格遵守自身 cap
+        if (chatLists[id].length < cap.get(id)) {
+          const c = candidates[0];
+          chatLists[id].push(c.id);
+          needLeft.set(id, Math.max(0, needLeft.get(id) - 1));
+        } else {
+          break;
+        }
+      }
+    }
+  
+    // 统计
+    let totalMatches = 0;
+    let bidirectionalPairs = 0;
+    let usersWithInsufficientMatches = 0;
+    for (const id of Object.keys(chatLists)) {
+      const list = chatLists[id];
+      totalMatches += list.length;
+      if (list.length < listSize) usersWithInsufficientMatches++;
+      for (const other of list) {
+        if ((chatLists[other] || []).includes(id)) bidirectionalPairs++;
+      }
+    }
+    bidirectionalPairs = bidirectionalPairs / 2;
+    
+    return { 
+      chatLists,
+      statistics: {
+        totalMatches,
+        bidirectionalMatches: bidirectionalPairs,
+        usersWithInsufficientMatches,
+        bidirectionalMatchRate: totalMatches > 0 ? ((bidirectionalPairs) / (totalMatches / 2) * 100).toFixed(1) : 0
+      }
+    };
+  }
 
 // 导出函数
 module.exports = {
