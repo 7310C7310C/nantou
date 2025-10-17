@@ -165,8 +165,12 @@ app.get('/api/admin/favorite-mutual-data', protect, restrictTo('admin', 'staff')
 app.get('/api/admin/validate-selections', protect, restrictTo('admin'), adminController.validateUserSelections);
 app.post('/api/admin/preview-group-matching', protect, restrictTo('admin'), adminController.previewGroupMatching);
 app.post('/api/admin/preview-chat-matching', protect, restrictTo('admin'), adminController.previewChatMatching);
+app.post('/api/admin/preview-group-matching-tmp', protect, restrictTo('admin'), adminController.previewGroupMatchingTmp);
+app.post('/api/admin/preview-chat-matching-tmp', protect, restrictTo('admin'), adminController.previewChatMatchingTmp);
 app.post('/api/admin/execute-group-matching', protect, restrictTo('admin'), adminController.executeGroupMatching);
 app.post('/api/admin/execute-chat-matching', protect, restrictTo('admin'), adminController.executeChatMatching);
+app.post('/api/admin/execute-group-matching-tmp', protect, restrictTo('admin'), adminController.executeGroupMatchingTmp);
+app.post('/api/admin/execute-chat-matching-tmp', protect, restrictTo('admin'), adminController.executeChatMatchingTmp);
 app.post('/api/admin/simulate-group-matching', protect, restrictTo('admin', 'staff'), adminController.simulateGroupMatching);
 app.post('/api/admin/simulate-chat-matching', protect, restrictTo('admin', 'staff'), adminController.simulateChatMatching);
 app.get('/api/admin/grouping-history', protect, restrictTo('admin', 'staff'), adminController.getGroupingHistory);

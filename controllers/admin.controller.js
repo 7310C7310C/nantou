@@ -1213,6 +1213,111 @@ async function executeChatMatching(req, res) {
 }
 
 /**
+ * 执行分组匹配算法（临时版）
+ */
+async function executeGroupMatchingTmp(req, res) {
+  try {
+    logger.info('收到分组匹配执行请求（临时版）', { body: req.body, user: req.user?.username });
+    logger.operation('执行分组匹配算法（临时版）', req.user?.id, { operator: req.user?.username });
+    
+    const { group_size_male = 3, group_size_female = 3 } = req.body;
+
+    // 验证输入
+    if (!Number.isInteger(group_size_male) || group_size_male < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '男性组大小必须是大于等于1的整数'
+      });
+    }
+
+    if (!Number.isInteger(group_size_female) || group_size_female < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '女性组大小必须是大于等于1的整数'
+      });
+    }
+
+    // 检查功能开关
+    const [flagRows] = await pool.execute(
+      'SELECT grouping_enabled FROM feature_flags LIMIT 1'
+    );
+
+    if (flagRows.length === 0 || !flagRows[0].grouping_enabled) {
+      return res.status(400).json({
+        success: false,
+        message: '分组匹配功能未开启'
+      });
+    }
+
+    const options = { group_size_male, group_size_female };
+    const result = await matchingAdminService.executeGroupMatchingTmp(options);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    logger.error('执行分组匹配算法（临时版）失败', error);
+    res.status(500).json({
+      success: false,
+      message: '执行分组匹配算法（临时版）失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
+ * 执行聊天匹配算法（临时版）
+ */
+async function executeChatMatchingTmp(req, res) {
+  try {
+    logger.info('收到聊天匹配执行请求（临时版）', { body: req.body, user: req.user?.username });
+    logger.operation('执行聊天匹配算法（临时版）', req.user?.id, { operator: req.user?.username });
+    
+    const { list_size = 5 } = req.body;
+
+    // 验证输入
+    if (!Number.isInteger(list_size) || list_size < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '名单大小必须是大于等于1的整数'
+      });
+    }
+
+    // 检查功能开关
+    const [flagRows] = await pool.execute(
+      'SELECT chat_enabled FROM feature_flags LIMIT 1'
+    );
+
+    if (flagRows.length === 0 || !flagRows[0].chat_enabled) {
+      return res.status(400).json({
+        success: false,
+        message: '聊天匹配功能未开启'
+      });
+    }
+
+    const options = { list_size };
+    const result = await matchingAdminService.executeChatMatchingTmp(options);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    logger.error('执行聊天匹配算法（临时版）失败', error);
+    res.status(500).json({
+      success: false,
+      message: '执行聊天匹配算法（临时版）失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
  * 预览分组匹配算法（不写入数据库）
  */
 async function previewGroupMatching(req, res) {
@@ -1310,6 +1415,109 @@ async function previewChatMatching(req, res) {
     res.status(500).json({
       success: false,
       message: '预览聊天匹配算法失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
+ * 预览分组匹配算法（临时版，不写入数据库）
+ */
+async function previewGroupMatchingTmp(req, res) {
+  try {
+    logger.info('收到分组匹配预览请求（临时版）', { body: req.body, user: req.user?.username });
+    
+    const { group_size_male = 3, group_size_female = 3 } = req.body;
+
+    // 验证输入
+    if (!Number.isInteger(group_size_male) || group_size_male < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '男性组大小必须是大于等于1的整数'
+      });
+    }
+
+    if (!Number.isInteger(group_size_female) || group_size_female < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '女性组大小必须是大于等于1的整数'
+      });
+    }
+
+    // 检查功能开关
+    const [flagRows] = await pool.execute(
+      'SELECT grouping_enabled FROM feature_flags LIMIT 1'
+    );
+
+    if (flagRows.length === 0 || !flagRows[0].grouping_enabled) {
+      return res.status(400).json({
+        success: false,
+        message: '分组匹配功能未开启'
+      });
+    }
+
+    const options = { group_size_male, group_size_female };
+    const result = await matchingAdminService.previewGroupMatchingTmp(options);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    logger.error('预览分组匹配算法（临时版）失败', error);
+    res.status(500).json({
+      success: false,
+      message: '预览分组匹配算法（临时版）失败，请稍后重试',
+      details: error.message 
+    });
+  }
+}
+
+/**
+ * 预览聊天匹配算法（临时版，不写入数据库）
+ */
+async function previewChatMatchingTmp(req, res) {
+  try {
+    logger.info('收到聊天匹配预览请求（临时版）', { body: req.body, user: req.user?.username });
+    
+    const { list_size = 5 } = req.body;
+
+    // 验证输入
+    if (!Number.isInteger(list_size) || list_size < 1) {
+      return res.status(400).json({
+        success: false,
+        message: '名单大小必须是大于等于1的整数'
+      });
+    }
+
+    // 检查功能开关
+    const [flagRows] = await pool.execute(
+      'SELECT chat_enabled FROM feature_flags LIMIT 1'
+    );
+
+    if (flagRows.length === 0 || !flagRows[0].chat_enabled) {
+      return res.status(400).json({
+        success: false,
+        message: '聊天匹配功能未开启'
+      });
+    }
+
+    const options = { list_size };
+    const result = await matchingAdminService.previewChatMatchingTmp(options);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    logger.error('预览聊天匹配算法（临时版）失败', error);
+    res.status(500).json({
+      success: false,
+      message: '预览聊天匹配算法（临时版）失败，请稍后重试',
       details: error.message 
     });
   }
@@ -1891,8 +2099,12 @@ module.exports = {
   validateUserSelections,
   executeGroupMatching,
   executeChatMatching,
+  executeGroupMatchingTmp,
+  executeChatMatchingTmp,
   previewGroupMatching,
   previewChatMatching,
+  previewGroupMatchingTmp,
+  previewChatMatchingTmp,
   simulateGroupMatching,
   simulateChatMatching,
   getGroupingHistory,
