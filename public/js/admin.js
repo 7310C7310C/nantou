@@ -593,9 +593,28 @@ function showAuthenticatedUI() {
 
 // 根据角色控制UI显示
 function controlUIByRole(role) {
+    // 直接通过ID控制"数据统计"和"系统日志"卡片的显示
+    const dataStatsCard = document.getElementById('dataStatsCard');
+    const systemLogsCard = document.getElementById('systemLogsCard');
+    
+    if (dataStatsCard) {
+        // 数据统计卡片：只有admin和staff可见
+        dataStatsCard.style.display = (role === 'admin' || role === 'staff') ? 'block' : 'none';
+    }
+    
+    if (systemLogsCard) {
+        // 系统日志卡片：只有admin可见
+        systemLogsCard.style.display = (role === 'admin') ? 'block' : 'none';
+    }
+    
     const dashboardCards = document.querySelectorAll('.dashboard-card');
     
     dashboardCards.forEach(card => {
+        // 跳过已经通过ID控制的卡片
+        if (card.id === 'dataStatsCard' || card.id === 'systemLogsCard') {
+            return;
+        }
+        
         const cardTitle = card.querySelector('h3').textContent;
         let shouldShow = false;
         
@@ -611,14 +630,6 @@ function controlUIByRole(role) {
             case '💕 红娘操作':
                 // 只有matchmaker能用
                 shouldShow = role === 'matchmaker';
-                break;
-            case '� 数据统计':
-                // admin、staff和matchmaker都能用
-                shouldShow = role === 'admin' || role === 'staff' || role === 'matchmaker';
-                break;
-            case '� 系统日志':
-                // 只有admin能用
-                shouldShow = role === 'admin';
                 break;
             case '⚙️ 系统设置':
                 // 只有admin能用
@@ -648,10 +659,10 @@ function controlUIByRole(role) {
         profileEditBtn.style.display = (role === 'admin') ? 'block' : 'none';
     }
     
-    // 控制"配对统计"行的显示（数据统计卡片中，只有admin和staff可见）
+    // 控制"配对统计"行的显示（数据统计卡片中，admin、staff和matchmaker可见）
     const matchmakingStatsRow = document.getElementById('matchmakingStatsRow');
     if (matchmakingStatsRow) {
-        matchmakingStatsRow.style.display = (role === 'admin' || role === 'staff') ? 'flex' : 'none';
+        matchmakingStatsRow.style.display = (role === 'admin' || role === 'staff' || role === 'matchmaker') ? 'flex' : 'none';
     }
     
     // 控制算法操作按钮的显示
@@ -666,26 +677,34 @@ function controlUIByRole(role) {
     }
     
     if (simulateMatchingBtns) {
-        // 模拟匹配按钮：admin总是可见，staff和matchmaker需要检查算法模拟开关
+        // 模拟匹配按钮：admin总是可见，staff需要检查算法模拟开关，matchmaker始终不可见
         if (role === 'admin') {
             simulateMatchingBtns.style.display = 'flex';
+        } else if (role === 'matchmaker') {
+            // matchmaker始终不可见
+            simulateMatchingBtns.style.display = 'none';
         } else {
-            // staff和matchmaker需要等待功能开关加载后决定显示
+            // staff需要等待功能开关加载后决定显示
             simulateMatchingBtns.style.display = 'none';
         }
     }
     
     // 根据角色修改算法操作的标题和卡片显示
-    if (role === 'staff' || role === 'matchmaker') {
+    if (role === 'staff') {
         if (algorithmOperationTitle) {
             algorithmOperationTitle.innerHTML = '🧮 算法模拟<br><small style="font-size: 12px; color: #666; font-weight: normal;">（基于参与者收藏顺序，准确性有限，活动当天会有入口给参与者选出 7 人手动排序）</small>';
         }
-        // 对于staff和matchmaker，初始隐藏卡片，等待功能开关加载后决定是否显示
+        // 对于staff，初始隐藏卡片，等待功能开关加载后决定是否显示
         if (algorithmCard) {
             algorithmCard.style.display = 'none';
         }
         // 加载功能开关后更新显示
         updateSimulationButtonsVisibility(role);
+    } else if (role === 'matchmaker') {
+        // matchmaker始终不显示算法卡片
+        if (algorithmCard) {
+            algorithmCard.style.display = 'none';
+        }
     } else {
         if (algorithmOperationTitle) {
             algorithmOperationTitle.innerHTML = '🧮 算法操作';
@@ -701,6 +720,11 @@ function controlUIByRole(role) {
 async function updateSimulationButtonsVisibility(role) {
     // admin总是可以看到所有按钮，不需要检查开关
     if (role === 'admin') {
+        return;
+    }
+    
+    // matchmaker始终看不到，不需要检查开关
+    if (role === 'matchmaker') {
         return;
     }
     
@@ -720,8 +744,8 @@ async function updateSimulationButtonsVisibility(role) {
             const simulateMatchingBtns = document.getElementById('simulateMatchingBtns');
             const algorithmCard = document.querySelector('.dashboard-card:has(#algorithmOperationTitle)');
             
-            if (role === 'staff' || role === 'matchmaker') {
-                // staff和matchmaker只能看到模拟按钮，不能看到执行按钮
+            if (role === 'staff') {
+                // 只有staff受功能开关控制
                 // 控制模拟按钮的显示
                 if (simulateMatchingBtns) {
                     simulateMatchingBtns.style.display = simulationEnabled ? 'flex' : 'none';
@@ -735,8 +759,8 @@ async function updateSimulationButtonsVisibility(role) {
         }
     } catch (error) {
         console.error('获取功能开关状态失败:', error);
-        // 出错时默认隐藏模拟按钮和卡片（对于非admin用户）
-        if (role !== 'admin') {
+        // 出错时默认隐藏模拟按钮和卡片（对于staff用户）
+        if (role === 'staff') {
             const simulateMatchingBtns = document.getElementById('simulateMatchingBtns');
             const algorithmCard = document.querySelector('.dashboard-card:has(#algorithmOperationTitle)');
             

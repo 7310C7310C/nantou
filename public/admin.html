@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>管理后台</title>
-    <link rel="stylesheet" href="css/style.css?v=20251017">
-    <link rel="stylesheet" href="css/admin.css?v=20251017">
+    <link rel="stylesheet" href="css/style.css?v=20251017a">
+    <link rel="stylesheet" href="css/admin.css?v=20251017a">
 </head>
 <body>
     <div class="admin-container">
@@ -70,7 +70,7 @@
                     </div>
                 </div>
 
-                <div class="dashboard-card">
+                <div class="dashboard-card" id="dataStatsCard">
                     <h3>📊 数据统计</h3>
                     <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                         <button class="btn btn-primary" id="viewFavoriteStatsBtn" style="flex: 1; margin: 0;">被收藏情况</button>
@@ -90,7 +90,7 @@
                     </div>
                 </div>
 
-                <div class="dashboard-card">
+                <div class="dashboard-card" id="systemLogsCard">
                     <h3>📋 系统日志</h3>
                     <div style="display: flex; gap: 8px;">
                         <button class="btn btn-primary" id="openLogsBtn" style="flex: 1; margin: 0;">查看日志</button>
@@ -780,7 +780,7 @@
                 <div class="feature-flag-item">
                     <div class="feature-flag-info">
                         <h3>💬 聊天匹配功能</h3>
-                        <p>启用后可以进行聊天匹配相关操作</p>
+                        <p>启用后可以对参与者进行聊天匹配操作</p>
                     </div>
                     <div class="feature-flag-toggle">
                         <label class="toggle-switch">
@@ -1350,6 +1350,6 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script src="js/Sortable.min.js"></script>
-    <script src="js/admin.js?v=20251017"></script>
+    <script src="js/admin.js?v=20251017a"></script>
 </body>
 </html>
