@@ -593,13 +593,17 @@ function showAuthenticatedUI() {
 
 // 根据角色控制UI显示
 function controlUIByRole(role) {
+    // 获取当前用户名，用于特殊控制
+    const username = localStorage.getItem('username') || (currentUser ? currentUser.username : '');
+    const isStaff03 = (username === 'staff03');
+    
     // 直接通过ID控制"数据统计"和"系统日志"卡片的显示
     const dataStatsCard = document.getElementById('dataStatsCard');
     const systemLogsCard = document.getElementById('systemLogsCard');
     
     if (dataStatsCard) {
-        // 数据统计卡片：只有admin和staff可见
-        dataStatsCard.style.display = (role === 'admin' || role === 'staff') ? 'block' : 'none';
+        // 数据统计卡片：只有admin和staff可见（staff03除外）
+        dataStatsCard.style.display = (role === 'admin' || (role === 'staff' && !isStaff03)) ? 'block' : 'none';
     }
     
     if (systemLogsCard) {
@@ -620,11 +624,11 @@ function controlUIByRole(role) {
         
         switch (cardTitle) {
             case '👥 报名录入':
-                // 只有admin和staff能用
-                shouldShow = role === 'admin' || role === 'staff';
+                // 只有admin和staff能用（staff03除外）
+                shouldShow = role === 'admin' || (role === 'staff' && !isStaff03);
                 break;
             case '✅ 现场签到':
-                // 只有admin和staff能用
+                // 只有admin和staff能用（staff03也可以用）
                 shouldShow = role === 'admin' || role === 'staff';
                 break;
             case '💕 红娘操作':
@@ -677,11 +681,11 @@ function controlUIByRole(role) {
     }
     
     if (simulateMatchingBtns) {
-        // 模拟匹配按钮：admin总是可见，staff需要检查算法模拟开关，matchmaker始终不可见
+        // 模拟匹配按钮：admin总是可见，staff需要检查算法模拟开关（staff03除外），matchmaker始终不可见
         if (role === 'admin') {
             simulateMatchingBtns.style.display = 'flex';
-        } else if (role === 'matchmaker') {
-            // matchmaker始终不可见
+        } else if (role === 'matchmaker' || isStaff03) {
+            // matchmaker和staff03始终不可见
             simulateMatchingBtns.style.display = 'none';
         } else {
             // staff需要等待功能开关加载后决定显示
@@ -691,15 +695,23 @@ function controlUIByRole(role) {
     
     // 根据角色修改算法操作的标题和卡片显示
     if (role === 'staff') {
-        if (algorithmOperationTitle) {
-            algorithmOperationTitle.innerHTML = '🧮 算法模拟<br><small style="font-size: 12px; color: #666; font-weight: normal;">（基于参与者收藏顺序，准确性有限，活动当天会有入口给参与者选出 7 人手动排序）</small>';
+        if (isStaff03) {
+            // staff03 始终不显示算法卡片
+            if (algorithmCard) {
+                algorithmCard.style.display = 'none';
+            }
+        } else {
+            // 其他staff用户
+            if (algorithmOperationTitle) {
+                algorithmOperationTitle.innerHTML = '🧮 算法模拟<br><small style="font-size: 12px; color: #666; font-weight: normal;">（基于参与者收藏顺序，准确性有限，活动当天会有入口给参与者选出 7 人手动排序）</small>';
+            }
+            // 对于staff，初始隐藏卡片，等待功能开关加载后决定是否显示
+            if (algorithmCard) {
+                algorithmCard.style.display = 'none';
+            }
+            // 加载功能开关后更新显示
+            updateSimulationButtonsVisibility(role);
         }
-        // 对于staff，初始隐藏卡片，等待功能开关加载后决定是否显示
-        if (algorithmCard) {
-            algorithmCard.style.display = 'none';
-        }
-        // 加载功能开关后更新显示
-        updateSimulationButtonsVisibility(role);
     } else if (role === 'matchmaker') {
         // matchmaker始终不显示算法卡片
         if (algorithmCard) {
@@ -725,6 +737,13 @@ async function updateSimulationButtonsVisibility(role) {
     
     // matchmaker始终看不到，不需要检查开关
     if (role === 'matchmaker') {
+        return;
+    }
+    
+    // staff03 始终看不到，不需要检查开关
+    const username = localStorage.getItem('username') || (currentUser ? currentUser.username : '');
+    const isStaff03 = (username === 'staff03');
+    if (isStaff03) {
         return;
     }
     
