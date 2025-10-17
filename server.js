@@ -151,13 +151,13 @@ app.delete('/api/admin/staff/:staff_id', protect, restrictTo('admin'), staffCont
 app.get('/api/admin/feature-flags', protect, restrictTo('admin'), adminController.getFeatureFlags);
 app.put('/api/admin/feature-flags', protect, restrictTo('admin'), adminController.updateFeatureFlags);
 
-// 互选情况数据API路由（管理员、工作人员和红娘可访问）
-app.get('/api/admin/selections-data', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getSelectionsData);
-app.get('/api/admin/favorite-stats', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getFavoriteStats);
-app.get('/api/admin/participant-stats', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getParticipantStats);
-app.get('/api/admin/favorite-detail/:targetId', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getFavoriteDetail);
-app.get('/api/admin/selection-detail/:targetId', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getSelectionDetail);
-app.get('/api/admin/favorite-mutual-data', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getFavoriteMutualData);
+// 互选情况数据API路由（管理员和工作人员可访问）
+app.get('/api/admin/selections-data', protect, restrictTo('admin', 'staff'), adminController.getSelectionsData);
+app.get('/api/admin/favorite-stats', protect, restrictTo('admin', 'staff'), adminController.getFavoriteStats);
+app.get('/api/admin/participant-stats', protect, restrictTo('admin', 'staff'), adminController.getParticipantStats);
+app.get('/api/admin/favorite-detail/:targetId', protect, restrictTo('admin', 'staff'), adminController.getFavoriteDetail);
+app.get('/api/admin/selection-detail/:targetId', protect, restrictTo('admin', 'staff'), adminController.getSelectionDetail);
+app.get('/api/admin/favorite-mutual-data', protect, restrictTo('admin', 'staff'), adminController.getFavoriteMutualData);
 
 // 匹配算法管理API路由（仅管理员可访问）
 app.get('/api/admin/validate-selections', protect, restrictTo('admin'), adminController.validateUserSelections);
@@ -165,12 +165,12 @@ app.post('/api/admin/preview-group-matching', protect, restrictTo('admin'), admi
 app.post('/api/admin/preview-chat-matching', protect, restrictTo('admin'), adminController.previewChatMatching);
 app.post('/api/admin/execute-group-matching', protect, restrictTo('admin'), adminController.executeGroupMatching);
 app.post('/api/admin/execute-chat-matching', protect, restrictTo('admin'), adminController.executeChatMatching);
-app.post('/api/admin/simulate-group-matching', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.simulateGroupMatching);
-app.post('/api/admin/simulate-chat-matching', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.simulateChatMatching);
-app.get('/api/admin/grouping-history', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getGroupingHistory);
-app.get('/api/admin/chat-history', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getChatHistory);
-app.get('/api/admin/grouping-result/:runBatch', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getGroupingResult);
-app.get('/api/admin/chat-result/:runBatch', protect, restrictTo('admin', 'staff', 'matchmaker'), adminController.getChatResult);
+app.post('/api/admin/simulate-group-matching', protect, restrictTo('admin', 'staff'), adminController.simulateGroupMatching);
+app.post('/api/admin/simulate-chat-matching', protect, restrictTo('admin', 'staff'), adminController.simulateChatMatching);
+app.get('/api/admin/grouping-history', protect, restrictTo('admin', 'staff'), adminController.getGroupingHistory);
+app.get('/api/admin/chat-history', protect, restrictTo('admin', 'staff'), adminController.getChatHistory);
+app.get('/api/admin/grouping-result/:runBatch', protect, restrictTo('admin', 'staff'), adminController.getGroupingResult);
+app.get('/api/admin/chat-result/:runBatch', protect, restrictTo('admin', 'staff'), adminController.getChatResult);
 
 // 红娘配对API路由
 app.get('/api/matchmaker/participants/:participant_id/matching', protect, restrictTo('matchmaker'), matchmakerController.getParticipantMatchingData);
