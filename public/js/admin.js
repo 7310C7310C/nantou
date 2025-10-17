@@ -679,6 +679,7 @@ function controlUIByRole(role) {
     
     // 控制算法操作按钮的显示
     const executeMatchingBtns = document.getElementById('executeMatchingBtns');
+    const executeTmpMatchingBtns = document.getElementById('executeTmpMatchingBtns');
     const simulateMatchingBtns = document.getElementById('simulateMatchingBtns');
     const algorithmOperationTitle = document.getElementById('algorithmOperationTitle');
     const algorithmCard = document.querySelector('.dashboard-card:has(#algorithmOperationTitle)');
@@ -686,6 +687,11 @@ function controlUIByRole(role) {
     if (executeMatchingBtns) {
         // 执行匹配按钮：只有admin可见
         executeMatchingBtns.style.display = (role === 'admin') ? 'flex' : 'none';
+    }
+    
+    if (executeTmpMatchingBtns) {
+        // 执行匹配（临时版）按钮：只有admin可见
+        executeTmpMatchingBtns.style.display = (role === 'admin') ? 'flex' : 'none';
     }
     
     if (simulateMatchingBtns) {
@@ -6064,6 +6070,7 @@ function closePreviewModal() {
     const modal = document.getElementById('matchingPreviewModal');
     if (modal) {
         const type = modal.dataset.type;
+        const isTmpVersion = modal.dataset.isTmpVersion === 'true';
         modal.style.display = 'none';
         
         // 清除搜索
@@ -6077,14 +6084,28 @@ function closePreviewModal() {
         
         // 返回到之前的配置模态框
         if (type === 'grouping') {
-            const groupMatchingModal = document.getElementById('groupMatchingModal');
-            if (groupMatchingModal) {
-                groupMatchingModal.style.display = 'block';
+            if (isTmpVersion) {
+                const groupMatchingTmpModal = document.getElementById('groupMatchingTmpModal');
+                if (groupMatchingTmpModal) {
+                    groupMatchingTmpModal.style.display = 'block';
+                }
+            } else {
+                const groupMatchingModal = document.getElementById('groupMatchingModal');
+                if (groupMatchingModal) {
+                    groupMatchingModal.style.display = 'block';
+                }
             }
         } else if (type === 'chat') {
-            const chatMatchingModal = document.getElementById('chatMatchingModal');
-            if (chatMatchingModal) {
-                chatMatchingModal.style.display = 'block';
+            if (isTmpVersion) {
+                const chatMatchingTmpModal = document.getElementById('chatMatchingTmpModal');
+                if (chatMatchingTmpModal) {
+                    chatMatchingTmpModal.style.display = 'block';
+                }
+            } else {
+                const chatMatchingModal = document.getElementById('chatMatchingModal');
+                if (chatMatchingModal) {
+                    chatMatchingModal.style.display = 'block';
+                }
             }
         }
     }
