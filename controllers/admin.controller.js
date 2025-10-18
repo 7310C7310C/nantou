@@ -776,6 +776,28 @@ async function updateParticipantCheckin(req, res) {
       });
     }
 
+    // 如果是取消签到，清理该用户相关的 selections 记录
+    if (!isCheckedIn) {
+      // 删除该用户作为选择者的记录（user_id）
+      const [deleteUserSelections] = await pool.execute(
+        'DELETE FROM selections WHERE user_id = ?',
+        [id]
+      );
+      
+      // 删除该用户作为被选择者的记录（target_id）
+      const [deleteTargetSelections] = await pool.execute(
+        'DELETE FROM selections WHERE target_id = ?',
+        [id]
+      );
+
+      logger.info('取消签到：已清理相关选择记录', { 
+        participant_id: id,
+        deleted_as_user: deleteUserSelections.affectedRows,
+        deleted_as_target: deleteTargetSelections.affectedRows,
+        operator: req.user?.username 
+      });
+    }
+
     // 记录操作成功
     const action = isCheckedIn ? '签到' : '取消签到';
     logger.success(`参与者${action}成功`, { 
@@ -841,7 +863,15 @@ async function clearAllCheckins(req, res) {
       'SELECT COUNT(*) as total, SUM(is_checked_in) as checkedIn FROM participants'
     );
     
-    // 执行清空操作
+    // 先清空所有 selections 记录（因为所有人都将取消签到）
+    const [selectionsResult] = await pool.execute('DELETE FROM selections');
+    
+    logger.info('清空签到：已清理所有选择记录', {
+      deleted_selections: selectionsResult.affectedRows,
+      operator: req.user?.username
+    });
+    
+    // 执行清空签到操作
     const [result] = await pool.execute('UPDATE participants SET is_checked_in = 0');
 
     // 记录操作成功
@@ -851,6 +881,7 @@ async function clearAllCheckins(req, res) {
       operatorUsername: req.user.username,
       totalParticipants: beforeStats[0].total,
       previousCheckedIn: beforeStats[0].checkedIn,
+      deletedSelections: selectionsResult.affectedRows,
       affectedRows: result.affectedRows,
       timestamp: new Date().toISOString()
     });
@@ -861,6 +892,7 @@ async function clearAllCheckins(req, res) {
       data: {
         totalParticipants: beforeStats[0].total,
         previousCheckedIn: beforeStats[0].checkedIn,
+        deletedSelections: selectionsResult.affectedRows,
         affectedRows: result.affectedRows
       }
     });
