@@ -1356,6 +1356,28 @@ function setupLoginEvents() {
                     await initFavorites();
                     // 获取用户详细信息并设置默认性别筛选
                     await setDefaultGenderForUser();
+                    
+                    // ==== 新增：如果已签到且开启了匹配功能，自动打开选择界面 ====
+                    const isSigned = localStorage.getItem('isSigned') === '1';
+                    if (isSigned) {
+                        // 检查功能开关，如果开启了分组或聊天匹配，自动打开选择界面
+                        try {
+                            const flagsResp = await fetch('/api/feature-flags');
+                            if (flagsResp.ok) {
+                                const flagsData = await flagsResp.json();
+                                const featureFlags = flagsData.featureFlags;
+                                
+                                // 优先打开分组匹配，如果未开启则打开聊天匹配
+                                if (featureFlags.grouping_enabled) {
+                                    openSelectionsModal('group');
+                                } else if (featureFlags.chat_enabled) {
+                                    openSelectionsModal('chat');
+                                }
+                            }
+                        } catch (err) {
+                            console.log('检查功能开关失败，跳过自动打开选择界面', err);
+                        }
+                    }
                 }
             } else {
                 // 登录失败
@@ -1576,6 +1598,29 @@ async function checkLoginStatus() {
             // 先初始化收藏状态，再加载用户列表
             await initFavorites();
             await setDefaultGenderForUser();
+            
+            // ==== 新增：如果已签到且开启了匹配功能，自动打开选择界面 ====
+            const isSigned = localStorage.getItem('isSigned') === '1';
+            if (isSigned) {
+                // 检查功能开关，如果开启了分组或聊天匹配，自动打开选择界面
+                try {
+                    const flagsResp = await fetch('/api/feature-flags');
+                    if (flagsResp.ok) {
+                        const flagsData = await flagsResp.json();
+                        const featureFlags = flagsData.featureFlags;
+                        
+                        // 优先打开分组匹配，如果未开启则打开聊天匹配
+                        if (featureFlags.grouping_enabled) {
+                            openSelectionsModal('group');
+                        } else if (featureFlags.chat_enabled) {
+                            openSelectionsModal('chat');
+                        }
+                    }
+                } catch (err) {
+                    console.log('检查功能开关失败，跳过自动打开选择界面', err);
+                }
+            }
+            
             return true; // 表示已处理参与者的初始加载
         }
     }
