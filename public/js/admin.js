@@ -267,6 +267,12 @@ function setupEventListeners() {
         clearCheckinConfirmInput.addEventListener('input', validateClearCheckinConfirm);
     }
 
+    // 签到成功提示弹窗关闭按钮
+    const closeSuccessBtn = document.getElementById('closeSuccessBtn');
+    if (closeSuccessBtn) {
+        closeSuccessBtn.addEventListener('click', closeCheckinSuccessModal);
+    }
+
     // 确认弹窗
     cancelConfirmBtn.addEventListener('click', closeConfirmModal);
     confirmSubmitBtn.addEventListener('click', submitRegistration);
