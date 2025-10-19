@@ -913,7 +913,7 @@ async function clearAllCheckins(req, res) {
 async function getFeatureFlags(req, res) {
   try {
     const [rows] = await pool.execute(
-      'SELECT grouping_enabled, chat_enabled, simulation_enabled, sort_by_id_enabled FROM feature_flags LIMIT 1'
+      'SELECT grouping_enabled, chat_enabled, simulation_enabled, sort_by_id_enabled, thankyou_page FROM feature_flags LIMIT 1'
     );
 
     let featureFlags;
@@ -923,14 +923,16 @@ async function getFeatureFlags(req, res) {
         grouping_enabled: false,
         chat_enabled: false,
         simulation_enabled: false,
-        sort_by_id_enabled: false
+        sort_by_id_enabled: false,
+        thankyou_page: false
       };
     } else {
       featureFlags = {
         grouping_enabled: Boolean(rows[0].grouping_enabled),
         chat_enabled: Boolean(rows[0].chat_enabled),
         simulation_enabled: Boolean(rows[0].simulation_enabled),
-        sort_by_id_enabled: Boolean(rows[0].sort_by_id_enabled)
+        sort_by_id_enabled: Boolean(rows[0].sort_by_id_enabled),
+        thankyou_page: Boolean(rows[0].thankyou_page)
       };
     }
 
@@ -957,10 +959,10 @@ async function getFeatureFlags(req, res) {
  */
 async function updateFeatureFlags(req, res) {
   try {
-    const { grouping_enabled, chat_enabled, simulation_enabled, sort_by_id_enabled } = req.body;
+    const { grouping_enabled, chat_enabled, simulation_enabled, sort_by_id_enabled, thankyou_page } = req.body;
 
     // 验证输入
-    if (typeof grouping_enabled !== 'boolean' || typeof chat_enabled !== 'boolean' || typeof simulation_enabled !== 'boolean' || typeof sort_by_id_enabled !== 'boolean') {
+    if (typeof grouping_enabled !== 'boolean' || typeof chat_enabled !== 'boolean' || typeof simulation_enabled !== 'boolean' || typeof sort_by_id_enabled !== 'boolean' || typeof thankyou_page !== 'boolean') {
       return res.status(400).json({
         success: false,
         message: '功能开关状态必须是布尔值'
@@ -983,14 +985,14 @@ async function updateFeatureFlags(req, res) {
     if (existingRows.length === 0) {
       // 插入新记录
       await pool.execute(
-        'INSERT INTO feature_flags (grouping_enabled, chat_enabled, simulation_enabled, sort_by_id_enabled) VALUES (?, ?, ?, ?)',
-        [grouping_enabled, chat_enabled, simulation_enabled, sort_by_id_enabled]
+        'INSERT INTO feature_flags (grouping_enabled, chat_enabled, simulation_enabled, sort_by_id_enabled, thankyou_page) VALUES (?, ?, ?, ?, ?)',
+        [grouping_enabled, chat_enabled, simulation_enabled, sort_by_id_enabled, thankyou_page]
       );
     } else {
       // 更新现有记录
       await pool.execute(
-        'UPDATE feature_flags SET grouping_enabled = ?, chat_enabled = ?, simulation_enabled = ?, sort_by_id_enabled = ? WHERE id = ?',
-        [grouping_enabled, chat_enabled, simulation_enabled, sort_by_id_enabled, existingRows[0].id]
+        'UPDATE feature_flags SET grouping_enabled = ?, chat_enabled = ?, simulation_enabled = ?, sort_by_id_enabled = ?, thankyou_page = ? WHERE id = ?',
+        [grouping_enabled, chat_enabled, simulation_enabled, sort_by_id_enabled, thankyou_page, existingRows[0].id]
       );
     }
 
