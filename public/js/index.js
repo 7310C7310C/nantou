@@ -1337,6 +1337,13 @@ function setupLoginEvents() {
                     // 参与者角色，关闭模态框并更新界面
                     closeLoginModal();
                     updateUserInterface(userUsername, userRole, userName);
+                    
+                    // 如果感谢页面正在显示，更新感谢页面的登录状态
+                    const thankyouPage = document.getElementById('thankyouPage');
+                    if (thankyouPage && thankyouPage.style.display === 'flex') {
+                        showThankyouPage();
+                    }
+                    
                     // ==== 修复：登录前已加载的第一页卡片没有爱心按钮的问题 ====
                     // 场景：未登录状态已经加载了当前性别(默认 female)第一页数据；登录男性参与者后仍然停留在 female，
                     // 此时旧卡片是未登录时渲染的，不包含收藏按钮；随后懒加载第二页才出现按钮，造成“第一页没有爱心”的错觉。
@@ -4255,10 +4262,55 @@ async function togglePinParticipant(participantId, currentlyPinned) {
 function showThankyouPage() {
     const thankyouPage = document.getElementById('thankyouPage');
     const userRole = localStorage.getItem('userRole');
+    const username = localStorage.getItem('username');
+    const userName = localStorage.getItem('userName');
+    const authToken = localStorage.getItem('authToken');
     const isStaff = ['admin', 'staff', 'matchmaker'].includes(userRole);
     
     // 显示感谢页面
     thankyouPage.style.display = 'flex';
+    
+    // 根据登录状态显示登录按钮或用户信息
+    const thankyouLoginBtn = document.getElementById('thankyouLoginBtn');
+    const thankyouUserInfo = document.getElementById('thankyouUserInfo');
+    
+    if (authToken && username && userRole) {
+        // 用户已登录，显示用户信息按钮
+        thankyouLoginBtn.style.display = 'none';
+        thankyouUserInfo.style.display = 'block';
+        
+        // 设置用户信息
+        const thankyouRoleBtn = document.getElementById('thankyouRoleBtn');
+        const thankyouUserInfoItem = document.getElementById('thankyouUserInfoItem');
+        
+        let displayText = '';
+        if (['admin', 'staff', 'matchmaker'].includes(userRole)) {
+            const roleMap = {
+                'admin': '管理员',
+                'staff': '工作人员', 
+                'matchmaker': '红娘'
+            };
+            displayText = roleMap[userRole] || userRole;
+        } else {
+            displayText = userName || username;
+        }
+        thankyouRoleBtn.textContent = displayText;
+        
+        if (thankyouUserInfoItem && username) {
+            thankyouUserInfoItem.textContent = `账号：${username}`;
+            thankyouUserInfoItem.style.display = 'block';
+        }
+        
+        // 设置用户下拉菜单
+        setupThankyouUserDropdown();
+    } else {
+        // 用户未登录，显示登录按钮
+        thankyouLoginBtn.style.display = 'block';
+        thankyouUserInfo.style.display = 'none';
+        
+        // 设置登录按钮点击事件
+        setupThankyouLoginButton();
+    }
     
     // 隐藏所有其他内容
     document.querySelector('.header').style.display = 'none';
@@ -4279,11 +4331,90 @@ function showThankyouPage() {
 }
 
 /**
+ * 设置感谢页面中的登录按钮
+ */
+function setupThankyouLoginButton() {
+    const thankyouLoginBtn = document.getElementById('thankyouLoginBtn');
+    const loginModal = document.getElementById('loginModal');
+    
+    if (!thankyouLoginBtn) return;
+    
+    // 移除旧的事件监听器
+    const newBtn = thankyouLoginBtn.cloneNode(true);
+    thankyouLoginBtn.parentNode.replaceChild(newBtn, thankyouLoginBtn);
+    
+    // 添加点击事件
+    newBtn.addEventListener('click', function() {
+        if (loginModal) {
+            loginModal.classList.add('active');
+        }
+    });
+}
+
+/**
+ * 设置感谢页面中的用户下拉菜单
+ */
+function setupThankyouUserDropdown() {
+    const thankyouRoleBtn = document.getElementById('thankyouRoleBtn');
+    const thankyouUserDropdownMenu = document.getElementById('thankyouUserDropdownMenu');
+    const thankyouLogoutBtn = document.getElementById('thankyouLogoutBtn');
+    
+    if (!thankyouRoleBtn || !thankyouUserDropdownMenu) return;
+    
+    // 移除旧的事件监听器
+    const newRoleBtn = thankyouRoleBtn.cloneNode(true);
+    thankyouRoleBtn.parentNode.replaceChild(newRoleBtn, thankyouRoleBtn);
+    
+    // 点击角色按钮显示/隐藏下拉菜单
+    newRoleBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        newRoleBtn.classList.toggle('active');
+        thankyouUserDropdownMenu.classList.toggle('show');
+    });
+    
+    // 点击其他地方隐藏下拉菜单
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.thankyou-user-info')) {
+            newRoleBtn.classList.remove('active');
+            thankyouUserDropdownMenu.classList.remove('show');
+        }
+    });
+    
+    // 登出功能
+    if (thankyouLogoutBtn) {
+        const newLogoutBtn = thankyouLogoutBtn.cloneNode(true);
+        thankyouLogoutBtn.parentNode.replaceChild(newLogoutBtn, thankyouLogoutBtn);
+        
+        newLogoutBtn.addEventListener('click', function() {
+            // 执行登出操作
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('username');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('userGender');
+            localStorage.removeItem('isSigned');
+            
+            // 更新UI状态
+            updateUIForLoggedOutState();
+            
+            // 重新显示感谢页面（此时为未登录状态）
+            showThankyouPage();
+        });
+    }
+}
+
+/**
  * 隐藏感谢页面，恢复正常显示
  */
 function hideThankyouPage() {
     const thankyouPage = document.getElementById('thankyouPage');
     thankyouPage.style.display = 'none';
+    
+    // 隐藏感谢页面中的登录按钮和用户信息
+    const thankyouLoginBtn = document.getElementById('thankyouLoginBtn');
+    const thankyouUserInfo = document.getElementById('thankyouUserInfo');
+    if (thankyouLoginBtn) thankyouLoginBtn.style.display = 'none';
+    if (thankyouUserInfo) thankyouUserInfo.style.display = 'none';
     
     // 恢复其他内容的显示（由其他逻辑控制具体显示）
     document.querySelector('.header').style.display = '';
