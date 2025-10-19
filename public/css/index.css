@@ -2863,3 +2863,41 @@ img, a, .user-photo {
         width: 40%;
     }
 }
+
+/* 感谢页面样式 */
+.thankyou-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    background: linear-gradient(135deg, #db909a 0%, #d5abff 50%, #ffa4c5 100%);
+}
+
+.thankyou-message {
+    font-size: 48px;
+    font-weight: bold;
+    color: #fff;
+    text-align: center;
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    line-height: 1.5;
+    padding: 40px;
+}
+
+@media (max-width: 768px) {
+    .thankyou-message {
+        font-size: 36px;
+        padding: 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .thankyou-message {
+        font-size: 28px;
+        padding: 20px;
+    }
+}

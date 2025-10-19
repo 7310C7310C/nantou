@@ -3232,6 +3232,14 @@ async function checkFeatureFlags() {
             const data = await response.json();
             const featureFlags = data.featureFlags;
             
+            // 检查感谢页面开关
+            if (featureFlags.thankyou_page) {
+                showThankyouPage();
+                return; // 如果开启感谢页面，直接返回不再处理其他逻辑
+            } else {
+                hideThankyouPage();
+            }
+            
             // 获取按钮元素
             const groupMatchingBtn = document.getElementById('groupMatchingBtn');
             const chatMatchingBtn = document.getElementById('chatMatchingBtn');
@@ -4239,4 +4247,49 @@ async function togglePinParticipant(participantId, currentlyPinned) {
         
         showToast('网络错误，请重试', 'error');
     }
+}
+
+/**
+ * 显示感谢页面
+ */
+function showThankyouPage() {
+    const thankyouPage = document.getElementById('thankyouPage');
+    const userRole = localStorage.getItem('userRole');
+    const isStaff = ['admin', 'staff', 'matchmaker'].includes(userRole);
+    
+    // 显示感谢页面
+    thankyouPage.style.display = 'flex';
+    
+    // 隐藏所有其他内容
+    document.querySelector('.header').style.display = 'none';
+    document.querySelector('.search-container').style.display = 'none';
+    document.querySelector('.gender-toggle').style.display = 'none';
+    document.querySelector('.feature-matching-container').style.display = 'none';
+    document.querySelector('.manage-matches-container').style.display = 'none';
+    document.querySelector('.users-grid').style.display = 'none';
+    document.getElementById('favoritesBtn').style.display = 'none';
+    
+    // 对于工作人员，保留管理后台按钮
+    const adminBtn = document.getElementById('adminPanelBtn');
+    if (isStaff && adminBtn) {
+        adminBtn.style.display = 'block';
+    } else if (adminBtn) {
+        adminBtn.style.display = 'none';
+    }
+}
+
+/**
+ * 隐藏感谢页面，恢复正常显示
+ */
+function hideThankyouPage() {
+    const thankyouPage = document.getElementById('thankyouPage');
+    thankyouPage.style.display = 'none';
+    
+    // 恢复其他内容的显示（由其他逻辑控制具体显示）
+    document.querySelector('.header').style.display = '';
+    document.querySelector('.search-container').style.display = '';
+    document.querySelector('.gender-toggle').style.display = '';
+    document.querySelector('.feature-matching-container').style.display = '';
+    document.querySelector('.manage-matches-container').style.display = '';
+    document.querySelector('.users-grid').style.display = '';
 }
