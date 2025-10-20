@@ -245,6 +245,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 监听页面可见性变化，当用户重新回到页面时刷新用户状态
     document.addEventListener('visibilitychange', async function() {
         if (!document.hidden && localStorage.getItem('authToken')) {
+            // 检查是否在感谢页面模式，如果是则跳过数据刷新
+            const thankyouPage = document.getElementById('thankyouPage');
+            if (thankyouPage && thankyouPage.style.display === 'flex') {
+                return; // 感谢页面模式下不刷新数据
+            }
+            
             // 页面变为可见且用户已登录时，刷新用户状态
             await refreshCurrentUserToLocalStorage();
             // 更新搜索框状态（因为签到状态可能影响搜索权限）
@@ -269,16 +275,42 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
     
     setupLoginEvents();
-    // 检查登录状态，如果是参与者，则由 checkLoginStatus 内部处理加载
-    // 如果不是参与者，则加载默认用户列表
-    const isParticipant = await checkLoginStatus();
-    if (!isParticipant) {
-        loadUsers();
-    }
-    // 管理后台按钮跳转
+    
+    // 管理后台按钮跳转 - 必须在检查功能开关之前绑定
     document.getElementById('adminPanelBtn').addEventListener('click', function() {
         window.location.href = '/admin';
     });
+    
+    // ========== 优先检查感谢页面开关 ==========
+    // 如果感谢页面开启，不需要加载用户数据
+    try {
+        const flagsResponse = await fetch('/api/feature-flags');
+        if (flagsResponse.ok) {
+            const flagsData = await flagsResponse.json();
+            if (flagsData.featureFlags && flagsData.featureFlags.thankyou_page) {
+                // 感谢页面已开启，只检查登录状态用于显示按钮，但不加载用户列表
+                await checkLoginStatus(true); // 传入 true 跳过数据加载
+                return; // 直接返回，不加载用户数据，不显示主内容
+            } else {
+                // 感谢页面未开启，显示主内容
+                const mainContent = document.getElementById('mainContent');
+                if (mainContent) mainContent.style.display = 'block';
+            }
+        }
+    } catch (error) {
+        console.log('检查功能开关失败，继续正常加载:', error);
+        // 出错时默认显示主内容
+        const mainContent = document.getElementById('mainContent');
+        if (mainContent) mainContent.style.display = 'block';
+    }
+    
+    // 感谢页面未开启，正常加载用户数据
+    // 检查登录状态，如果是参与者，则由 checkLoginStatus 内部处理加载
+    // 如果不是参与者，则加载默认用户列表
+    const isParticipant = await checkLoginStatus(false); // 传入 false 正常加载数据
+    if (!isParticipant) {
+        loadUsers();
+    }
 });
 
 // 页面加载完成时确保用户状态是最新的
@@ -1338,10 +1370,11 @@ function setupLoginEvents() {
                     closeLoginModal();
                     updateUserInterface(userUsername, userRole, userName);
                     
-                    // 如果感谢页面正在显示，更新感谢页面的登录状态
+                    // 如果感谢页面正在显示，更新感谢页面的登录状态并跳过数据加载
                     const thankyouPage = document.getElementById('thankyouPage');
                     if (thankyouPage && thankyouPage.style.display === 'flex') {
                         showThankyouPage();
+                        return; // 感谢页面模式下不加载用户数据，直接返回
                     }
                     
                     // ==== 修复：登录前已加载的第一页卡片没有爱心按钮的问题 ====
@@ -1591,7 +1624,8 @@ function setupUserDropdown() {
 }
 
 // 页面加载时检查登录状态
-async function checkLoginStatus() {
+// @param {boolean} skipDataLoading - 是否跳过数据加载（用于感谢页面模式）
+async function checkLoginStatus(skipDataLoading = false) {
     const authToken = localStorage.getItem('authToken');
     const username = localStorage.getItem('username');
     const userRole = localStorage.getItem('userRole');
@@ -1601,7 +1635,7 @@ async function checkLoginStatus() {
         // 如果已登录，更新界面
         updateUserInterface(username, userRole, userName);
         // 为已登录的参与者设置默认性别筛选
-        if (userRole === 'participant') {
+        if (userRole === 'participant' && !skipDataLoading) {
             // 先初始化收藏状态，再加载用户列表
             await initFavorites();
             await setDefaultGenderForUser();
@@ -4261,13 +4295,15 @@ async function togglePinParticipant(participantId, currentlyPinned) {
  */
 function showThankyouPage() {
     const thankyouPage = document.getElementById('thankyouPage');
+    const mainContent = document.getElementById('mainContent');
     const userRole = localStorage.getItem('userRole');
     const authToken = localStorage.getItem('authToken');
     const username = localStorage.getItem('username');
     const isStaff = ['admin', 'staff', 'matchmaker'].includes(userRole);
     
-    // 显示感谢页面
+    // 显示感谢页面，隐藏主内容
     thankyouPage.style.display = 'flex';
+    if (mainContent) mainContent.style.display = 'none';
     
     // 控制登录按钮和用户信息的显示（复用正常页面的控件）
     const loginBtn = document.getElementById('loginBtn');
@@ -4283,15 +4319,6 @@ function showThankyouPage() {
         if (userInfo) userInfo.style.display = 'none';
     }
     
-    // 隐藏所有其他内容
-    document.querySelector('.header').style.display = 'none';
-    document.querySelector('.search-container').style.display = 'none';
-    document.querySelector('.gender-toggle').style.display = 'none';
-    document.querySelector('.feature-matching-container').style.display = 'none';
-    document.querySelector('.manage-matches-container').style.display = 'none';
-    document.querySelector('.users-grid').style.display = 'none';
-    document.getElementById('favoritesBtn').style.display = 'none';
-    
     // 对于工作人员，保留管理后台按钮
     const adminBtn = document.getElementById('adminPanelBtn');
     if (isStaff && adminBtn) {
@@ -4306,13 +4333,10 @@ function showThankyouPage() {
  */
 function hideThankyouPage() {
     const thankyouPage = document.getElementById('thankyouPage');
+    const mainContent = document.getElementById('mainContent');
+    
     thankyouPage.style.display = 'none';
     
-    // 恢复其他内容的显示（由其他逻辑控制具体显示）
-    document.querySelector('.header').style.display = '';
-    document.querySelector('.search-container').style.display = '';
-    document.querySelector('.gender-toggle').style.display = '';
-    document.querySelector('.feature-matching-container').style.display = '';
-    document.querySelector('.manage-matches-container').style.display = '';
-    document.querySelector('.users-grid').style.display = '';
+    // 显示主内容容器
+    if (mainContent) mainContent.style.display = 'block';
 }
