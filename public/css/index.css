@@ -2878,22 +2878,6 @@ img, a, .user-photo {
     background: linear-gradient(135deg, #db909a 0%, #d5abff 50%, #ffa4c5 100%);
 }
 
-/* 感谢页面中的登录按钮 */
-.thankyou-login-btn {
-    position: absolute !important;
-    top: 20px;
-    left: 20px;
-    z-index: 11;
-}
-
-/* 感谢页面中的用户信息 */
-.thankyou-user-info {
-    position: absolute !important;
-    top: 20px;
-    left: 20px;
-    z-index: 11;
-}
-
 .thankyou-message {
     font-size: 48px;
     font-weight: bold;

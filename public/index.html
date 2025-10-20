@@ -4,26 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>一线牵</title>
-    <link rel="stylesheet" href="css/index.css?v=20251019">
+    <link rel="stylesheet" href="css/index.css?v=20251020">
 </head>
 <body>
     <!-- 登录按钮 - 固定在左上角 -->
     <button class="login-btn" id="loginBtn">登录</button>
 
+    <!-- 用户信息 - 固定在左上角 -->
+    <div class="user-dropdown" id="userInfo">
+        <button class="role-btn" id="roleBtn">角色名</button>
+        <div class="user-dropdown-menu" id="userDropdownMenu">
+            <div class="user-info-item" id="userInfoItem" style="display:none;">账号：</div>
+            <button class="logout-btn" id="logoutBtn">登出</button>
+        </div>
+    </div>
+
+    <!-- 管理后台按钮 - 固定在右上角 -->
+    <button id="adminPanelBtn">管理后台</button>
+
     <!-- 感谢页面 -->
     <div class="thankyou-page" id="thankyouPage" style="display:none;">
-        <!-- 登录按钮 - 在感谢页面中也显示 -->
-        <button class="login-btn thankyou-login-btn" id="thankyouLoginBtn" style="display:none;">登录</button>
-        
-        <!-- 用户信息 - 在感谢页面中也显示 -->
-        <div class="user-dropdown thankyou-user-info" id="thankyouUserInfo" style="display:none;">
-            <button class="role-btn" id="thankyouRoleBtn">角色名</button>
-            <div class="user-dropdown-menu" id="thankyouUserDropdownMenu">
-                <div class="user-info-item" id="thankyouUserInfoItem" style="display:none;">账号：</div>
-                <button class="logout-btn" id="thankyouLogoutBtn">登出</button>
-            </div>
-        </div>
-        
         <div class="thankyou-message">
             活动结束，🎉<br>感谢参与！💒<br>更多精彩，💞<br>敬请期待！🥰
         </div>
@@ -33,20 +33,9 @@
         <div style="display: flex; align-items: center; gap: 16px;">
             <h1 class="title">一线牵</h1>
         </div>
-        <!-- 用户信息 -->
-        <div class="user-dropdown" id="userInfo">
-            <button class="role-btn" id="roleBtn">角色名</button>
-            <div class="user-dropdown-menu" id="userDropdownMenu">
-                <div class="user-info-item" id="userInfoItem" style="display:none;">账号：</div>
-                <button class="logout-btn" id="logoutBtn">登出</button>
-            </div>
-        </div>
     <!-- 我的喜欢按钮 -->
     <button class="favorites-btn" id="favoritesBtn" style="display:none;">我的喜欢</button>
     </div>
-
-    <!-- 管理后台按钮 - 固定在右上角 -->
-    <button id="adminPanelBtn">管理后台</button>
 
     <div class="search-container">
         <div class="search-wrapper">
@@ -291,7 +280,7 @@
     </div>
 
     <div id="toastContainer" class="toast-container"></div>
-    <script src="js/Sortable.min.js?v=20251019"></script>
-    <script src="js/index.js?v=20251019"></script>
+    <script src="js/Sortable.min.js?v=20251020"></script>
+    <script src="js/index.js?v=20251020"></script>
 </body>
 </html>
